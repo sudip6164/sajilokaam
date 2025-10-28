@@ -19,3 +19,4 @@ Environment config
   - CORS_ORIGINS=http://localhost:5173
 
 See `docs/` for architecture and ERD.
+# sajilokaam
