@@ -19,7 +19,8 @@
 
   <properties>
     <java.version>17</java.version>
-    <mapstruct.version>1.5.5.Final</mapstruct.version>
+    <mapstruct.version>1.6.2</mapstruct.version>
+    <mysql.connector.version>9.1.0</mysql.connector.version>
   </properties>
 
   <dependencies>
@@ -42,6 +43,7 @@
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
+      <version>${mysql.connector.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
