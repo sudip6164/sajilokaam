@@ -1,6 +1,0 @@
-﻿pdfminer.six
-pytesseract
-opencv-python
-scikit-learn
-fastapi
-uvicorn
