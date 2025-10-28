@@ -1,0 +1,32 @@
+﻿# Root
+.env
+.env.*.local
+*.log
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+dist/
+build/
+coverage/
+uploads/
+.tmp/
+
+# Backend
+backend/target/
+backend/.mvn/
+backend/mvnw*
+backend/.classpath
+backend/.project
+
+# Frontend
+frontend/.vite/
+frontend/.parcel-cache/
+frontend/npm-debug.log
+
+# ML
+ml/.venv/
+ml/__pycache__/
+ml/.pytest_cache/
+ml/*.pyc
+ml/.ipynb_checkpoints/

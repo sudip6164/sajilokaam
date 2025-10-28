@@ -1,0 +1,9 @@
+﻿# application.yml placeholder
+spring:
+  datasource:
+    url: jdbc:mysql://
+  jpa:
+    hibernate:
+      ddl-auto: validate
+server:
+  port: 8080
