@@ -1,9 +1,1 @@
-﻿# application.yml placeholder
-spring:
-  datasource:
-    url: jdbc:mysql://
-  jpa:
-    hibernate:
-      ddl-auto: validate
-server:
-  port: 8080
+﻿# Deprecated in favor of application.properties
