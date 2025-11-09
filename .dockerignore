@@ -1,0 +1,14 @@
+.git
+.gitignore
+private_docs/
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+**/.cache/
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+**/.env
+**/.env.*.local
+
+

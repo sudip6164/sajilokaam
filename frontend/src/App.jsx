@@ -7,6 +7,7 @@ function App() {
   const [password, setPassword] = useState('')
   const [token, setToken] = useState('')
   const [error, setError] = useState('')
+  const [users, setUsers] = useState([])
 
   useEffect(() => {
     fetch('http://localhost:8080/api/health')
@@ -32,6 +33,18 @@ function App() {
       setToken(data.token || '')
     } catch (err) {
       setError('Login failed')
+    }
+  }
+
+  const loadUsers = async () => {
+    setError('')
+    try {
+      const res = await fetch('http://localhost:8080/api/users')
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      setUsers(Array.isArray(data) ? data : [])
+    } catch {
+      setError('Failed to load users')
     }
   }
 
@@ -66,6 +79,15 @@ function App() {
             <code style={{ wordBreak: 'break-all' }}>{token}</code>
           </div>
         )}
+
+        <div style={{ marginTop: 16 }}>
+          <button type="button" onClick={loadUsers}>Load users</button>
+          <ul>
+            {users.map(u => (
+              <li key={u.id}>{u.fullName} ({u.email})</li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   )
