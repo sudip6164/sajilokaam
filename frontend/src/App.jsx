@@ -27,12 +27,14 @@ function App() {
         body: JSON.stringify({ email, password })
       })
       if (!res.ok) {
-        throw new Error('Login failed')
+        const statusText = res.status === 401 ? 'Invalid email or password' : `Login failed (${res.status})`
+        setError(statusText)
+        return
       }
       const data = await res.json()
       setToken(data.token || '')
     } catch (err) {
-      setError('Login failed')
+      setError(`Error: ${err.message}`)
     }
   }
 

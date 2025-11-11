@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -23,12 +24,19 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> create(@Validated @RequestBody User body) {
-        // Minimal validation
-        if (body.getEmail() == null || body.getEmail().isBlank() || body.getPassword() == null || body.getPassword().isBlank() || body.getFullName() == null || body.getFullName().isBlank()) {
+    public ResponseEntity<User> create(@RequestBody UserCreateRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank() ||
+            request.getPassword() == null || request.getPassword().isBlank() ||
+            request.getFullName() == null || request.getFullName().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        User created = userRepository.save(body);
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+        user.setFullName(request.getFullName());
+
+        User created = userRepository.save(user);
         return ResponseEntity.created(URI.create("/api/users/" + created.getId())).body(created);
     }
 }
