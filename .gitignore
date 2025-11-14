@@ -33,3 +33,6 @@ build/
 .vscode/
 
 private_docs/
+.env
+.env.local
+.env.*.local

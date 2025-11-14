@@ -47,6 +47,8 @@ public class JwtService {
                     .parseSignedClaims(token);
             return Optional.ofNullable(jwt.getPayload().getSubject());
         } catch (Exception e) {
+            System.err.println("JWT validation failed: " + e.getMessage());
+            e.printStackTrace();
             return Optional.empty();
         }
     }

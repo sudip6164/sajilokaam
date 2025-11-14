@@ -6,6 +6,7 @@ function App() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [token, setToken] = useState('')
+  const [profile, setProfile] = useState(null)
   const [error, setError] = useState('')
   const [users, setUsers] = useState([])
 
@@ -19,6 +20,7 @@ function App() {
   const submit = async (e) => {
     e.preventDefault()
     setError('')
+    setProfile(null)
     setToken('')
     try {
       const res = await fetch('http://localhost:8080/api/auth/login', {
@@ -33,8 +35,26 @@ function App() {
       }
       const data = await res.json()
       setToken(data.token || '')
+      await loadProfile(data.token)
     } catch (err) {
       setError(`Error: ${err.message}`)
+    }
+  }
+
+  const loadProfile = async (tokenValue) => {
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${tokenValue}`
+        }
+      })
+      if (!res.ok) {
+        throw new Error('Failed to fetch profile')
+      }
+      const data = await res.json()
+      setProfile(data)
+    } catch (err) {
+      setError('Failed to fetch profile')
     }
   }
 
@@ -79,6 +99,13 @@ function App() {
           <div style={{ marginTop: 12 }}>
             <p>Token:</p>
             <code style={{ wordBreak: 'break-all' }}>{token}</code>
+            {profile && (
+              <div style={{ marginTop: 8 }}>
+                <p>Logged in as</p>
+                <strong>{profile.fullName}</strong>
+                <div>{profile.email}</div>
+              </div>
+            )}
           </div>
         )}
 
