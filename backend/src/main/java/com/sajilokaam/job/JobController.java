@@ -40,6 +40,13 @@ public class JobController {
         return jobRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> get(@PathVariable Long id) {
+        return jobRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<Job> create(
             @RequestBody JobCreateRequest request,
