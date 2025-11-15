@@ -18,6 +18,9 @@ export function Navbar() {
           {profile ? (
             <>
               <Link to="/jobs" className="hover:underline">Jobs</Link>
+              <Link to="/jobs/new" className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-100">
+                Post Job
+              </Link>
               <span>{profile.fullName}</span>
               <button onClick={handleLogout} className="hover:underline">Logout</button>
             </>
