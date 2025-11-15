@@ -44,11 +44,11 @@ export function SignupPage() {
       }
 
       const data = await res.json()
-      // Auto-login with the token
+      // Auto-login with the token from registration
       localStorage.setItem('token', data.token)
-      await login(email, password)
+      // Update auth context
+      window.location.href = '/' // Force reload to update auth state
       showSuccess('Account created successfully!')
-      navigate('/')
     } catch (err) {
       showError(err.message || 'Registration failed')
     } finally {
