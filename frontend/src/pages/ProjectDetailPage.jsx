@@ -93,12 +93,14 @@ export function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <div className="loading-skeleton h-8 w-32 mb-6"></div>
-          <div className="card">
-            <div className="loading-skeleton h-8 w-64 mb-4"></div>
-            <div className="loading-skeleton h-4 w-full"></div>
+      <div className="min-h-screen py-12">
+        <div className="container-custom">
+          <div className="max-w-4xl mx-auto">
+            <div className="loading-skeleton h-10 w-48 mb-8"></div>
+            <div className="card">
+              <div className="loading-skeleton h-8 w-3/4 mb-4"></div>
+              <div className="loading-skeleton h-4 w-full"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -107,13 +109,18 @@ export function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen py-8">
-        <div className="container mx-auto px-4">
-          <div className="card text-center py-12">
-            <p className="text-red-500 text-lg">Project not found</p>
-            <Link to="/projects" className="btn btn-primary mt-4 inline-block">
-              Back to Projects
-            </Link>
+      <div className="min-h-screen py-12">
+        <div className="container-custom">
+          <div className="max-w-4xl mx-auto">
+            <div className="card text-center py-16">
+              <p className="text-red-500 text-lg font-semibold mb-4">Project not found</p>
+              <Link to="/projects" className="btn btn-primary inline-flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Projects
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -121,38 +128,65 @@ export function ProjectDetailPage() {
   }
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen py-12">
+      <div className="container-custom">
         <div className="max-w-4xl mx-auto">
-          <Link to="/projects" className="text-blue-600 hover:text-blue-700 font-medium mb-6 inline-block flex items-center gap-2">
+          <Link to="/projects" className="text-blue-600 hover:text-blue-700 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Projects
           </Link>
 
-          <div className="card mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">{project.title}</h1>
+          <div className="card mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-extrabold text-gray-900">{project.title}</h1>
+            </div>
             <p className="text-gray-600 text-lg leading-relaxed mb-4">
               {project.description || 'No description provided'}
             </p>
             {project.job && (
-              <p className="text-sm text-gray-500">
-                From job: {project.job.title}
-              </p>
+              <div className="flex items-center gap-2 text-sm text-gray-500 pt-4 border-t border-gray-200">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span>From job: {project.job.title}</span>
+              </div>
             )}
           </div>
 
           <div className="card">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Tasks <span className="text-gray-500 font-normal">({tasks.length})</span>
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Tasks <span className="text-gray-500 font-normal">({tasks.length})</span>
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Manage project tasks and track progress</p>
+              </div>
               <button
                 onClick={() => setShowTaskForm(!showTaskForm)}
                 className="btn btn-primary"
               >
-                {showTaskForm ? 'Cancel' : 'Add Task'}
+                {showTaskForm ? (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Task
+                  </>
+                )}
               </button>
             </div>
 
