@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useToast } from '../hooks/useToast'
 
 export function CreateJobPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState('OPEN')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const { token } = useAuth()
+  const { success: showSuccess, error: showError } = useToast()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
     setLoading(true)
 
     try {
@@ -31,70 +31,81 @@ export function CreateJobPage() {
       }
 
       const job = await res.json()
+      showSuccess('Job created successfully!')
       navigate(`/jobs/${job.id}`)
     } catch (err) {
-      setError(err.message)
+      showError(err.message || 'Failed to create job')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Post a New Job</h1>
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Title *</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="w-full px-4 py-2 border rounded"
-            placeholder="e.g., Website Development"
-          />
+    <div className="min-h-screen py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">Post a New Job</h1>
+          <div className="card">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="input-field"
+                  placeholder="e.g., Website Development"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={6}
+                  className="input-field"
+                  placeholder="Describe the job requirements, timeline, and expectations..."
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="input-field"
+                  disabled={loading}
+                >
+                  <option value="OPEN">Open</option>
+                  <option value="CLOSED">Closed</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                </select>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary"
+                >
+                  {loading ? 'Creating...' : 'Create Job'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/jobs')}
+                  className="btn btn-secondary"
+                  disabled={loading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={6}
-            className="w-full px-4 py-2 border rounded"
-            placeholder="Describe the job requirements..."
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-2">Status</label>
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="w-full px-4 py-2 border rounded"
-          >
-            <option value="OPEN">Open</option>
-            <option value="CLOSED">Closed</option>
-            <option value="IN_PROGRESS">In Progress</option>
-          </select>
-        </div>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Creating...' : 'Create Job'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/jobs')}
-            className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
-

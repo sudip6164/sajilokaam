@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Navbar } from './components/Navbar'
+import { ToastContainer } from './components/Toast'
+import { useToast } from './hooks/useToast'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { JobsPage } from './pages/JobsPage'
@@ -10,12 +12,13 @@ import { CreateJobPage } from './pages/CreateJobPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 
-function App() {
+function AppContent() {
+  const { toasts, removeToast } = useToast()
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
+    <>
+      <Navbar />
+      <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/"
@@ -66,7 +69,17 @@ function App() {
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      </Routes>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+    </>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppContent />
       </BrowserRouter>
     </AuthProvider>
   )
