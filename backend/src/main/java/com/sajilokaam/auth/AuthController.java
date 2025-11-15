@@ -95,7 +95,7 @@ public class AuthController {
             return ResponseEntity.status(401).build();
         }
         var u = userOpt.get();
-        return ResponseEntity.ok(new UserProfile(u.getId(), u.getEmail(), u.getFullName()));
+        return ResponseEntity.ok(new UserProfile(u.getId(), u.getEmail(), u.getFullName(), u.getRoles()));
     }
 }
 
