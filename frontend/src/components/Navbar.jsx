@@ -11,29 +11,43 @@ export function Navbar() {
   }
 
   return (
-    <nav className="bg-white shadow-md border-b border-gray-200">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors">
-            Sajilo Kaam
+    <nav className="bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
+      <div className="container-custom">
+        <div className="flex justify-between items-center h-20">
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <span className="text-white font-bold text-lg">SK</span>
+            </div>
+            <span className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Sajilo Kaam
+            </span>
           </Link>
-          <div className="flex gap-6 items-center">
+          <div className="flex gap-2 items-center">
             {profile ? (
               <>
-                <Link to="/jobs" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
+                <Link 
+                  to="/jobs" 
+                  className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold transition-colors rounded-lg hover:bg-blue-50"
+                >
                   Jobs
                 </Link>
-                <Link to="/projects" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
+                <Link 
+                  to="/projects" 
+                  className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold transition-colors rounded-lg hover:bg-blue-50"
+                >
                   Projects
                 </Link>
-                <Link to="/jobs/new" className="btn btn-primary text-sm">
-                  Post Job
+                <Link to="/jobs/new" className="btn btn-primary text-sm ml-2">
+                  + Post Job
                 </Link>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-700 font-medium">{profile.fullName}</span>
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-gray-900">{profile.fullName}</p>
+                    <p className="text-xs text-gray-500">{profile.email}</p>
+                  </div>
                   <button 
                     onClick={handleLogout} 
-                    className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                    className="btn btn-ghost text-sm px-4"
                   >
                     Logout
                   </button>
