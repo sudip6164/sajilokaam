@@ -1,10 +1,16 @@
 package com.sajilokaam.auth;
 
+import com.sajilokaam.role.Role;
+import com.sajilokaam.role.RoleRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -12,13 +18,47 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthController(UserRepository userRepository, JwtService jwtService, PasswordEncoder passwordEncoder) {
+    public AuthController(UserRepository userRepository, RoleRepository roleRepository, JwtService jwtService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<LoginResponse> register(@RequestBody RegisterRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank() ||
+            request.getPassword() == null || request.getPassword().isBlank() ||
+            request.getFullName() == null || request.getFullName().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Check if user already exists
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(409).build(); // Conflict
+        }
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+
+        // Assign default role: FREELANCER
+        Role freelancerRole = roleRepository.findByName("FREELANCER")
+                .orElseThrow(() -> new RuntimeException("FREELANCER role not found"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(freelancerRole);
+        user.setRoles(roles);
+
+        User created = userRepository.save(user);
+
+        // Auto-login: generate token
+        String token = jwtService.generateToken(created.getId(), created.getEmail());
+        return ResponseEntity.created(URI.create("/api/users/" + created.getId())).body(new LoginResponse(token));
     }
 
     @PostMapping("/login")

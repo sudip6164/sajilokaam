@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar'
 import { ToastContainer } from './components/Toast'
 import { useToast } from './hooks/useToast'
 import { LoginPage } from './pages/LoginPage'
+import { SignupPage } from './pages/SignupPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { JobsPage } from './pages/JobsPage'
 import { JobDetailPage } from './pages/JobDetailPage'
@@ -18,8 +19,9 @@ function AppContent() {
   return (
     <>
       <Navbar />
-      <Routes>
+        <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route
             path="/"
             element={

@@ -3,22 +3,54 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 
-export function LoginPage() {
+export function SignupPage() {
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
-  const { error: showError } = useToast()
+  const { success: showSuccess, error: showError } = useToast()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    if (password !== confirmPassword) {
+      showError('Passwords do not match')
+      return
+    }
+
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters')
+      return
+    }
+
     setLoading(true)
     try {
+      const res = await fetch('http://localhost:8080/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName })
+      })
+
+      if (res.status === 409) {
+        showError('Email already registered')
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error('Registration failed')
+      }
+
+      const data = await res.json()
+      // Auto-login with the token
+      localStorage.setItem('token', data.token)
       await login(email, password)
+      showSuccess('Account created successfully!')
       navigate('/')
     } catch (err) {
-      showError(err.message || 'Login failed')
+      showError(err.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -32,10 +64,22 @@ export function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
               <span className="text-2xl font-bold text-white">SK</span>
             </div>
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Sajilo Kaam</h1>
-            <p className="text-gray-600 font-medium">Welcome back! Sign in to continue</p>
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Create Account</h1>
+            <p className="text-gray-600 font-medium">Join Sajilo Kaam and start freelancing</p>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+              <input
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="input-field"
+                disabled={loading}
+              />
+            </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
               <input
@@ -52,10 +96,24 @@ export function LoginPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
               <input
                 type="password"
-                placeholder="Enter your password"
+                placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
+                className="input-field"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Password</label>
+              <input
+                type="password"
+                placeholder="Re-enter your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
                 className="input-field"
                 disabled={loading}
               />
@@ -71,16 +129,16 @@ export function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing in...
+                  Creating account...
                 </span>
               ) : (
-                'Sign In'
+                'Create Account'
               )}
             </button>
             <p className="text-center text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-semibold">
-                Create one
+              Already have an account?{' '}
+              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+                Sign in
               </Link>
             </p>
           </form>
@@ -89,3 +147,4 @@ export function LoginPage() {
     </div>
   )
 }
+
