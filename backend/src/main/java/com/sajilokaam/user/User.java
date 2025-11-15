@@ -1,5 +1,6 @@
 package com.sajilokaam.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sajilokaam.role.Role;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -20,6 +21,7 @@ public class User {
     private String email;
 
     @Column(nullable = false, length = 255)
+    @JsonIgnore
     private String password;
 
     @Column(name = "full_name", nullable = false, length = 255)
