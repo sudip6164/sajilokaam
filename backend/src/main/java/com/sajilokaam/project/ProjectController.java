@@ -51,6 +51,13 @@ public class ProjectController {
         return projectRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Project> get(@PathVariable Long id) {
+        return projectRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/accept-bid/{bidId}")
     public ResponseEntity<Project> acceptBid(
             @PathVariable Long bidId,

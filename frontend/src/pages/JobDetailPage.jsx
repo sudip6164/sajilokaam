@@ -8,7 +8,8 @@ export function JobDetailPage() {
   const [bids, setBids] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const { token } = useAuth()
+  const [acceptingBidId, setAcceptingBidId] = useState(null)
+  const { token, profile } = useAuth()
 
   useEffect(() => {
     loadJob()
@@ -71,6 +72,43 @@ export function JobDetailPage() {
     }
   }
 
+  const handleAcceptBid = async (bidId) => {
+    if (!confirm('Accept this bid and create a project?')) return
+
+    const title = prompt('Enter project title:')
+    if (!title) return
+
+    const description = prompt('Enter project description (optional):') || ''
+
+    setAcceptingBidId(bidId)
+    try {
+      const res = await fetch(`http://localhost:8080/api/projects/accept-bid/${bidId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, description })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to accept bid')
+      }
+
+      const project = await res.json()
+      alert('Bid accepted! Project created.')
+      window.location.href = `/projects/${project.id}`
+    } catch (err) {
+      alert('Failed to accept bid: ' + err.message)
+    } finally {
+      setAcceptingBidId(null)
+    }
+  }
+
+  // Check if current user is the job owner (client)
+  const isJobOwner = job && profile && job.client && 
+    (job.client.id === profile.id || (typeof job.client === 'object' && job.client.id === profile.id))
+
   if (loading) return <div className="container mx-auto p-6">Loading...</div>
   if (error) return <div className="container mx-auto p-6 text-red-500">Error: {error}</div>
   if (!job) return <div className="container mx-auto p-6">Job not found</div>
@@ -126,12 +164,23 @@ export function JobDetailPage() {
         ) : (
           <div className="space-y-4">
             {bids.map(bid => (
-              <div key={bid.id} className="border p-4 rounded">
-                <p className="font-semibold text-lg">${bid.amount}</p>
-                <p className="text-gray-600 mt-2">{bid.message || 'No message'}</p>
-                <span className="inline-block mt-2 text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded">
-                  {bid.status}
-                </span>
+              <div key={bid.id} className="border p-4 rounded flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-lg">${bid.amount}</p>
+                  <p className="text-gray-600 mt-2">{bid.message || 'No message'}</p>
+                  <span className="inline-block mt-2 text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded">
+                    {bid.status}
+                  </span>
+                </div>
+                {isJobOwner && bid.status === 'PENDING' && (
+                  <button
+                    onClick={() => handleAcceptBid(bid.id)}
+                    disabled={acceptingBidId === bid.id}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {acceptingBidId === bid.id ? 'Accepting...' : 'Accept Bid'}
+                  </button>
+                )}
               </div>
             ))}
           </div>
