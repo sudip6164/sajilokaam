@@ -4,6 +4,7 @@ public class RegisterRequest {
     private String email;
     private String password;
     private String fullName;
+    private String role; // CLIENT or FREELANCER
 
     public String getEmail() {
         return email;
@@ -27,6 +28,14 @@ public class RegisterRequest {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }
 

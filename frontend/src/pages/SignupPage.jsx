@@ -8,6 +8,7 @@ export function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [role, setRole] = useState('FREELANCER')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -31,7 +32,7 @@ export function SignupPage() {
       const res = await fetch('http://localhost:8080/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName })
+        body: JSON.stringify({ email, password, fullName, role })
       })
 
       if (res.status === 409) {
@@ -117,6 +118,43 @@ export function SignupPage() {
                 className="input-field"
                 disabled={loading}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">I am a</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('FREELANCER')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    role === 'FREELANCER'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                  disabled={loading}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">👨‍💻</div>
+                    <div className="text-sm font-bold">Freelancer</div>
+                    <div className="text-xs text-gray-500 mt-1">Looking for work</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('CLIENT')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    role === 'CLIENT'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                  disabled={loading}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">💼</div>
+                    <div className="text-sm font-bold">Client</div>
+                    <div className="text-xs text-gray-500 mt-1">Hiring talent</div>
+                  </div>
+                </button>
+              </div>
             </div>
             <button
               type="submit"

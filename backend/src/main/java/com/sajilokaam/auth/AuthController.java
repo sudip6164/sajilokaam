@@ -47,11 +47,12 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFullName(request.getFullName());
 
-        // Assign default role: FREELANCER
-        Role freelancerRole = roleRepository.findByName("FREELANCER")
-                .orElseThrow(() -> new RuntimeException("FREELANCER role not found"));
+        // Assign role: CLIENT or FREELANCER (default to FREELANCER)
+        String roleName = (request.getRole() != null && request.getRole().equals("CLIENT")) ? "CLIENT" : "FREELANCER";
+        Role userRole = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException(roleName + " role not found"));
         Set<Role> roles = new HashSet<>();
-        roles.add(freelancerRole);
+        roles.add(userRole);
         user.setRoles(roles);
 
         User created = userRepository.save(user);
