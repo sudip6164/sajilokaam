@@ -59,7 +59,12 @@ async function apiRequest(endpoint, options = {}) {
     }
   }
   
-  if (body) {
+  // Handle FormData (for file uploads) - don't set Content-Type, let browser set it with boundary
+  if (body instanceof FormData) {
+    config.body = body
+    // Remove Content-Type header for FormData to let browser set it with boundary
+    delete config.headers['Content-Type']
+  } else if (body) {
     config.body = typeof body === 'string' ? body : JSON.stringify(body)
   }
   
@@ -180,6 +185,43 @@ export const api = {
     
     delete: (id, token) => 
       apiRequest(`/projects/${id}`, { method: 'DELETE', token })
+  },
+  
+  // Document Processing (ML)
+  documents: {
+    upload: (projectId, token, file) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      return apiRequest(`/projects/${projectId}/documents/upload`, {
+        method: 'POST',
+        token,
+        body: formData,
+        headers: {} // Let browser set Content-Type for FormData
+      })
+    },
+    
+    getProcessingStatus: (projectId, processingId, token) =>
+      apiRequest(`/projects/${projectId}/documents/${processingId}/status`, { token }),
+    
+    getSuggestions: (projectId, processingId, token) =>
+      apiRequest(`/projects/${projectId}/documents/${processingId}/suggestions`, { token }),
+    
+    createTasks: (projectId, processingId, token, suggestionIds) =>
+      apiRequest(`/projects/${projectId}/documents/${processingId}/create-tasks`, {
+        method: 'POST',
+        token,
+        body: { suggestionIds }
+      }),
+    
+    rejectSuggestions: (projectId, processingId, token, suggestionIds) =>
+      apiRequest(`/projects/${projectId}/documents/${processingId}/reject-suggestions`, {
+        method: 'POST',
+        token,
+        body: { suggestionIds }
+      }),
+    
+    getAll: (projectId, token) =>
+      apiRequest(`/projects/${projectId}/documents`, { token })
   },
   
   // Milestones

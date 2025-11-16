@@ -28,6 +28,7 @@ import { NotificationsPage } from './pages/NotificationsPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { InvoiceDetailPage } from './pages/InvoiceDetailPage'
 import { CreateInvoicePage } from './pages/CreateInvoicePage'
+import { DocumentUploadPage } from './pages/DocumentUploadPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -91,6 +92,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <KanbanBoardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/documents/upload"
+            element={
+              <ProtectedRoute>
+                <DocumentUploadPage />
               </ProtectedRoute>
             }
           />
