@@ -76,7 +76,7 @@ export function MyBidsPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-6xl mx-auto">
           <div className="mb-10">
@@ -87,7 +87,7 @@ export function MyBidsPage() {
           {bids.length > 0 && (
             <div className="card mb-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <label className="block text-sm font-semibold text-gray-700">Filter by Status</label>
+                <label className="block text-sm font-bold text-white/90">Filter by Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -104,25 +104,25 @@ export function MyBidsPage() {
 
           {bids.length === 0 ? (
             <div className="card text-center py-16">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                <svg className="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No bids yet</h3>
-              <p className="text-gray-600 mb-4">Start bidding on jobs to see them here.</p>
+              <h3 className="text-xl font-bold text-white mb-2">No bids yet</h3>
+              <p className="text-white/70 mb-4">Start bidding on jobs to see them here.</p>
               <Link to="/jobs" className="btn btn-primary inline-flex items-center">
                 Browse Jobs
               </Link>
             </div>
           ) : filteredBids.length === 0 ? (
             <div className="card text-center py-16">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                <svg className="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No bids match the filter</h3>
+              <h3 className="text-xl font-bold text-white mb-2">No bids match the filter</h3>
               <button
                 onClick={() => setStatusFilter('ALL')}
                 className="btn btn-secondary mt-4"
@@ -133,43 +133,43 @@ export function MyBidsPage() {
           ) : (
             <div className="grid gap-6">
               {filteredBids.map(bid => (
-                <div key={bid.id} className="card hover:shadow-xl transition-all">
+                <div key={bid.id} className="card hover-lift">
                   <div className="flex flex-col md:flex-row justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
                           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                          <h2 className="text-2xl font-bold text-white mb-2">
                             {bid.job?.title || 'Job Title'}
                           </h2>
                           <span className={getStatusBadge(bid.status)}>{bid.status}</span>
                         </div>
                         <div className="text-right">
-                          <div className="text-3xl font-extrabold text-emerald-600">${bid.amount}</div>
-                          <div className="text-sm text-gray-500">Bid Amount</div>
+                          <div className="text-3xl font-extrabold text-emerald-400">${bid.amount}</div>
+                          <div className="text-sm text-white/60">Bid Amount</div>
                         </div>
                       </div>
                       
                       {bid.message && (
-                        <p className="text-gray-600 mb-4 leading-relaxed">{bid.message}</p>
+                        <p className="text-white/70 mb-4 leading-relaxed">{bid.message}</p>
                       )}
 
                       {bid.job && (
-                        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                        <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                          <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30">
                             {bid.job.client?.fullName?.charAt(0) || 'C'}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-700">Client</p>
-                            <p className="text-base font-bold text-gray-900">{bid.job.client?.fullName || 'Unknown'}</p>
-                            <p className="text-xs text-gray-500">{bid.job.client?.email}</p>
+                            <p className="text-sm font-semibold text-white/60">Client</p>
+                            <p className="text-base font-bold text-white">{bid.job.client?.fullName || 'Unknown'}</p>
+                            <p className="text-xs text-white/50">{bid.job.client?.email}</p>
                           </div>
                           {bid.job.description && (
-                            <div className="text-sm text-gray-600 max-w-md">
+                            <div className="text-sm text-white/70 max-w-md">
                               <p className="font-semibold mb-1">Job Description:</p>
                               <p className="line-clamp-2">{bid.job.description}</p>
                             </div>
@@ -177,7 +177,7 @@ export function MyBidsPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10">
                         <Link
                           to={`/jobs/${bid.job?.id}`}
                           className="btn btn-secondary text-sm"
@@ -185,7 +185,7 @@ export function MyBidsPage() {
                           View Job Details
                         </Link>
                         {bid.status === 'ACCEPTED' && (
-                          <span className="text-sm text-emerald-600 font-semibold flex items-center gap-2">
+                          <span className="text-sm text-emerald-400 font-semibold flex items-center gap-2">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
