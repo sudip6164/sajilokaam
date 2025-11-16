@@ -65,5 +65,35 @@ public class TaskController {
         URI location = URI.create("/api/projects/" + projectId + "/tasks/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
+
+    @PatchMapping("/{projectId}/tasks/{taskId}/status")
+    public ResponseEntity<Task> updateTaskStatus(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @RequestBody TaskStatusUpdateRequest request) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOpt.get();
+        if (!task.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (request.getStatus() == null || request.getStatus().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Validate status value
+        String status = request.getStatus().toUpperCase();
+        if (!status.equals("TODO") && !status.equals("IN_PROGRESS") && !status.equals("DONE")) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        task.setStatus(status);
+        Task updated = taskRepository.save(task);
+        return ResponseEntity.ok(updated);
+    }
 }
 
