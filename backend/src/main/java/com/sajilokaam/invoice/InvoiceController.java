@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/invoices")
@@ -250,8 +251,18 @@ public class InvoiceController {
 
     private String generateInvoiceNumber() {
         String prefix = "INV-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
-        Optional<Integer> maxNumber = invoiceRepository.findMaxInvoiceNumber(prefix);
-        int nextNumber = maxNumber.map(n -> n + 1).orElse(1);
+        List<Invoice> existing = invoiceRepository.findByInvoiceNumberPrefix(prefix + "%");
+        int nextNumber = 1;
+        if (!existing.isEmpty()) {
+            // Extract number from last invoice and increment
+            String lastNumber = existing.get(0).getInvoiceNumber();
+            try {
+                String numberPart = lastNumber.substring(prefix.length() + 1);
+                nextNumber = Integer.parseInt(numberPart) + 1;
+            } catch (Exception e) {
+                // If parsing fails, start from 1
+            }
+        }
         return prefix + "-" + String.format("%04d", nextNumber);
     }
 
