@@ -259,17 +259,74 @@ export const api = {
   
   // Reports
   reports: {
-    exportProject: (projectId, token) => 
+    exportProject: (projectId, token) =>
       `${API_BASE_URL}/reports/projects/${projectId}/csv`,
     
-    exportProjectPdf: (projectId, token) => 
+    exportProjectPdf: (projectId, token) =>
       `${API_BASE_URL}/reports/projects/${projectId}/pdf`,
     
-    exportTasks: (projectId, token) => 
+    exportTasks: (projectId, token) =>
       `${API_BASE_URL}/reports/projects/${projectId}/tasks/csv`,
     
-    exportTimeLogs: (projectId, token) => 
+    exportTimeLogs: (projectId, token) =>
       `${API_BASE_URL}/reports/projects/${projectId}/time-logs/csv`
+  },
+  
+  // Admin APIs
+  admin: {
+    // Users
+    getUsers: (page = 0, size = 20, token) =>
+      apiRequest(`/admin/users?page=${page}&size=${size}`, { token }),
+    
+    getUserById: (userId, token) =>
+      apiRequest(`/admin/users/${userId}`, { token }),
+    
+    createUser: (userData, token) =>
+      apiRequest('/admin/users', { method: 'POST', body: userData, token }),
+    
+    updateUser: (userId, userData, token) =>
+      apiRequest(`/admin/users/${userId}`, { method: 'PUT', body: userData, token }),
+    
+    deleteUser: (userId, token) =>
+      apiRequest(`/admin/users/${userId}`, { method: 'DELETE', token }),
+    
+    getRoles: (token) =>
+      apiRequest('/admin/users/roles', { token }),
+    
+    // System Settings
+    getSettings: (token) =>
+      apiRequest('/admin/settings', { token }),
+    
+    getSettingByKey: (key, token) =>
+      apiRequest(`/admin/settings/${key}`, { token }),
+    
+    updateSetting: (key, settingData, token) =>
+      apiRequest(`/admin/settings/${key}`, { method: 'PUT', body: settingData, token }),
+    
+    createSetting: (settingData, token) =>
+      apiRequest('/admin/settings', { method: 'POST', body: settingData, token }),
+    
+    // Activity Logs
+    getActivityLogs: (page = 0, size = 50, filters = {}, token) => {
+      const params = new URLSearchParams({ page, size })
+      if (filters.userId) params.append('userId', filters.userId)
+      if (filters.entityType) params.append('entityType', filters.entityType)
+      if (filters.entityId) params.append('entityId', filters.entityId)
+      return apiRequest(`/admin/activity-logs?${params}`, { token })
+    },
+    
+    // Audit Trail
+    getAuditTrail: (page = 0, size = 50, filters = {}, token) => {
+      const params = new URLSearchParams({ page, size })
+      if (filters.userId) params.append('userId', filters.userId)
+      if (filters.entityType) params.append('entityType', filters.entityType)
+      if (filters.entityId) params.append('entityId', filters.entityId)
+      return apiRequest(`/admin/audit-trail?${params}`, { token })
+    },
+    
+    // Analytics
+    getAnalytics: (token) =>
+      apiRequest('/admin/analytics/overview', { token })
   }
 }
 
