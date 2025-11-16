@@ -326,6 +326,65 @@ export function JobDetailPage() {
                 <p className="text-white/70 text-lg leading-relaxed mb-6">
                   {job.description || 'No description provided'}
                 </p>
+                
+                {/* Job Details */}
+                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                  {job.category && (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-sm font-semibold text-white/60 mb-1">Category</p>
+                      <p className="text-base font-bold text-white">{job.category.name}</p>
+                    </div>
+                  )}
+                  {job.jobType && (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-sm font-semibold text-white/60 mb-1">Job Type</p>
+                      <p className="text-base font-bold text-white">{job.jobType.replace('_', ' ')}</p>
+                    </div>
+                  )}
+                  {job.budgetMin && job.budgetMax && (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-sm font-semibold text-white/60 mb-1">Budget Range</p>
+                      <p className="text-base font-bold text-white">
+                        Rs. {job.budgetMin.toLocaleString()} - Rs. {job.budgetMax.toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                  {job.experienceLevel && (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-sm font-semibold text-white/60 mb-1">Experience Level</p>
+                      <p className="text-base font-bold text-white">{job.experienceLevel} Level</p>
+                    </div>
+                  )}
+                  {job.durationHours && (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-sm font-semibold text-white/60 mb-1">Estimated Duration</p>
+                      <p className="text-base font-bold text-white">{job.durationHours} hours</p>
+                    </div>
+                  )}
+                  {job.expiresAt && (
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <p className="text-sm font-semibold text-white/60 mb-1">Expires At</p>
+                      <p className="text-base font-bold text-white">
+                        {new Date(job.expiresAt).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Required Skills */}
+                {job.requiredSkills && job.requiredSkills.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-sm font-semibold text-white/60 mb-3">Required Skills</p>
+                    <div className="flex flex-wrap gap-2">
+                      {job.requiredSkills.map(skill => (
+                        <span key={skill.id} className="badge badge-secondary">
+                          {skill.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {job.client && (
                   <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10">
                     <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30">
