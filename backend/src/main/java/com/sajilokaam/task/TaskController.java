@@ -95,5 +95,34 @@ public class TaskController {
         Task updated = taskRepository.save(task);
         return ResponseEntity.ok(updated);
     }
+
+    @PatchMapping("/{projectId}/tasks/{taskId}/assignee")
+    public ResponseEntity<Task> updateTaskAssignee(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @RequestBody TaskAssigneeUpdateRequest request) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOpt.get();
+        if (!task.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (request.getAssigneeId() != null) {
+            Optional<User> assigneeOpt = userRepository.findById(request.getAssigneeId());
+            if (assigneeOpt.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            task.setAssignee(assigneeOpt.get());
+        } else {
+            task.setAssignee(null);
+        }
+
+        Task updated = taskRepository.save(task);
+        return ResponseEntity.ok(updated);
+    }
 }
 

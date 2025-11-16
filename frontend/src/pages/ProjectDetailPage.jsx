@@ -8,11 +8,13 @@ export function ProjectDetailPage() {
   const [project, setProject] = useState(null)
   const [tasks, setTasks] = useState([])
   const [filteredTasks, setFilteredTasks] = useState([])
+  const [freelancers, setFreelancers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [submittingTask, setSubmittingTask] = useState(false)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
+  const [assigningTaskId, setAssigningTaskId] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingProject, setEditingProject] = useState(false)
@@ -26,6 +28,7 @@ export function ProjectDetailPage() {
   useEffect(() => {
     loadProject()
     loadTasks()
+    loadFreelancers()
   }, [id])
 
   useEffect(() => {
@@ -56,6 +59,18 @@ export function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load tasks', err)
+    }
+  }
+
+  const loadFreelancers = async () => {
+    try {
+      const res = await fetch('http://localhost:8080/api/users/freelancers')
+      if (res.ok) {
+        const data = await res.json()
+        setFreelancers(Array.isArray(data) ? data : [])
+      }
+    } catch (err) {
+      console.error('Failed to load freelancers', err)
     }
   }
 
@@ -92,7 +107,8 @@ export function ProjectDetailPage() {
           title: title.trim(),
           description: description || '',
           status,
-          dueDate: dueDate || null
+          dueDate: dueDate || null,
+          assigneeId: formData.get('assigneeId') ? parseInt(formData.get('assigneeId')) : null
         })
       })
 
@@ -114,20 +130,50 @@ export function ProjectDetailPage() {
   const updateTaskStatus = async (taskId, newStatus) => {
     setUpdatingTaskId(taskId)
     try {
-      // Note: This would require a PUT/PATCH endpoint in the backend
-      // For now, we'll just show a message
+      const res = await fetch(`http://localhost:8080/api/projects/${id}/tasks/${taskId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update task status')
+      }
+
       showSuccess(`Task status updated to ${newStatus}`)
-      // In a real implementation, you'd call the API here
-      // await fetch(`http://localhost:8080/api/projects/${id}/tasks/${taskId}`, {
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      //   body: JSON.stringify({ status: newStatus })
-      // })
       await loadTasks()
     } catch (err) {
-      showError('Failed to update task status')
+      showError(err.message || 'Failed to update task status')
     } finally {
       setUpdatingTaskId(null)
+    }
+  }
+
+  const updateTaskAssignee = async (taskId, assigneeId) => {
+    setAssigningTaskId(taskId)
+    try {
+      const res = await fetch(`http://localhost:8080/api/projects/${id}/tasks/${taskId}/assignee`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ assigneeId: assigneeId || null })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update task assignee')
+      }
+
+      showSuccess('Task assignee updated successfully!')
+      await loadTasks()
+    } catch (err) {
+      showError(err.message || 'Failed to update task assignee')
+    } finally {
+      setAssigningTaskId(null)
     }
   }
 
@@ -400,13 +446,24 @@ export function ProjectDetailPage() {
                     disabled={submittingTask}
                   />
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
                     <select name="status" className="input-field" disabled={submittingTask}>
                       <option value="TODO">To Do</option>
                       <option value="IN_PROGRESS">In Progress</option>
                       <option value="DONE">Done</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Assign To</label>
+                    <select name="assigneeId" className="input-field" disabled={submittingTask}>
+                      <option value="">Unassigned</option>
+                      {freelancers.map(freelancer => (
+                        <option key={freelancer.id} value={freelancer.id}>
+                          {freelancer.fullName}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -505,17 +562,46 @@ export function ProjectDetailPage() {
                               <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
                             </div>
                           )}
-                          {task.assignee && (
+                          {task.assignee ? (
                             <div className="flex items-center gap-2 text-gray-500">
                               <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                                 {task.assignee.fullName?.charAt(0) || 'A'}
                               </div>
                               <span>{task.assignee.fullName}</span>
+                              {isProjectOwner && (
+                                <button
+                                  onClick={() => updateTaskAssignee(task.id, null)}
+                                  disabled={assigningTaskId === task.id}
+                                  className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                                  title="Unassign"
+                                >
+                                  ×
+                                </button>
+                              )}
                             </div>
+                          ) : (
+                            isProjectOwner && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400 text-xs">Unassigned</span>
+                                <select
+                                  value=""
+                                  onChange={(e) => updateTaskAssignee(task.id, e.target.value ? parseInt(e.target.value) : null)}
+                                  disabled={assigningTaskId === task.id}
+                                  className="text-xs border border-gray-300 rounded px-2 py-1"
+                                >
+                                  <option value="">Assign...</option>
+                                  {freelancers.map(freelancer => (
+                                    <option key={freelancer.id} value={freelancer.id}>
+                                      {freelancer.fullName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2">
                         {task.status !== 'TODO' && (
                           <button
                             onClick={() => updateTaskStatus(task.id, 'TODO')}

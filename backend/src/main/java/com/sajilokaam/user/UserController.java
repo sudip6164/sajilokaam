@@ -32,6 +32,13 @@ public class UserController {
         return userRepository.findAll();
     }
 
+    @GetMapping("/freelancers")
+    public List<User> getFreelancers() {
+        Role freelancerRole = roleRepository.findByName("FREELANCER")
+                .orElseThrow(() -> new RuntimeException("FREELANCER role not found"));
+        return userRepository.findByRolesContaining(freelancerRole);
+    }
+
     @PostMapping
     public ResponseEntity<User> create(@RequestBody UserCreateRequest request) {
         if (request.getEmail() == null || request.getEmail().isBlank() ||
