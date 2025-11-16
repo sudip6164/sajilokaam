@@ -7,4 +7,12 @@ export default defineConfig({
   css: {
     postcss: './postcss.config.cjs',
   },
+  define: {
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      buffer: 'buffer',
+    },
+  },
 })
