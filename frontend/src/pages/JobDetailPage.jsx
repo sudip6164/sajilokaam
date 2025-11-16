@@ -275,10 +275,10 @@ export function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-4xl mx-auto">
-          <Link to="/jobs" className="text-blue-600 hover:text-blue-700 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
+          <Link to="/jobs" className="text-violet-400 hover:text-violet-300 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -295,7 +295,7 @@ export function JobDetailPage() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{job.title}</h1>
+                    <h1 className="text-3xl font-extrabold text-white mb-2">{job.title}</h1>
                     <span className={getStatusBadge(job.status)}>{job.status}</span>
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export function JobDetailPage() {
                     </button>
                   </div>
                 )}
-                <p className="text-gray-600 text-lg leading-relaxed mb-6">
+                <p className="text-white/70 text-lg leading-relaxed mb-6">
                   {job.description || 'No description provided'}
                 </p>
                 {job.client && (
@@ -342,10 +342,10 @@ export function JobDetailPage() {
 
           {!isJobOwner && (
             <div className="card mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Place a Bid</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">Place a Bid</h2>
               <form onSubmit={handleBidSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-white/90 mb-2">
                     Amount ($) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -360,7 +360,7 @@ export function JobDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Message</label>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Message</label>
                   <textarea
                     name="message"
                     rows={5}
@@ -391,33 +391,33 @@ export function JobDetailPage() {
           )}
 
           <div className="card">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Bids <span className="text-gray-500 font-normal">({bids.length})</span>
+            <h2 className="text-2xl font-bold text-white mb-6">
+              Bids <span className="text-white/60 font-normal">({bids.length})</span>
             </h2>
             {bids.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                  <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-gray-500 text-lg">No bids yet</p>
+                <p className="text-white/70 text-lg">No bids yet</p>
                 {!isJobOwner && (
-                  <p className="text-sm text-gray-400 mt-2">Be the first to place a bid!</p>
+                  <p className="text-sm text-white/50 mt-2">Be the first to place a bid!</p>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
                 {bids.map(bid => (
-                  <div key={bid.id} className="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-lg transition-all">
+                  <div key={bid.id} className="border-2 border-white/10 rounded-xl p-6 hover:border-violet-500/50 hover:shadow-lg transition-all">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-3">
-                          <span className="text-3xl font-extrabold text-gray-900">${bid.amount}</span>
+                          <span className="text-3xl font-extrabold text-white">${bid.amount}</span>
                           <span className={getStatusBadge(bid.status)}>{bid.status}</span>
                         </div>
                         {bid.freelancer && (
-                          <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 mb-3 text-sm text-white/60">
                             <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                               {bid.freelancer.fullName?.charAt(0) || 'F'}
                             </div>
@@ -425,7 +425,7 @@ export function JobDetailPage() {
                           </div>
                         )}
                         {bid.message && (
-                          <p className="text-gray-600 leading-relaxed mt-3">{bid.message}</p>
+                          <p className="text-white/70 leading-relaxed mt-3">{bid.message}</p>
                         )}
                       </div>
                       {isJobOwner && bid.status === 'PENDING' && (
@@ -459,7 +459,7 @@ export function JobDetailPage() {
       {showAcceptModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Accept Bid & Create Project</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">Accept Bid & Create Project</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -513,7 +513,7 @@ export function JobDetailPage() {
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Edit Job</h3>
+            <h3 className="text-2xl font-bold text-white mb-6">Edit Job</h3>
             <form onSubmit={handleEditJob} className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -579,8 +579,8 @@ export function JobDetailPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Delete Job</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-2xl font-bold text-white mb-4">Delete Job</h3>
+            <p className="text-white/70 mb-6">
               Are you sure you want to delete "{job?.title}"? This action cannot be undone and will also delete all associated bids.
             </p>
             <div className="flex gap-3">
