@@ -1,6 +1,7 @@
 package com.sajilokaam.task;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class TaskCreateRequest {
     private String title;
@@ -9,6 +10,9 @@ public class TaskCreateRequest {
     private Long assigneeId;
     private Long milestoneId;
     private LocalDate dueDate;
+    private String priority; // LOW, MEDIUM, HIGH, CRITICAL
+    private Integer estimatedHours;
+    private List<Long> labelIds; // Task label IDs
 
     public String getTitle() {
         return title;
@@ -56,6 +60,30 @@ public class TaskCreateRequest {
 
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public Integer getEstimatedHours() {
+        return estimatedHours;
+    }
+
+    public void setEstimatedHours(Integer estimatedHours) {
+        this.estimatedHours = estimatedHours;
+    }
+
+    public List<Long> getLabelIds() {
+        return labelIds;
+    }
+
+    public void setLabelIds(List<Long> labelIds) {
+        this.labelIds = labelIds;
     }
 }
 
