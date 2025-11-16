@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { ProjectMessaging } from '../components/ProjectMessaging'
+import { Timer } from '../components/Timer'
 
 export function ProjectDetailPage() {
   const { id } = useParams()
