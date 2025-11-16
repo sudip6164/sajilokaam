@@ -1268,6 +1268,18 @@ export function ProjectDetailPage() {
                           )}
                         </div>
                         
+                        {/* Timer Component */}
+                        <div className="mt-4">
+                          <Timer 
+                            taskId={task.id} 
+                            taskTitle={task.title}
+                            onTimerStop={() => {
+                              loadTimeSummary(task.id)
+                              loadTimeLogs(task.id)
+                            }}
+                          />
+                        </div>
+                        
                         {/* Time Log Form */}
                         {showTimeLogForm[task.id] && (
                           <form onSubmit={(e) => handleTimeLogSubmit(e, task.id)} className="mt-4 p-4 border border-violet-500/30 rounded-lg bg-violet-500/5">
