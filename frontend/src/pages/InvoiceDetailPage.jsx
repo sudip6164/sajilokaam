@@ -25,6 +25,7 @@ export function InvoiceDetailPage() {
       setLoading(true)
       const data = await api.invoices.getById(id, token)
       setInvoice(data)
+      setInvoiceItems(data?.items || [])
     } catch (err) {
       showError(err.message || 'Failed to load invoice')
     } finally {
@@ -180,7 +181,7 @@ export function InvoiceDetailPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {invoice.items?.map((item) => (
+                      {invoiceItems.map((item) => (
                         <tr key={item.id} className="border-b border-white/5">
                           <td className="py-3 text-sm text-white">{item.description}</td>
                           <td className="py-3 text-sm text-white/80 text-right">{item.quantity}</td>

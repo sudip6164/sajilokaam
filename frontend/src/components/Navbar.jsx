@@ -137,6 +137,21 @@ export function Navbar() {
                     </Link>
                   </>
                 )}
+                {profile?.roles?.some(r => r.name === 'FREELANCER') && (
+                  <Link 
+                    to="/invoices" 
+                    className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                      isActive('/invoices') || location.pathname.startsWith('/invoices')
+                        ? 'text-white bg-white/10' 
+                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {(isActive('/invoices') || location.pathname.startsWith('/invoices')) && (
+                      <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                    )}
+                    <span className="relative">Invoices</span>
+                  </Link>
+                )}
               </>
             ) : null}
           </div>

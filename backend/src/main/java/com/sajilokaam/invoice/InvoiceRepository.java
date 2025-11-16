@@ -12,7 +12,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByProjectIdOrderByCreatedAtDesc(Long projectId);
     List<Invoice> findByStatus(String status);
     
-    @Query("SELECT MAX(CAST(SUBSTRING(i.invoiceNumber, LENGTH(:prefix) + 1) AS int)) FROM Invoice i WHERE i.invoiceNumber LIKE :prefix%")
-    Optional<Integer> findMaxInvoiceNumber(String prefix);
+    @Query("SELECT i FROM Invoice i WHERE i.invoiceNumber LIKE :prefix% ORDER BY i.invoiceNumber DESC")
+    List<Invoice> findByInvoiceNumberPrefix(String prefix);
 }
 
