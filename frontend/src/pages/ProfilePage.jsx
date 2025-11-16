@@ -67,7 +67,7 @@ export function ProfilePage() {
         <div className="container-custom">
           <div className="max-w-2xl mx-auto">
             <div className="card text-center py-16">
-              <p className="text-gray-500 text-lg">Loading profile...</p>
+              <p className="text-white/70 text-lg">Loading profile...</p>
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-2xl mx-auto">
           <div className="mb-10">
@@ -86,12 +86,12 @@ export function ProfilePage() {
 
           <div className="card mb-6">
             <div className="flex items-center gap-6 mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-purple-500/30">
                 {profile.fullName?.charAt(0) || 'U'}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{profile.fullName}</h2>
-                <p className="text-gray-600">{profile.email}</p>
+                <h2 className="text-2xl font-bold text-white">{profile.fullName}</h2>
+                <p className="text-white/70">{profile.email}</p>
                 <div className="flex gap-2 mt-2">
                   {profile.roles?.map(role => (
                     <span key={role.id} className="badge badge-primary">
@@ -104,10 +104,10 @@ export function ProfilePage() {
           </div>
 
           <div className="card">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">Edit Profile</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -122,25 +122,25 @@ export function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   value={profile.email}
                   disabled
-                  className="input-field bg-gray-50"
+                  className="input-field"
                 />
-                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                <p className="text-xs text-white/50 mt-1">Email cannot be changed</p>
               </div>
 
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Change Password</h3>
-                <p className="text-sm text-gray-600 mb-4">Leave blank if you don't want to change your password</p>
+              <div className="border-t border-white/10 pt-6">
+                <h3 className="text-lg font-bold text-white mb-4">Change Password</h3>
+                <p className="text-sm text-white/70 mb-4">Leave blank if you don't want to change your password</p>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-white/90 mb-2">
                       New Password
                     </label>
                     <input
@@ -155,7 +155,7 @@ export function ProfilePage() {
                   </div>
                   {password && (
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className="block text-sm font-bold text-white/90 mb-2">
                         Confirm New Password
                       </label>
                       <input

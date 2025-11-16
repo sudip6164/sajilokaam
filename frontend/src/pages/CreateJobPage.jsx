@@ -41,7 +41,7 @@ export function CreateJobPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-3xl mx-auto">
           <div className="mb-10">
@@ -51,7 +51,7 @@ export function CreateJobPage() {
           <div className="card">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Job Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -65,7 +65,7 @@ export function CreateJobPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Description
                 </label>
                 <textarea
@@ -76,10 +76,10 @@ export function CreateJobPage() {
                   placeholder="Describe the job requirements, timeline, budget expectations, and any specific skills needed..."
                   disabled={loading}
                 />
-                <p className="text-xs text-gray-500 mt-1">Be detailed to attract the right freelancers</p>
+                <p className="text-xs text-white/50 mt-1">Be detailed to attract the right freelancers</p>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-bold text-white/90 mb-2">Status</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}

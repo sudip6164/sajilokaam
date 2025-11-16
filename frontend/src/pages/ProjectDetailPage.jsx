@@ -299,10 +299,10 @@ export function ProjectDetailPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-4xl mx-auto">
-          <Link to="/projects" className="text-blue-600 hover:text-blue-700 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
+          <Link to="/projects" className="text-violet-400 hover:text-violet-300 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -318,7 +318,7 @@ export function ProjectDetailPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-3">
-                  <h1 className="text-3xl font-extrabold text-gray-900">{project.title}</h1>
+                  <h1 className="text-3xl font-extrabold text-white">{project.title}</h1>
                   {isProjectOwner && (
                     <div className="flex gap-3">
                       <button
@@ -342,11 +342,11 @@ export function ProjectDetailPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-gray-600 text-lg leading-relaxed mb-4">
+                <p className="text-white/70 text-lg leading-relaxed mb-4">
                   {project.description || 'No description provided'}
                 </p>
                 {project.job && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-white/60 pt-4 border-t border-white/10">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
@@ -361,31 +361,31 @@ export function ProjectDetailPage() {
           {stats.total > 0 && (
             <div className="card mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Progress</h3>
-                <span className="text-2xl font-extrabold text-blue-600">{progressPercentage}%</span>
+                <h3 className="text-lg font-bold text-white">Progress</h3>
+                <span className="text-2xl font-extrabold text-violet-400">{progressPercentage}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
+              <div className="w-full bg-white/10 rounded-full h-3 mb-4">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-violet-500 to-purple-600 h-3 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
               <div className="grid grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-extrabold text-gray-900">{stats.total}</p>
-                  <p className="text-xs text-gray-600 font-semibold">Total</p>
+                <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                  <p className="text-2xl font-extrabold text-white">{stats.total}</p>
+                  <p className="text-xs text-white/60 font-semibold">Total</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-extrabold text-gray-600">{stats.todo}</p>
-                  <p className="text-xs text-gray-600 font-semibold">To Do</p>
+                <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                  <p className="text-2xl font-extrabold text-white/80">{stats.todo}</p>
+                  <p className="text-xs text-white/60 font-semibold">To Do</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-extrabold text-amber-600">{stats.inProgress}</p>
-                  <p className="text-xs text-gray-600 font-semibold">In Progress</p>
+                <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                  <p className="text-2xl font-extrabold text-violet-400">{stats.inProgress}</p>
+                  <p className="text-xs text-white/60 font-semibold">In Progress</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-extrabold text-emerald-600">{stats.done}</p>
-                  <p className="text-xs text-gray-600 font-semibold">Done</p>
+                <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
+                  <p className="text-2xl font-extrabold text-emerald-400">{stats.done}</p>
+                  <p className="text-xs text-white/60 font-semibold">Done</p>
                 </div>
               </div>
             </div>
@@ -394,10 +394,10 @@ export function ProjectDetailPage() {
           <div className="card">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Tasks <span className="text-gray-500 font-normal">({stats.total})</span>
+                <h2 className="text-2xl font-bold text-white">
+                  Tasks <span className="text-white/60 font-normal">({stats.total})</span>
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">Manage project tasks and track progress</p>
+                <p className="text-sm text-white/70 mt-1">Manage project tasks and track progress</p>
               </div>
               <button
                 onClick={() => setShowTaskForm(!showTaskForm)}
@@ -422,9 +422,9 @@ export function ProjectDetailPage() {
             </div>
 
             {showTaskForm && (
-              <form onSubmit={handleTaskSubmit} className="mb-6 p-5 border-2 border-gray-200 rounded-xl bg-gray-50 space-y-4">
+              <form onSubmit={handleTaskSubmit} className="mb-6 p-5 border-2 border-white/10 rounded-xl bg-white/5 space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-white/90 mb-2">
                     Title <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -437,7 +437,7 @@ export function ProjectDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Description</label>
                   <textarea
                     name="description"
                     rows={3}
@@ -448,7 +448,7 @@ export function ProjectDetailPage() {
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <label className="block text-sm font-bold text-white/90 mb-2">Status</label>
                     <select name="status" className="input-field" disabled={submittingTask}>
                       <option value="TODO">To Do</option>
                       <option value="IN_PROGRESS">In Progress</option>
@@ -456,7 +456,7 @@ export function ProjectDetailPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Assign To</label>
+                    <label className="block text-sm font-bold text-white/90 mb-2">Assign To</label>
                     <select name="assigneeId" className="input-field" disabled={submittingTask}>
                       <option value="">Unassigned</option>
                       {freelancers.map(freelancer => (
@@ -467,7 +467,7 @@ export function ProjectDetailPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Due Date</label>
+                    <label className="block text-sm font-bold text-white/90 mb-2">Due Date</label>
                     <input
                       type="date"
                       name="dueDate"
@@ -499,7 +499,7 @@ export function ProjectDetailPage() {
             {/* Task Filter */}
             {tasks.length > 0 && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Status</label>
+                <label className="block text-sm font-bold text-white/90 mb-2">Filter by Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -517,20 +517,20 @@ export function ProjectDetailPage() {
               <div className="text-center py-12">
                 {tasks.length === 0 ? (
                   <>
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                      <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
-                    <p className="text-gray-500 text-lg font-semibold mb-2">No tasks yet</p>
-                    <p className="text-sm text-gray-400">Create your first task above!</p>
+                    <p className="text-white/70 text-lg font-semibold mb-2">No tasks yet</p>
+                    <p className="text-sm text-white/50">Create your first task above!</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-gray-500 text-lg font-semibold">No tasks match the filter</p>
+                    <p className="text-white/70 text-lg font-semibold">No tasks match the filter</p>
                     <button
                       onClick={() => setStatusFilter('ALL')}
-                      className="text-blue-600 hover:text-blue-700 font-semibold mt-2 text-sm"
+                      className="text-violet-400 hover:text-violet-300 font-semibold mt-2 text-sm transition-colors"
                     >
                       Show all tasks
                     </button>
@@ -542,20 +542,20 @@ export function ProjectDetailPage() {
                 {filteredTasks.map(task => (
                   <div
                     key={task.id}
-                    className="border-2 border-gray-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-lg transition-all"
+                    className="border-2 border-white/10 rounded-xl p-5 hover:border-violet-500/50 hover:shadow-lg transition-all"
                   >
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-bold text-lg text-gray-900">{task.title}</h3>
+                          <h3 className="font-bold text-lg text-white">{task.title}</h3>
                           <span className={getStatusBadge(task.status)}>{task.status}</span>
                         </div>
                         {task.description && (
-                          <p className="text-gray-600 mb-3 leading-relaxed">{task.description}</p>
+                          <p className="text-white/70 mb-3 leading-relaxed">{task.description}</p>
                         )}
                         <div className="flex flex-wrap gap-4 items-center text-sm">
                           {task.dueDate && (
-                            <div className="flex items-center gap-2 text-gray-500">
+                            <div className="flex items-center gap-2 text-white/60">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
@@ -563,8 +563,8 @@ export function ProjectDetailPage() {
                             </div>
                           )}
                           {task.assignee ? (
-                            <div className="flex items-center gap-2 text-gray-500">
-                              <div className="w-5 h-5 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            <div className="flex items-center gap-2 text-white/60">
+                              <div className="w-5 h-5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30">
                                 {task.assignee.fullName?.charAt(0) || 'A'}
                               </div>
                               <span>{task.assignee.fullName}</span>
@@ -572,7 +572,7 @@ export function ProjectDetailPage() {
                                 <button
                                   onClick={() => updateTaskAssignee(task.id, null)}
                                   disabled={assigningTaskId === task.id}
-                                  className="ml-2 text-red-500 hover:text-red-700 text-xs"
+                                  className="ml-2 text-red-400 hover:text-red-300 text-xs transition-colors"
                                   title="Unassign"
                                 >
                                   ×
@@ -582,12 +582,12 @@ export function ProjectDetailPage() {
                           ) : (
                             isProjectOwner && (
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-400 text-xs">Unassigned</span>
+                                <span className="text-white/40 text-xs">Unassigned</span>
                                 <select
                                   value=""
                                   onChange={(e) => updateTaskAssignee(task.id, e.target.value ? parseInt(e.target.value) : null)}
                                   disabled={assigningTaskId === task.id}
-                                  className="text-xs border border-gray-300 rounded px-2 py-1"
+                                  className="text-xs border border-white/20 rounded px-2 py-1 bg-white/5 text-white/90"
                                 >
                                   <option value="">Assign...</option>
                                   {freelancers.map(freelancer => (
@@ -646,10 +646,10 @@ export function ProjectDetailPage() {
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Edit Project</h3>
+            <h3 className="text-2xl font-bold text-white mb-6">Edit Project</h3>
             <form onSubmit={handleEditProject} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Project Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -663,7 +663,7 @@ export function ProjectDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-bold text-white/90 mb-2">Description</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -699,8 +699,8 @@ export function ProjectDetailPage() {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Delete Project</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-2xl font-bold text-white mb-4">Delete Project</h3>
+            <p className="text-white/70 mb-6">
               Are you sure you want to delete "{project?.title}"? This action cannot be undone and will also delete all associated tasks.
             </p>
             <div className="flex gap-3">

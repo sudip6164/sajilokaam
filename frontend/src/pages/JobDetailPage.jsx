@@ -325,14 +325,14 @@ export function JobDetailPage() {
                   {job.description || 'No description provided'}
                 </p>
                 {job.client && (
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                  <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30">
                       {job.client.fullName?.charAt(0) || 'U'}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-700">Posted by</p>
-                      <p className="text-base font-bold text-gray-900">{job.client.fullName}</p>
-                      <p className="text-xs text-gray-500">{job.client.email}</p>
+                      <p className="text-sm font-semibold text-white/60">Posted by</p>
+                      <p className="text-base font-bold text-white">{job.client.fullName}</p>
+                      <p className="text-xs text-white/50">{job.client.email}</p>
                     </div>
                   </div>
                 )}
