@@ -2,14 +2,18 @@ package com.sajilokaam.task;
 
 import com.sajilokaam.project.Project;
 import com.sajilokaam.project.ProjectRepository;
+import com.sajilokaam.tasklabel.TaskLabel;
+import com.sajilokaam.tasklabel.TaskLabelRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -19,12 +23,14 @@ public class TaskController {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final TaskLabelRepository taskLabelRepository;
 
     public TaskController(TaskRepository taskRepository, ProjectRepository projectRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository, TaskLabelRepository taskLabelRepository) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.taskLabelRepository = taskLabelRepository;
     }
 
     @GetMapping("/{projectId}/tasks")
@@ -55,10 +61,21 @@ public class TaskController {
         task.setStatus(request.getStatus() != null ? request.getStatus() : "TODO");
         task.setDueDate(request.getDueDate());
         task.setMilestoneId(request.getMilestoneId());
+        task.setPriority(request.getPriority() != null ? request.getPriority() : "MEDIUM");
+        task.setEstimatedHours(request.getEstimatedHours());
 
         if (request.getAssigneeId() != null) {
             Optional<User> assigneeOpt = userRepository.findById(request.getAssigneeId());
             assigneeOpt.ifPresent(task::setAssignee);
+        }
+
+        // Set labels
+        if (request.getLabelIds() != null && !request.getLabelIds().isEmpty()) {
+            Set<TaskLabel> labels = new HashSet<>();
+            for (Long labelId : request.getLabelIds()) {
+                taskLabelRepository.findById(labelId).ifPresent(labels::add);
+            }
+            task.setLabels(labels);
         }
 
         Task created = taskRepository.save(task);
