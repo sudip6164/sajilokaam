@@ -1,10 +1,13 @@
 package com.sajilokaam.task;
 
 import com.sajilokaam.project.Project;
+import com.sajilokaam.tasklabel.TaskLabel;
 import com.sajilokaam.user.User;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tasks", indexes = {
@@ -44,6 +47,14 @@ public class Task {
 
     @Column(name = "estimated_hours")
     private Integer estimatedHours;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "task_label_assignments",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    private Set<TaskLabel> labels = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -134,6 +145,14 @@ public class Task {
 
     public void setEstimatedHours(Integer estimatedHours) {
         this.estimatedHours = estimatedHours;
+    }
+
+    public Set<TaskLabel> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(Set<TaskLabel> labels) {
+        this.labels = labels;
     }
 }
 
