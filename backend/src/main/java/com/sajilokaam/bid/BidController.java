@@ -154,5 +154,41 @@ public class BidController {
         long count = bidRepository.countByJobId(jobId);
         return ResponseEntity.ok(count);
     }
+
+    @GetMapping("/{jobId}/bids/compare")
+    public ResponseEntity<List<Bid>> compareBids(
+            @PathVariable Long jobId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        if (jobOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Verify user is the client who owns the job
+        if (!jobOpt.get().getClient().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // Get all bids for this job, sorted by amount (ascending)
+        List<Bid> bids = bidRepository.findByJobId(jobId);
+        bids.sort((b1, b2) -> b1.getAmount().compareTo(b2.getAmount()));
+        
+        return ResponseEntity.ok(bids);
+    }
 }
 
