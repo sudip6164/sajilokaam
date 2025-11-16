@@ -5,7 +5,9 @@ import { useToast } from '../hooks/useToast'
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState([])
+  const [filteredProjects, setFilteredProjects] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const { token } = useAuth()
   const { error: showError } = useToast()
 
@@ -13,18 +15,40 @@ export function ProjectsPage() {
     loadProjects()
   }, [])
 
+  useEffect(() => {
+    filterProjects()
+  }, [searchQuery, projects])
+
   const loadProjects = async () => {
     try {
       const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
       const res = await fetch('http://localhost:8080/api/projects', { headers })
       if (!res.ok) throw new Error('Failed to load projects')
       const data = await res.json()
-      setProjects(Array.isArray(data) ? data : [])
+      const projectsList = Array.isArray(data) ? data : []
+      setProjects(projectsList)
+      setFilteredProjects(projectsList)
     } catch (err) {
       showError(err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const filterProjects = () => {
+    let filtered = [...projects]
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(project =>
+        project.title?.toLowerCase().includes(query) ||
+        project.description?.toLowerCase().includes(query) ||
+        project.job?.title?.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredProjects(filtered)
   }
 
   if (loading) {
@@ -56,6 +80,40 @@ export function ProjectsPage() {
             <h1 className="page-title">Projects</h1>
             <p className="page-subtitle">Manage your active projects and track progress</p>
           </div>
+
+          {projects.length > 0 && (
+            <div className="card mb-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search projects by title, description, or related job..."
+                      className="input-field pl-12"
+                    />
+                  </div>
+                </div>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="btn btn-secondary whitespace-nowrap"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <p className="text-sm text-gray-600 mt-3">
+                  Found {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+          )}
           
           {projects.length === 0 ? (
             <div className="card text-center py-16">
@@ -68,9 +126,25 @@ export function ProjectsPage() {
               <p className="text-gray-600 mb-2">Projects are created when you accept a bid on a job.</p>
               <p className="text-sm text-gray-500">Go to Jobs to accept a bid and start a project!</p>
             </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="card text-center py-16">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No projects found</h3>
+              <p className="text-gray-600 mb-2">Try adjusting your search query.</p>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="btn btn-secondary mt-4"
+              >
+                Clear Search
+              </button>
+            </div>
           ) : (
             <div className="grid gap-6">
-              {projects.map(project => (
+              {filteredProjects.map(project => (
                 <Link
                   key={project.id}
                   to={`/projects/${project.id}`}
