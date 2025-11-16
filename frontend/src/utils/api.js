@@ -144,6 +144,28 @@ export const api = {
       apiRequest(`/projects/${id}`, { method: 'DELETE', token })
   },
   
+  // Milestones
+  milestones: {
+    getAll: (projectId, token) => 
+      apiRequest(`/projects/${projectId}/milestones`, { token }),
+    
+    create: (projectId, token, data) => 
+      apiRequest(`/projects/${projectId}/milestones`, { method: 'POST', token, body: data }),
+    
+    update: (projectId, milestoneId, token, data) => 
+      apiRequest(`/projects/${projectId}/milestones/${milestoneId}`, { 
+        method: 'PUT', 
+        token, 
+        body: data 
+      }),
+    
+    delete: (projectId, milestoneId, token) => 
+      apiRequest(`/projects/${projectId}/milestones/${milestoneId}`, { 
+        method: 'DELETE', 
+        token 
+      })
+  },
+  
   // Tasks
   tasks: {
     getAll: (projectId, token) => 
@@ -167,6 +189,62 @@ export const api = {
       })
   },
   
+  // Time Logs
+  timeLogs: {
+    getAll: (projectId, taskId, token) => 
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/time-logs`, { token }),
+    
+    create: (projectId, taskId, token, data) => 
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/time-logs`, { 
+        method: 'POST', 
+        token, 
+        body: data 
+      }),
+    
+    getSummary: (projectId, taskId, token) => 
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/time-logs/summary`, { token })
+  },
+  
+  // Comments
+  comments: {
+    getAll: (projectId, taskId, token) => 
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/comments`, { token }),
+    
+    create: (projectId, taskId, token, data) => 
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/comments`, { 
+        method: 'POST', 
+        token, 
+        body: data 
+      })
+  },
+  
+  // Files
+  files: {
+    getAll: (projectId, taskId, token) => 
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/files`, { token }),
+    
+    upload: async (projectId, taskId, token, file) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const headers = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}/tasks/${taskId}/files`, {
+        method: 'POST',
+        headers,
+        body: formData
+      })
+      
+      return handleResponse(response)
+    },
+    
+    download: (projectId, taskId, fileId) => 
+      `${API_BASE_URL}/projects/${projectId}/tasks/${taskId}/files/${fileId}/download`
+  },
+  
   // Users
   users: {
     getFreelancers: (token) => 
@@ -177,6 +255,21 @@ export const api = {
   dashboard: {
     getStats: (token) => 
       apiRequest('/dashboard/stats', { token })
+  },
+  
+  // Reports
+  reports: {
+    exportProject: (projectId, token) => 
+      `${API_BASE_URL}/reports/projects/${projectId}/csv`,
+    
+    exportProjectPdf: (projectId, token) => 
+      `${API_BASE_URL}/reports/projects/${projectId}/pdf`,
+    
+    exportTasks: (projectId, token) => 
+      `${API_BASE_URL}/reports/projects/${projectId}/tasks/csv`,
+    
+    exportTimeLogs: (projectId, token) => 
+      `${API_BASE_URL}/reports/projects/${projectId}/time-logs/csv`
   }
 }
 

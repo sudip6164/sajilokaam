@@ -15,6 +15,7 @@ import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { MyBidsPage } from './pages/MyBidsPage'
 import { MyJobsPage } from './pages/MyJobsPage'
+import { KanbanBoardPage } from './pages/KanbanBoardPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -70,6 +71,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ProjectDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:id/kanban"
+            element={
+              <ProtectedRoute>
+                <KanbanBoardPage />
               </ProtectedRoute>
             }
           />

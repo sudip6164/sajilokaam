@@ -16,6 +16,7 @@ export function LoginPage() {
     setLoading(true)
     try {
       await login(email, password)
+      // Navigate after successful login - auth state should be updated
       navigate('/')
     } catch (err) {
       showError(err.message || 'Login failed')
