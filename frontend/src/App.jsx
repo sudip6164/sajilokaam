@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -207,6 +208,39 @@ function AppContent() {
 
 function App() {
   console.log('App component rendering...')
+  
+  // Temporary test - remove after debugging
+  const [showTest, setShowTest] = useState(true)
+  
+  if (showTest) {
+    return (
+      <div style={{ 
+        padding: '50px', 
+        background: '#101820', 
+        color: 'white', 
+        minHeight: '100vh',
+        fontSize: '24px'
+      }}>
+        <h1>✅ React is Working!</h1>
+        <p>If you see this, React is rendering.</p>
+        <button 
+          onClick={() => setShowTest(false)}
+          style={{ 
+            padding: '10px 20px', 
+            background: '#7c3aed', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '8px',
+            cursor: 'pointer',
+            marginTop: '20px'
+          }}
+        >
+          Load Full App
+        </button>
+      </div>
+    )
+  }
+  
   return (
     <ErrorBoundary>
       <AuthProvider>

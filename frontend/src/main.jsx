@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+// import TestApp from './TestApp.jsx' // Uncomment to test if React works
 
 console.log('Main.jsx loaded, rendering App...')
 
@@ -14,6 +15,7 @@ if (!rootElement) {
   root.render(
     <StrictMode>
       <App />
+      {/* <TestApp /> Uncomment to test */}
     </StrictMode>
   )
   console.log('App rendered!')
