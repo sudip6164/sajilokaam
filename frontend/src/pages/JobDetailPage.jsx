@@ -15,6 +15,13 @@ export function JobDetailPage() {
   const [selectedBidId, setSelectedBidId] = useState(null)
   const [projectTitle, setProjectTitle] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [editingJob, setEditingJob] = useState(false)
+  const [deletingJob, setDeletingJob] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editStatus, setEditStatus] = useState('OPEN')
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
 
@@ -132,6 +139,69 @@ export function JobDetailPage() {
   const isJobOwner = job && profile && job.client && 
     (job.client.id === profile.id || (typeof job.client === 'object' && job.client.id === profile.id))
 
+  const openEditModal = () => {
+    setEditTitle(job.title)
+    setEditDescription(job.description || '')
+    setEditStatus(job.status)
+    setShowEditModal(true)
+  }
+
+  const handleEditJob = async (e) => {
+    e.preventDefault()
+    setEditingJob(true)
+    try {
+      const res = await fetch(`http://localhost:8080/api/jobs/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+          status: editStatus
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update job')
+      }
+
+      const updatedJob = await res.json()
+      setJob(updatedJob)
+      showSuccess('Job updated successfully!')
+      setShowEditModal(false)
+    } catch (err) {
+      showError(err.message || 'Failed to update job')
+    } finally {
+      setEditingJob(false)
+    }
+  }
+
+  const handleDeleteJob = async () => {
+    setDeletingJob(true)
+    try {
+      const res = await fetch(`http://localhost:8080/api/jobs/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to delete job')
+      }
+
+      showSuccess('Job deleted successfully!')
+      navigate('/jobs')
+    } catch (err) {
+      showError(err.message || 'Failed to delete job')
+    } finally {
+      setDeletingJob(false)
+      setShowDeleteModal(false)
+    }
+  }
+
   const getStatusBadge = (status) => {
     const badges = {
       OPEN: 'badge badge-success',
@@ -205,6 +275,28 @@ export function JobDetailPage() {
                     <span className={getStatusBadge(job.status)}>{job.status}</span>
                   </div>
                 </div>
+                {isJobOwner && (
+                  <div className="flex gap-3 mb-4">
+                    <button
+                      onClick={openEditModal}
+                      className="btn btn-secondary text-sm"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Job
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="btn btn-danger text-sm"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete Job
+                    </button>
+                  </div>
+                )}
                 <p className="text-gray-600 text-lg leading-relaxed mb-6">
                   {job.description || 'No description provided'}
                 </p>
@@ -379,6 +471,100 @@ export function JobDetailPage() {
                   Cancel
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Job Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Edit Job</h3>
+            <form onSubmit={handleEditJob} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Job Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="input-field"
+                  placeholder="e.g., Website Development"
+                  disabled={editingJob}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={8}
+                  className="input-field resize-none"
+                  placeholder="Describe the job requirements..."
+                  disabled={editingJob}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="input-field"
+                  disabled={editingJob}
+                >
+                  <option value="OPEN">Open - Accepting applications</option>
+                  <option value="CLOSED">Closed - No longer accepting</option>
+                  <option value="IN_PROGRESS">In Progress - Work has started</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={editingJob}
+                  className="btn btn-primary flex-1"
+                >
+                  {editingJob ? 'Updating...' : 'Update Job'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="btn btn-secondary"
+                  disabled={editingJob}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card max-w-md w-full">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Delete Job</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{job?.title}"? This action cannot be undone and will also delete all associated bids.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteJob}
+                disabled={deletingJob}
+                className="btn btn-danger flex-1"
+              >
+                {deletingJob ? 'Deleting...' : 'Delete Job'}
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="btn btn-secondary"
+                disabled={deletingJob}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

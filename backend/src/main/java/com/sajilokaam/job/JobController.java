@@ -80,5 +80,84 @@ public class JobController {
         URI location = URI.create("/api/jobs/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Job> update(
+            @PathVariable Long id,
+            @RequestBody JobUpdateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Job> jobOpt = jobRepository.findById(id);
+        if (jobOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Job job = jobOpt.get();
+        // Verify user is the client who owns the job
+        if (!job.getClient().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            job.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null) {
+            job.setDescription(request.getDescription());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            job.setStatus(request.getStatus());
+        }
+
+        Job updated = jobRepository.save(job);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Job> jobOpt = jobRepository.findById(id);
+        if (jobOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Job job = jobOpt.get();
+        // Verify user is the client who owns the job
+        if (!job.getClient().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        jobRepository.delete(job);
+        return ResponseEntity.noContent().build();
+    }
 }
 
