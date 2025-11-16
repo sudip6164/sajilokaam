@@ -120,6 +120,17 @@ export function KanbanBoardPage() {
     return `px-2 py-1 rounded-md text-xs font-semibold border ${statusMap[status] || statusMap['TODO']}`
   }
 
+  const getPriorityBadge = (priority) => {
+    if (!priority) return null
+    const priorityMap = {
+      'LOW': 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+      'MEDIUM': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      'HIGH': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+      'CRITICAL': 'bg-red-500/20 text-red-300 border-red-500/30'
+    }
+    return `px-2 py-0.5 rounded text-xs font-semibold border ${priorityMap[priority] || priorityMap['MEDIUM']}`
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen py-12 bg-pattern">
@@ -227,11 +238,34 @@ export function KanbanBoardPage() {
                           updatingTaskId === task.id ? 'opacity-50' : ''
                         }`}
                       >
-                        <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start justify-between mb-2 gap-2">
                           <h3 className="font-bold text-white text-sm flex-1">{task.title}</h3>
+                          {task.priority && (
+                            <span className={getPriorityBadge(task.priority)}>
+                              {task.priority}
+                            </span>
+                          )}
                         </div>
                         {task.description && (
                           <p className="text-xs text-white/60 mb-3 line-clamp-2">{task.description}</p>
+                        )}
+                        {task.labels && task.labels.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {task.labels.slice(0, 3).map(label => (
+                              <span
+                                key={label.id}
+                                className="px-2 py-0.5 rounded text-xs font-medium"
+                                style={{ backgroundColor: `${label.color}20`, color: label.color, border: `1px solid ${label.color}40` }}
+                              >
+                                {label.name}
+                              </span>
+                            ))}
+                            {task.labels.length > 3 && (
+                              <span className="px-2 py-0.5 rounded text-xs text-white/50">
+                                +{task.labels.length - 3}
+                              </span>
+                            )}
+                          </div>
                         )}
                         <div className="flex items-center gap-2 flex-wrap">
                           {task.assignee && (
@@ -240,6 +274,14 @@ export function KanbanBoardPage() {
                                 {task.assignee.fullName?.charAt(0) || 'A'}
                               </div>
                               <span className="text-xs text-white/60">{task.assignee.fullName}</span>
+                            </div>
+                          )}
+                          {task.estimatedHours && (
+                            <div className="flex items-center gap-1 text-xs text-white/60">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>{task.estimatedHours}h</span>
                             </div>
                           )}
                           {task.dueDate && (
