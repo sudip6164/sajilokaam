@@ -145,5 +145,14 @@ public class BidController {
         Bid updated = bidRepository.save(bid);
         return ResponseEntity.ok(updated);
     }
+
+    @GetMapping("/{jobId}/bids/count")
+    public ResponseEntity<Long> getBidCount(@PathVariable Long jobId) {
+        if (!jobRepository.existsById(jobId)) {
+            return ResponseEntity.notFound().build();
+        }
+        long count = bidRepository.countByJobId(jobId);
+        return ResponseEntity.ok(count);
+    }
 }
 

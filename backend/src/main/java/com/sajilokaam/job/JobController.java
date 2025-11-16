@@ -53,6 +53,7 @@ public class JobController {
         return ResponseEntity.ok(jobs);
     }
 
+
     @GetMapping("/{id}")
     public ResponseEntity<Job> get(@PathVariable Long id) {
         return jobRepository.findById(id)
