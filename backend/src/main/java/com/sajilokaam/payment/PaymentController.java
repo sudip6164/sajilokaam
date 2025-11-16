@@ -3,6 +3,12 @@ package com.sajilokaam.payment;
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.invoice.Invoice;
 import com.sajilokaam.invoice.InvoiceRepository;
+import com.sajilokaam.paymentgateway.PaymentInitiationResponse;
+import com.sajilokaam.paymentgateway.PaymentVerificationResponse;
+import com.sajilokaam.paymentgateway.RefundResponse;
+import com.sajilokaam.paymentservice.PaymentService;
+import com.sajilokaam.transaction.Transaction;
+import com.sajilokaam.transaction.TransactionRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -21,15 +28,21 @@ public class PaymentController {
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final PaymentService paymentService;
+    private final TransactionRepository transactionRepository;
 
     public PaymentController(PaymentRepository paymentRepository,
                             InvoiceRepository invoiceRepository,
                             UserRepository userRepository,
-                            JwtService jwtService) {
+                            JwtService jwtService,
+                            PaymentService paymentService,
+                            TransactionRepository transactionRepository) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.paymentService = paymentService;
+        this.transactionRepository = transactionRepository;
     }
 
     @GetMapping("/invoice/{invoiceId}")
@@ -166,6 +179,29 @@ public class PaymentController {
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
+    }
+
+    public static class PaymentInitiateRequest {
+        private String gateway;
+        private String returnUrl;
+        private String cancelUrl;
+
+        public String getGateway() { return gateway; }
+        public void setGateway(String gateway) { this.gateway = gateway; }
+        public String getReturnUrl() { return returnUrl; }
+        public void setReturnUrl(String returnUrl) { this.returnUrl = returnUrl; }
+        public String getCancelUrl() { return cancelUrl; }
+        public void setCancelUrl(String cancelUrl) { this.cancelUrl = cancelUrl; }
+    }
+
+    public static class RefundRequest {
+        private java.math.BigDecimal amount;
+        private String reason;
+
+        public java.math.BigDecimal getAmount() { return amount; }
+        public void setAmount(java.math.BigDecimal amount) { this.amount = amount; }
+        public String getReason() { return reason; }
+        public void setReason(String reason) { this.reason = reason; }
     }
 }
 
