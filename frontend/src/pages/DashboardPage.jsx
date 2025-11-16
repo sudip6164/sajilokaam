@@ -9,10 +9,15 @@ export function DashboardPage() {
     jobs: 0,
     projects: 0,
     bids: 0,
-    activeProjects: 0
+    activeProjects: 0,
+    pendingBids: 0,
+    acceptedBids: 0,
+    totalBidsReceived: 0,
+    pendingBidsToReview: 0
   })
   const [recentJobs, setRecentJobs] = useState([])
   const [recentProjects, setRecentProjects] = useState([])
+  const [recentBids, setRecentBids] = useState([])
   const [loading, setLoading] = useState(true)
   const { error: showError } = useToast()
 
@@ -27,33 +32,90 @@ export function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       const headers = { 'Authorization': `Bearer ${token}` }
+      const isClient = profile.roles?.some(r => r.name === 'CLIENT')
+      const isFreelancer = profile.roles?.some(r => r.name === 'FREELANCER')
       
       // Load jobs
-      const jobsRes = await fetch('http://localhost:8080/api/jobs', { headers })
-      if (jobsRes.ok) {
-        const jobs = await jobsRes.json()
-        const myJobs = Array.isArray(jobs) ? jobs.filter(j => j.client?.id === profile.id) : []
-        setRecentJobs(myJobs.slice(0, 3))
-        setStats(prev => ({ ...prev, jobs: myJobs.length }))
+      if (isClient) {
+        const jobsRes = await fetch('http://localhost:8080/api/jobs/my-jobs', { headers })
+        if (jobsRes.ok) {
+          const jobs = await jobsRes.json()
+          const jobsList = Array.isArray(jobs) ? jobs : []
+          setRecentJobs(jobsList.slice(0, 3))
+          setStats(prev => ({ ...prev, jobs: jobsList.length }))
+          
+          // Calculate total bids received and pending bids to review
+          let totalBids = 0
+          let pendingBids = 0
+          await Promise.all(
+            jobsList.map(async (job) => {
+              try {
+                const bidRes = await fetch(`http://localhost:8080/api/jobs/${job.id}/bids`, { headers })
+                if (bidRes.ok) {
+                  const bids = await bidRes.json()
+                  const bidsList = Array.isArray(bids) ? bids : []
+                  totalBids += bidsList.length
+                  pendingBids += bidsList.filter(b => b.status === 'PENDING').length
+                }
+              } catch (err) {
+                console.error(`Failed to load bids for job ${job.id}`, err)
+              }
+            })
+          )
+          setStats(prev => ({ 
+            ...prev, 
+            totalBidsReceived: totalBids,
+            pendingBidsToReview: pendingBids
+          }))
+        }
       }
 
       // Load projects
       const projectsRes = await fetch('http://localhost:8080/api/projects', { headers })
       if (projectsRes.ok) {
         const projects = await projectsRes.json()
-        const myProjects = Array.isArray(projects) ? projects : []
+        const projectsList = Array.isArray(projects) ? projects : []
+        
+        // Filter projects based on role
+        let myProjects = []
+        if (isClient) {
+          // Client's projects (from their jobs)
+          myProjects = projectsList.filter(p => p.job?.client?.id === profile.id)
+        } else if (isFreelancer) {
+          // Freelancer's projects (from accepted bids)
+          myProjects = projectsList.filter(p => {
+            // Check if freelancer has tasks assigned in this project
+            // For now, we'll show all projects - can be enhanced later
+            return true
+          })
+        }
+        
         setRecentProjects(myProjects.slice(0, 3))
         setStats(prev => ({ 
           ...prev, 
           projects: myProjects.length,
-          activeProjects: myProjects.filter(p => p.job?.status !== 'CLOSED').length
+          activeProjects: myProjects.filter(p => p.job?.status !== 'CLOSED' && p.job?.status !== 'IN_PROGRESS').length
         }))
       }
 
       // Load bids (for freelancers)
-      if (profile.roles?.some(r => r.name === 'FREELANCER')) {
-        // We'll need to get bids from jobs - for now, we'll skip this
-        // In a real app, you'd have a /api/bids endpoint
+      if (isFreelancer) {
+        const bidsRes = await fetch('http://localhost:8080/api/jobs/my-bids', { headers })
+        if (bidsRes.ok) {
+          const bids = await bidsRes.json()
+          const bidsList = Array.isArray(bids) ? bids : []
+          setRecentBids(bidsList.slice(0, 3))
+          
+          const pendingBids = bidsList.filter(b => b.status === 'PENDING').length
+          const acceptedBids = bidsList.filter(b => b.status === 'ACCEPTED').length
+          
+          setStats(prev => ({ 
+            ...prev, 
+            bids: bidsList.length,
+            pendingBids: pendingBids,
+            acceptedBids: acceptedBids
+          }))
+        }
       }
     } catch (err) {
       console.error('Failed to load dashboard data', err)
@@ -129,6 +191,32 @@ export function DashboardPage() {
                         </div>
                       </div>
                     </div>
+                    <div className="card group hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-500">Total Bids Received</p>
+                          <p className="text-2xl font-extrabold text-gray-900">{stats.totalBidsReceived}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card group hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-500">Pending Review</p>
+                          <p className="text-2xl font-extrabold text-gray-900">{stats.pendingBidsToReview}</p>
+                        </div>
+                      </div>
+                    </div>
                   </>
                 )}
                 
@@ -144,6 +232,45 @@ export function DashboardPage() {
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-gray-500">My Projects</p>
                           <p className="text-2xl font-extrabold text-gray-900">{stats.projects}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card group hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-500">Total Bids</p>
+                          <p className="text-2xl font-extrabold text-gray-900">{stats.bids}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card group hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-500">Pending Bids</p>
+                          <p className="text-2xl font-extrabold text-gray-900">{stats.pendingBids}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card group hover:scale-[1.02] transition-transform">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-500">Accepted Bids</p>
+                          <p className="text-2xl font-extrabold text-gray-900">{stats.acceptedBids}</p>
                         </div>
                       </div>
                     </div>
@@ -235,7 +362,7 @@ export function DashboardPage() {
                     <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
                   </div>
                   <div className="space-y-3">
-                    {recentJobs.length === 0 && recentProjects.length === 0 ? (
+                    {recentJobs.length === 0 && recentProjects.length === 0 && recentBids.length === 0 ? (
                       <p className="text-sm text-gray-500 text-center py-4">No recent activity</p>
                     ) : (
                       <>
@@ -257,6 +384,16 @@ export function DashboardPage() {
                           >
                             <p className="text-sm font-semibold text-gray-900 truncate">{project.title}</p>
                             <p className="text-xs text-gray-500">Project</p>
+                          </Link>
+                        ))}
+                        {recentBids.slice(0, 2).map(bid => (
+                          <Link
+                            key={bid.id}
+                            to={`/jobs/${bid.job?.id}`}
+                            className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <p className="text-sm font-semibold text-gray-900 truncate">{bid.job?.title || 'Job'}</p>
+                            <p className="text-xs text-gray-500">Bid • ${bid.amount} • {bid.status}</p>
                           </Link>
                         ))}
                       </>
