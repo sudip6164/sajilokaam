@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { ProjectMessaging } from '../components/ProjectMessaging'
 
 export function ProjectDetailPage() {
   const { id } = useParams()
@@ -1606,6 +1607,9 @@ export function ProjectDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Messaging Section */}
+      <ProjectMessaging projectId={id} />
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
