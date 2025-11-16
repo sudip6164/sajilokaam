@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute } from './components/AdminRoute'
 import { Navbar } from './components/Navbar'
 import { ToastContainer } from './components/Toast'
 import { useToast } from './hooks/useToast'
@@ -16,6 +17,9 @@ import { ProfilePage } from './pages/ProfilePage'
 import { MyBidsPage } from './pages/MyBidsPage'
 import { MyJobsPage } from './pages/MyJobsPage'
 import { KanbanBoardPage } from './pages/KanbanBoardPage'
+import { AdminDashboardPage } from './pages/AdminDashboardPage'
+import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AdminSettingsPage } from './pages/AdminSettingsPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -104,6 +108,30 @@ function AppContent() {
               <ProtectedRoute>
                 <MyJobsPage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminRoute>
+                <AdminSettingsPage />
+              </AdminRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -78,6 +78,21 @@ export function Navbar() {
                     <span className="relative">My Bids</span>
                   </Link>
                 )}
+                {profile?.roles?.some(r => r.name === 'ADMIN') && (
+                  <Link 
+                    to="/admin" 
+                    className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                      isActive('/admin') || location.pathname.startsWith('/admin')
+                        ? 'text-white bg-white/10' 
+                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {(isActive('/admin') || location.pathname.startsWith('/admin')) && (
+                      <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                    )}
+                    <span className="relative">Admin</span>
+                  </Link>
+                )}
                 {profile?.roles?.some(r => r.name === 'CLIENT') && (
                   <>
                     <Link 
