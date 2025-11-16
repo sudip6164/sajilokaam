@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
     } else {
       setLoading(false)
     }
-  }, [token, loadProfile])
+  }, []) // Only run on mount, not on every token/loadProfile change
 
   const login = async (email, password) => {
     const res = await fetch('http://localhost:8080/api/auth/login', {
