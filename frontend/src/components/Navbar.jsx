@@ -14,7 +14,7 @@ export function Navbar() {
   const isActive = (path) => location.pathname === path
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-white/20 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+    <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#101820]/80 backdrop-blur-xl supports-[backdrop-filter]:bg-[#101820]/60">
       <div className="container-custom">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
@@ -41,12 +41,12 @@ export function Navbar() {
                   to="/jobs" 
                   className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
                     isActive('/jobs') 
-                      ? 'text-violet-700 bg-violet-50/80' 
-                      : 'text-gray-700 hover:text-violet-700 hover:bg-violet-50/50'
+                      ? 'text-white bg-white/10' 
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   {isActive('/jobs') && (
-                    <span className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl"></span>
+                    <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
                   )}
                   <span className="relative">Jobs</span>
                 </Link>
@@ -54,12 +54,12 @@ export function Navbar() {
                   to="/projects" 
                   className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
                     isActive('/projects') 
-                      ? 'text-violet-700 bg-violet-50/80' 
-                      : 'text-gray-700 hover:text-violet-700 hover:bg-violet-50/50'
+                      ? 'text-white bg-white/10' 
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   {isActive('/projects') && (
-                    <span className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl"></span>
+                    <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
                   )}
                   <span className="relative">Projects</span>
                 </Link>
@@ -68,12 +68,12 @@ export function Navbar() {
                     to="/my-bids" 
                     className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
                       isActive('/my-bids') 
-                        ? 'text-violet-700 bg-violet-50/80' 
-                        : 'text-gray-700 hover:text-violet-700 hover:bg-violet-50/50'
+                        ? 'text-white bg-white/10' 
+                        : 'text-white/70 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     {isActive('/my-bids') && (
-                      <span className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl"></span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
                     )}
                     <span className="relative">My Bids</span>
                   </Link>
@@ -84,12 +84,12 @@ export function Navbar() {
                       to="/my-jobs" 
                       className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
                         isActive('/my-jobs') 
-                          ? 'text-violet-700 bg-violet-50/80' 
-                          : 'text-gray-700 hover:text-violet-700 hover:bg-violet-50/50'
+                          ? 'text-white bg-white/10' 
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
                       }`}
                     >
                       {isActive('/my-jobs') && (
-                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl"></span>
+                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
                       )}
                       <span className="relative">My Jobs</span>
                     </Link>
@@ -115,7 +115,7 @@ export function Navbar() {
             <div className="flex items-center gap-3">
               <Link 
                 to="/profile"
-                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100/80 transition-all duration-300 group"
+                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-all duration-300 group"
               >
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full blur-md opacity-50 group-hover:opacity-70 transition-opacity"></div>
@@ -124,13 +124,13 @@ export function Navbar() {
                   </div>
                 </div>
                 <div className="hidden lg:block text-left">
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-violet-700 transition-colors">{profile.fullName}</p>
-                  <p className="text-xs text-gray-500">{profile.email}</p>
+                  <p className="text-sm font-bold text-white group-hover:text-violet-300 transition-colors">{profile.fullName}</p>
+                  <p className="text-xs text-white/60">{profile.email}</p>
                 </div>
               </Link>
               <button 
                 onClick={handleLogout} 
-                className="btn btn-ghost text-sm px-4 hidden sm:flex"
+                className="btn btn-secondary text-sm px-4 hidden sm:flex"
               >
                 Logout
               </button>

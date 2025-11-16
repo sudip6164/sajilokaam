@@ -176,8 +176,8 @@ export function DashboardPage() {
                           </div>
                         </div>
                         <div className="flex-1">
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">My Jobs</p>
-                          <p className="text-3xl font-black text-gray-900">{stats.jobs}</p>
+                          <p className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-1">My Jobs</p>
+                          <p className="text-3xl font-black text-white">{stats.jobs}</p>
                         </div>
                       </div>
                     </div>
