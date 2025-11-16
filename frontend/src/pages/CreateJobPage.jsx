@@ -42,10 +42,17 @@ export function CreateJobPage() {
         api.jobCategories.getAll(),
         api.jobSkills.getAll()
       ])
-      setCategories(catsData || [])
-      setSkills(skillsData || [])
+      setCategories(Array.isArray(catsData) ? catsData : [])
+      setSkills(Array.isArray(skillsData) ? skillsData : [])
+      
+      if (!Array.isArray(catsData) || catsData.length === 0) {
+        console.warn('No categories found. Make sure categories are seeded in the database.')
+      }
     } catch (err) {
-      showError('Failed to load categories and skills')
+      console.error('Failed to load categories and skills:', err)
+      showError('Failed to load categories and skills: ' + (err.message || 'Unknown error'))
+      setCategories([])
+      setSkills([])
     } finally {
       setLoadingData(false)
     }
@@ -70,6 +77,12 @@ export function CreateJobPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Prevent duplicate submissions
+    if (loading) {
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -88,12 +101,21 @@ export function CreateJobPage() {
       }
 
       const job = await api.jobs.create(token, jobData)
+      
+      if (!job || !job.id) {
+        throw new Error('Job creation failed: Invalid response')
+      }
+      
       showSuccess('Job created successfully!')
-      navigate(`/jobs/${job.id}`)
+      
+      // Small delay to ensure success message is visible
+      setTimeout(() => {
+        navigate(`/jobs/${job.id}`)
+      }, 500)
     } catch (err) {
+      console.error('Job creation error:', err)
       showError(err.message || 'Failed to create job')
-    } finally {
-      setLoading(false)
+      setLoading(false) // Re-enable form on error
     }
   }
 
@@ -146,13 +168,22 @@ export function CreateJobPage() {
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   className="input-field"
-                  disabled={loading}
+                  disabled={loading || loadingData}
                 >
                   <option value="">Select a category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  {categories.length === 0 ? (
+                    <option value="" disabled>No categories available</option>
+                  ) : (
+                    categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))
+                  )}
                 </select>
+                {categories.length === 0 && !loadingData && (
+                  <p className="text-xs text-yellow-400 mt-1">
+                    ⚠️ No categories found. Please contact admin to add categories.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -314,8 +345,8 @@ export function CreateJobPage() {
               <div className="flex gap-4 pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="btn btn-primary flex-1"
+                  disabled={loading || !title.trim()}
+                  className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
