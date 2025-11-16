@@ -149,13 +149,13 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-10">
+          <div className="mb-12">
             <h1 className="page-title">Dashboard</h1>
             <p className="page-subtitle">
-              Welcome back, <span className="font-bold text-blue-600">{profile?.fullName}</span>! Here's what's happening.
+              Welcome back, <span className="font-bold gradient-text">{profile?.fullName}</span>! Here's what's happening.
             </p>
           </div>
           
@@ -165,16 +165,19 @@ export function DashboardPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {isClient && (
                   <>
-                    <div className="card group hover:scale-[1.02] transition-transform">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
+                    <div className="card hover-lift group">
+                      <div className="flex items-center gap-4 mb-2">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl blur-lg opacity-50"></div>
+                          <div className="relative w-14 h-14 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">My Jobs</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.jobs}</p>
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">My Jobs</p>
+                          <p className="text-3xl font-black text-gray-900">{stats.jobs}</p>
                         </div>
                       </div>
                     </div>
