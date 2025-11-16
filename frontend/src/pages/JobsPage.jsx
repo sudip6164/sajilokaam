@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { Pagination } from '../components/Pagination'
 
 export function JobsPage() {
   const [jobs, setJobs] = useState([])
@@ -10,6 +11,8 @@ export function JobsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const { token, profile } = useAuth()
   const { error: showError } = useToast()
 
@@ -19,6 +22,7 @@ export function JobsPage() {
 
   useEffect(() => {
     filterJobs()
+    setCurrentPage(1) // Reset to first page when filters change
   }, [searchQuery, statusFilter, jobs])
 
   const loadJobs = async () => {
@@ -73,6 +77,12 @@ export function JobsPage() {
 
     setFilteredJobs(filtered)
   }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedJobs = filteredJobs.slice(startIndex, endIndex)
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -228,8 +238,9 @@ export function JobsPage() {
               )}
             </div>
           ) : (
-            <div className="grid gap-6">
-              {filteredJobs.map(job => (
+            <>
+              <div className="grid gap-6">
+                {paginatedJobs.map(job => (
                 <Link
                   key={job.id}
                   to={`/jobs/${job.id}`}
@@ -283,7 +294,13 @@ export function JobsPage() {
                   </div>
                 </Link>
               ))}
-            </div>
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </div>

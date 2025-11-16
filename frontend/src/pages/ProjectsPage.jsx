@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { Pagination } from '../components/Pagination'
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [filteredProjects, setFilteredProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const { token } = useAuth()
   const { error: showError } = useToast()
 
@@ -17,6 +20,7 @@ export function ProjectsPage() {
 
   useEffect(() => {
     filterProjects()
+    setCurrentPage(1) // Reset to first page when filters change
   }, [searchQuery, projects])
 
   const loadProjects = async () => {
@@ -50,6 +54,12 @@ export function ProjectsPage() {
 
     setFilteredProjects(filtered)
   }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedProjects = filteredProjects.slice(startIndex, endIndex)
 
   if (loading) {
     return (
@@ -143,8 +153,9 @@ export function ProjectsPage() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-6">
-              {filteredProjects.map(project => (
+            <>
+              <div className="grid gap-6">
+                {paginatedProjects.map(project => (
                 <Link
                   key={project.id}
                   to={`/projects/${project.id}`}
@@ -182,7 +193,13 @@ export function ProjectsPage() {
                   </div>
                 </Link>
               ))}
-            </div>
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </div>
