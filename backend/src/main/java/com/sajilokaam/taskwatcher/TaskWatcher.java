@@ -10,6 +10,7 @@ import java.time.Instant;
         @Index(name = "idx_watchers_task", columnList = "task_id"),
         @Index(name = "idx_watchers_user", columnList = "user_id")
 })
+@IdClass(TaskWatcherId.class)
 public class TaskWatcher {
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
