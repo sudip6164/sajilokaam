@@ -44,7 +44,8 @@ export function AuthProvider({ children }) {
     } else {
       setLoading(false)
     }
-  }, []) // Only run on mount, not on every token/loadProfile change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount
 
   const login = async (email, password) => {
     const res = await fetch('http://localhost:8080/api/auth/login', {
