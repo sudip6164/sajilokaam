@@ -10,6 +10,7 @@ export function JobDetailPage() {
   const [bids, setBids] = useState([])
   const [loading, setLoading] = useState(true)
   const [acceptingBidId, setAcceptingBidId] = useState(null)
+  const [rejectingBidId, setRejectingBidId] = useState(null)
   const [submittingBid, setSubmittingBid] = useState(false)
   const [showAcceptModal, setShowAcceptModal] = useState(false)
   const [selectedBidId, setSelectedBidId] = useState(null)
@@ -133,6 +134,29 @@ export function JobDetailPage() {
       showError(err.message || 'Failed to accept bid')
     } finally {
       setAcceptingBidId(null)
+    }
+  }
+
+  const handleRejectBid = async (bidId) => {
+    setRejectingBidId(bidId)
+    try {
+      const res = await fetch(`http://localhost:8080/api/jobs/${id}/bids/${bidId}/reject`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to reject bid')
+      }
+
+      showSuccess('Bid rejected successfully')
+      await loadBids()
+    } catch (err) {
+      showError(err.message || 'Failed to reject bid')
+    } finally {
+      setRejectingBidId(null)
     }
   }
 
@@ -405,13 +429,22 @@ export function JobDetailPage() {
                         )}
                       </div>
                       {isJobOwner && bid.status === 'PENDING' && (
-                        <button
-                          onClick={() => openAcceptModal(bid.id)}
-                          disabled={acceptingBidId === bid.id}
-                          className="btn btn-primary ml-4 whitespace-nowrap"
-                        >
-                          {acceptingBidId === bid.id ? 'Accepting...' : 'Accept Bid'}
-                        </button>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => openAcceptModal(bid.id)}
+                            disabled={acceptingBidId === bid.id || rejectingBidId === bid.id}
+                            className="btn btn-primary whitespace-nowrap"
+                          >
+                            {acceptingBidId === bid.id ? 'Accepting...' : 'Accept Bid'}
+                          </button>
+                          <button
+                            onClick={() => handleRejectBid(bid.id)}
+                            disabled={acceptingBidId === bid.id || rejectingBidId === bid.id}
+                            className="btn btn-danger whitespace-nowrap"
+                          >
+                            {rejectingBidId === bid.id ? 'Rejecting...' : 'Reject'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
