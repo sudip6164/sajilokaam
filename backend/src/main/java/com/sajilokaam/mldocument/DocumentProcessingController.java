@@ -70,8 +70,9 @@ public class DocumentProcessingController {
             DocumentProcessing processing = future.get(); // For now, wait for completion
             // In production, you might want to return immediately and poll for status
             
+            Long processingId = processing.getId();
             return ResponseEntity.ok(Map.of(
-                    "id", processing.getId(),
+                    "id", processingId != null ? processingId : 0L,
                     "status", processing.getStatus(),
                     "message", "Document processing started"
             ));
@@ -142,8 +143,9 @@ public class DocumentProcessingController {
         }
 
         try {
+            Long procId = processingId;
             List<Task> createdTasks = documentProcessingService.createTasksFromSuggestions(
-                    processingId, request.getSuggestionIds());
+                    procId, request.getSuggestionIds());
 
             return ResponseEntity.ok(Map.of(
                     "message", "Tasks created successfully",

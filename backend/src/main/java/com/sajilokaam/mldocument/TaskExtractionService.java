@@ -74,9 +74,7 @@ public class TaskExtractionService {
         List<ExtractedTaskSuggestion> suggestions = new ArrayList<>();
         Matcher matcher = TASK_NUMBER_PATTERN.matcher(text);
         
-        int matchCount = 0;
         while (matcher.find()) {
-            matchCount++;
             String title = matcher.group(2).trim();
             String fullMatch = matcher.group(0).trim();
             

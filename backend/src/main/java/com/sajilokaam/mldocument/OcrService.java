@@ -59,9 +59,15 @@ public class OcrService {
      * Extract text from PDF using PDFBox
      */
     private String extractTextFromPdf(Path filePath) throws IOException {
-        try (PDDocument document = PDDocument.load(filePath.toFile())) {
+        PDDocument document = null;
+        try {
+            document = PDDocument.load(filePath.toFile());
             PDFTextStripper stripper = new PDFTextStripper();
             return stripper.getText(document);
+        } finally {
+            if (document != null) {
+                document.close();
+            }
         }
     }
 

@@ -112,12 +112,14 @@ public class DocumentProcessingService {
             documentProcessingRepository.save(processing);
 
             // Extract tasks
+            Long processingId = processing.getId();
             List<ExtractedTaskSuggestion> suggestions = taskExtractionService.extractTasks(
-                    ocrText, processing.getId());
+                    ocrText, processingId);
 
             // Save suggestions
+            DocumentProcessing finalProcessing = processing;
             for (ExtractedTaskSuggestion suggestion : suggestions) {
-                suggestion.setDocumentProcessing(processing);
+                suggestion.setDocumentProcessing(finalProcessing);
                 extractedTaskSuggestionRepository.save(suggestion);
             }
 
@@ -152,7 +154,8 @@ public class DocumentProcessingService {
             ExtractedTaskSuggestion suggestion = extractedTaskSuggestionRepository.findById(suggestionId)
                     .orElseThrow(() -> new IllegalArgumentException("Suggestion not found: " + suggestionId));
 
-            if (!suggestion.getDocumentProcessing().getId().equals(documentProcessingId)) {
+            Long suggestionDocId = suggestion.getDocumentProcessing().getId();
+            if (suggestionDocId == null || !suggestionDocId.equals(documentProcessingId)) {
                 continue; // Skip if suggestion doesn't belong to this document
             }
 
