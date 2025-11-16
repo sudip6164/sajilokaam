@@ -24,6 +24,9 @@ import { AdminActivityLogsPage } from './pages/AdminActivityLogsPage'
 import { AdminAuditTrailPage } from './pages/AdminAuditTrailPage'
 import { SavedJobsPage } from './pages/SavedJobsPage'
 import { NotificationsPage } from './pages/NotificationsPage'
+import { InvoicesPage } from './pages/InvoicesPage'
+import { InvoiceDetailPage } from './pages/InvoiceDetailPage'
+import { CreateInvoicePage } from './pages/CreateInvoicePage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -127,6 +130,30 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invoices"
+            element={
+              <ProtectedRoute>
+                <InvoicesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invoices/new"
+            element={
+              <ProtectedRoute>
+                <CreateInvoicePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invoices/:id"
+            element={
+              <ProtectedRoute>
+                <InvoiceDetailPage />
               </ProtectedRoute>
             }
           />
