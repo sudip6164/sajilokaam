@@ -27,17 +27,30 @@ public class JobController {
 
     @GetMapping
     public List<Job> list(@RequestHeader(name = "Authorization", required = false) String authorization) {
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring("Bearer ".length()).trim();
-            Optional<String> emailOpt = jwtService.extractSubject(token);
-            if (emailOpt.isPresent()) {
-                Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
-                if (userOpt.isPresent()) {
-                    return jobRepository.findByClientId(userOpt.get().getId());
-                }
-            }
-        }
+        // Return all jobs for browsing (freelancers can see all)
         return jobRepository.findAll();
+    }
+
+    @GetMapping("/my-jobs")
+    public ResponseEntity<List<Job>> getMyJobs(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<Job> jobs = jobRepository.findByClientId(userOpt.get().getId());
+        return ResponseEntity.ok(jobs);
     }
 
     @GetMapping("/{id}")
