@@ -485,7 +485,19 @@ export const api = {
       apiRequest('/payments', { method: 'POST', token, body: data }),
     
     updateStatus: (id, token, data) =>
-      apiRequest(`/payments/${id}/status`, { method: 'PATCH', token, body: data })
+      apiRequest(`/payments/${id}/status`, { method: 'PATCH', token, body: data }),
+    
+    initiate: (paymentId, token, data) =>
+      apiRequest(`/payments/${paymentId}/initiate`, { method: 'POST', token, body: data }),
+    
+    verify: (transactionId, token) =>
+      apiRequest(`/payments/verify/${transactionId}`, { method: 'POST', token }),
+    
+    refund: (paymentId, token, data) =>
+      apiRequest(`/payments/${paymentId}/refund`, { method: 'POST', token, body: data }),
+    
+    getTransactions: (token) =>
+      apiRequest('/payments/transactions', { token })
   },
   
   // Admin APIs
