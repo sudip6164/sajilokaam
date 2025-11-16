@@ -78,5 +78,27 @@ public class BidController {
         URI location = URI.create("/api/jobs/" + jobId + "/bids/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
+
+    @GetMapping("/my-bids")
+    public ResponseEntity<List<Bid>> getMyBids(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<Bid> bids = bidRepository.findByFreelancerId(userOpt.get().getId());
+        return ResponseEntity.ok(bids);
+    }
 }
 

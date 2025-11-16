@@ -37,9 +37,19 @@ export function Navbar() {
                 >
                   Projects
                 </Link>
-                <Link to="/jobs/new" className="btn btn-primary text-sm ml-2">
-                  + Post Job
-                </Link>
+                {profile?.roles?.some(r => r.name === 'FREELANCER') && (
+                  <Link 
+                    to="/my-bids" 
+                    className="px-4 py-2 text-gray-700 hover:text-blue-600 font-semibold transition-colors rounded-lg hover:bg-blue-50"
+                  >
+                    My Bids
+                  </Link>
+                )}
+                {profile?.roles?.some(r => r.name === 'CLIENT') && (
+                  <Link to="/jobs/new" className="btn btn-primary text-sm ml-2">
+                    + Post Job
+                  </Link>
+                )}
                 <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
                   <Link 
                     to="/profile"

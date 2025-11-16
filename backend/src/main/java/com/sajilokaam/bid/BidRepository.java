@@ -8,5 +8,8 @@ import java.util.List;
 public interface BidRepository extends JpaRepository<Bid, Long> {
     @EntityGraph(attributePaths = {"freelancer"})
     List<Bid> findByJobId(Long jobId);
+    
+    @EntityGraph(attributePaths = {"job", "job.client"})
+    List<Bid> findByFreelancerId(Long freelancerId);
 }
 

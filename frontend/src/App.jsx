@@ -13,6 +13,7 @@ import { CreateJobPage } from './pages/CreateJobPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { MyBidsPage } from './pages/MyBidsPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -76,6 +77,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-bids"
+            element={
+              <ProtectedRoute>
+                <MyBidsPage />
               </ProtectedRoute>
             }
           />
