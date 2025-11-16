@@ -22,6 +22,7 @@ import { AdminUsersPage } from './pages/AdminUsersPage'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AdminActivityLogsPage } from './pages/AdminActivityLogsPage'
 import { AdminAuditTrailPage } from './pages/AdminAuditTrailPage'
+import { SavedJobsPage } from './pages/SavedJobsPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -109,6 +110,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <MyJobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/saved-jobs"
+            element={
+              <ProtectedRoute>
+                <SavedJobsPage />
               </ProtectedRoute>
             }
           />

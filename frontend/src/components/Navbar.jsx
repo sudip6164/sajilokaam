@@ -64,19 +64,34 @@ export function Navbar() {
                   <span className="relative">Projects</span>
                 </Link>
                 {profile?.roles?.some(r => r.name === 'FREELANCER') && (
-                  <Link 
-                    to="/my-bids" 
-                    className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                      isActive('/my-bids') 
-                        ? 'text-white bg-white/10' 
-                        : 'text-white/70 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    {isActive('/my-bids') && (
-                      <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
-                    )}
-                    <span className="relative">My Bids</span>
-                  </Link>
+                  <>
+                    <Link 
+                      to="/my-bids" 
+                      className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                        isActive('/my-bids') 
+                          ? 'text-white bg-white/10' 
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {isActive('/my-bids') && (
+                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                      )}
+                      <span className="relative">My Bids</span>
+                    </Link>
+                    <Link 
+                      to="/saved-jobs" 
+                      className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                        isActive('/saved-jobs') 
+                          ? 'text-white bg-white/10' 
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {isActive('/saved-jobs') && (
+                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                      )}
+                      <span className="relative">Saved Jobs</span>
+                    </Link>
+                  </>
                 )}
                 {profile?.roles?.some(r => r.name === 'ADMIN') && (
                   <Link 
