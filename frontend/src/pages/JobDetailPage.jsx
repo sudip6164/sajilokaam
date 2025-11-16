@@ -516,27 +516,34 @@ export function JobDetailPage() {
               {isJobOwner && bids.length > 1 && (
                 <button
                   onClick={async () => {
-                    setComparingBids(true)
-                    try {
-                      const res = await fetch(`http://localhost:8080/api/jobs/${id}/bids/compare`, {
-                        headers: {
-                          'Authorization': `Bearer ${token}`
+                    if (showCompareBids) {
+                      // Return to normal view
+                      await loadBids()
+                      setShowCompareBids(false)
+                    } else {
+                      // Show comparison view
+                      setComparingBids(true)
+                      try {
+                        const res = await fetch(`http://localhost:8080/api/jobs/${id}/bids/compare`, {
+                          headers: {
+                            'Authorization': `Bearer ${token}`
+                          }
+                        })
+                        if (res.ok) {
+                          const comparedBids = await res.json()
+                          setBids(comparedBids)
+                          setShowCompareBids(true)
                         }
-                      })
-                      if (res.ok) {
-                        const comparedBids = await res.json()
-                        setBids(comparedBids)
-                        setShowCompareBids(true)
+                      } catch (err) {
+                        showError('Failed to load bid comparison')
+                      } finally {
+                        setComparingBids(false)
                       }
-                    } catch (err) {
-                      showError('Failed to load bid comparison')
-                    } finally {
-                      setComparingBids(false)
                     }
                   }}
                   className="btn btn-secondary"
                 >
-                  {comparingBids ? 'Loading...' : 'Compare Bids'}
+                  {comparingBids ? 'Loading...' : showCompareBids ? 'Normal View' : 'Compare Bids'}
                 </button>
               )}
             </div>
