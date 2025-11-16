@@ -187,6 +187,12 @@ export const api = {
       apiRequest(`/projects/${id}`, { method: 'DELETE', token })
   },
   
+  // Search
+  search: {
+    global: (query, token) =>
+      apiRequest(`/search/global?q=${encodeURIComponent(query)}`, { token })
+  },
+  
   // Document Processing (ML)
   documents: {
     upload: (projectId, token, file) => {

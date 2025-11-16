@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { NotificationBell } from './NotificationBell'
+import { GlobalSearch } from './GlobalSearch'
 
 export function Navbar() {
   const { profile, logout } = useAuth()
@@ -35,7 +36,8 @@ export function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-3">
+            <GlobalSearch />
             {profile ? (
               <>
                 <Link 
