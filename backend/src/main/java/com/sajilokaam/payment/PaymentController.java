@@ -133,6 +133,103 @@ public class PaymentController {
         return ResponseEntity.ok(updated);
     }
 
+    @PostMapping("/{paymentId}/initiate")
+    public ResponseEntity<PaymentInitiationResponse> initiatePayment(
+            @PathVariable Long paymentId,
+            @RequestBody PaymentInitiateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Payment> paymentOpt = paymentRepository.findById(paymentId);
+        if (paymentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Payment payment = paymentOpt.get();
+        String returnUrl = request.getReturnUrl() != null ? request.getReturnUrl() : 
+                          "http://localhost:5173/payments/success";
+        String cancelUrl = request.getCancelUrl() != null ? request.getCancelUrl() : 
+                          "http://localhost:5173/payments/cancel";
+
+        PaymentInitiationResponse response = paymentService.initiatePayment(
+            payment, request.getGateway(), returnUrl, cancelUrl
+        );
+
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PostMapping("/verify/{transactionId}")
+    public ResponseEntity<PaymentVerificationResponse> verifyPayment(@PathVariable String transactionId) {
+        PaymentVerificationResponse response = paymentService.verifyPayment(transactionId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/webhook/{gateway}")
+    public ResponseEntity<Map<String, String>> processWebhook(
+            @PathVariable String gateway,
+            @RequestBody Map<String, Object> webhookData) {
+        paymentService.processWebhook(gateway, webhookData);
+        return ResponseEntity.ok(Map.of("status", "success"));
+    }
+
+    @PostMapping("/{paymentId}/refund")
+    public ResponseEntity<RefundResponse> refundPayment(
+            @PathVariable Long paymentId,
+            @RequestBody RefundRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Payment> paymentOpt = paymentRepository.findById(paymentId);
+        if (paymentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Payment payment = paymentOpt.get();
+        Transaction transaction = transactionRepository.findByPaymentId(payment.getId())
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+
+        RefundResponse response = paymentService.refund(
+            transaction.getTransactionId(),
+            request.getAmount(),
+            request.getReason()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/transactions")
+    public ResponseEntity<List<Transaction>> getTransactions(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<Transaction> transactions = transactionRepository.findAll();
+        return ResponseEntity.ok(transactions);
+    }
+
     private void updateInvoicePaymentStatus(Invoice invoice) {
         List<Payment> payments = paymentRepository.findByInvoiceIdOrderByCreatedAtDesc(invoice.getId());
         java.math.BigDecimal totalPaid = payments.stream()
