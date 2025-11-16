@@ -8,7 +8,8 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "tasks", indexes = {
-        @Index(name = "idx_tasks_project", columnList = "project_id")
+        @Index(name = "idx_tasks_project", columnList = "project_id"),
+        @Index(name = "idx_tasks_priority", columnList = "priority")
 })
 public class Task {
     @Id
@@ -37,6 +38,12 @@ public class Task {
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Column(length = 50)
+    private String priority; // LOW, MEDIUM, HIGH, CRITICAL
+
+    @Column(name = "estimated_hours")
+    private Integer estimatedHours;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -111,6 +118,22 @@ public class Task {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public Integer getEstimatedHours() {
+        return estimatedHours;
+    }
+
+    public void setEstimatedHours(Integer estimatedHours) {
+        this.estimatedHours = estimatedHours;
     }
 }
 
