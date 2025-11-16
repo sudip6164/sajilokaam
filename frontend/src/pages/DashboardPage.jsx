@@ -189,8 +189,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">Active Projects</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.activeProjects}</p>
+                          <p className="text-sm font-semibold text-white/60">Active Projects</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.activeProjects}</p>
                         </div>
                       </div>
                     </div>
@@ -202,8 +202,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">Total Bids Received</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.totalBidsReceived}</p>
+                          <p className="text-sm font-semibold text-white/60">Total Bids Received</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.totalBidsReceived}</p>
                         </div>
                       </div>
                     </div>
@@ -215,8 +215,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">Pending Review</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.pendingBidsToReview}</p>
+                          <p className="text-sm font-semibold text-white/60">Pending Review</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.pendingBidsToReview}</p>
                         </div>
                       </div>
                     </div>
@@ -233,8 +233,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">My Projects</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.projects}</p>
+                          <p className="text-sm font-semibold text-white/60">My Projects</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.projects}</p>
                         </div>
                       </div>
                     </div>
@@ -246,8 +246,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">Total Bids</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.bids}</p>
+                          <p className="text-sm font-semibold text-white/60">Total Bids</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.bids}</p>
                         </div>
                       </div>
                     </div>
@@ -259,8 +259,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">Pending Bids</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.pendingBids}</p>
+                          <p className="text-sm font-semibold text-white/60">Pending Bids</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.pendingBids}</p>
                         </div>
                       </div>
                     </div>
@@ -272,8 +272,8 @@ export function DashboardPage() {
                           </svg>
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-500">Accepted Bids</p>
-                          <p className="text-2xl font-extrabold text-gray-900">{stats.acceptedBids}</p>
+                          <p className="text-sm font-semibold text-white/60">Accepted Bids</p>
+                          <p className="text-2xl font-extrabold text-white">{stats.acceptedBids}</p>
                         </div>
                       </div>
                     </div>
@@ -288,8 +288,8 @@ export function DashboardPage() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-500">Total Projects</p>
-                      <p className="text-2xl font-extrabold text-gray-900">{stats.projects}</p>
+                      <p className="text-sm font-semibold text-white/60">Total Projects</p>
+                      <p className="text-2xl font-extrabold text-white">{stats.projects}</p>
                     </div>
                   </div>
                 </div>
@@ -305,20 +305,20 @@ export function DashboardPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">Profile</h2>
+                    <h2 className="text-xl font-bold text-white">Profile</h2>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-500">Name:</span>
-                      <span className="text-sm font-bold text-gray-900">{profile.fullName}</span>
+                      <span className="text-sm font-semibold text-white/60">Name:</span>
+                      <span className="text-sm font-bold text-white">{profile.fullName}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-500">Email:</span>
-                      <span className="text-sm font-bold text-gray-900 break-all">{profile.email}</span>
+                      <span className="text-sm font-semibold text-white/60">Email:</span>
+                      <span className="text-sm font-bold text-white break-all">{profile.email}</span>
                     </div>
                     {profile.roles && profile.roles.length > 0 && (
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-500">Role:</span>
+                        <span className="text-sm font-semibold text-white/60">Role:</span>
                         {profile.roles.map((role, idx) => (
                           <span key={idx} className="badge badge-primary">
                             {role.name}
@@ -337,7 +337,7 @@ export function DashboardPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
+                    <h2 className="text-xl font-bold text-white">Quick Actions</h2>
                   </div>
                   <div className="space-y-3">
                     {isClient && (
@@ -362,41 +362,41 @@ export function DashboardPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+                    <h2 className="text-xl font-bold text-white">Recent Activity</h2>
                   </div>
                   <div className="space-y-3">
                     {recentJobs.length === 0 && recentProjects.length === 0 && recentBids.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-4">No recent activity</p>
+                      <p className="text-sm text-white/60 text-center py-4">No recent activity</p>
                     ) : (
                       <>
                         {recentJobs.slice(0, 2).map(job => (
                           <Link
                             key={job.id}
                             to={`/jobs/${job.id}`}
-                            className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="block p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/10"
                           >
-                            <p className="text-sm font-semibold text-gray-900 truncate">{job.title}</p>
-                            <p className="text-xs text-gray-500">Job • {job.status}</p>
+                            <p className="text-sm font-semibold text-white truncate">{job.title}</p>
+                            <p className="text-xs text-white/60">Job • {job.status}</p>
                           </Link>
                         ))}
                         {recentProjects.slice(0, 2).map(project => (
                           <Link
                             key={project.id}
                             to={`/projects/${project.id}`}
-                            className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="block p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/10"
                           >
-                            <p className="text-sm font-semibold text-gray-900 truncate">{project.title}</p>
-                            <p className="text-xs text-gray-500">Project</p>
+                            <p className="text-sm font-semibold text-white truncate">{project.title}</p>
+                            <p className="text-xs text-white/60">Project</p>
                           </Link>
                         ))}
                         {recentBids.slice(0, 2).map(bid => (
                           <Link
                             key={bid.id}
                             to={`/jobs/${bid.job?.id}`}
-                            className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            className="block p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/10"
                           >
-                            <p className="text-sm font-semibold text-gray-900 truncate">{bid.job?.title || 'Job'}</p>
-                            <p className="text-xs text-gray-500">Bid • ${bid.amount} • {bid.status}</p>
+                            <p className="text-sm font-semibold text-white truncate">{bid.job?.title || 'Job'}</p>
+                            <p className="text-xs text-white/60">Bid • ${bid.amount} • {bid.status}</p>
                           </Link>
                         ))}
                       </>
@@ -411,8 +411,8 @@ export function DashboardPage() {
                   {recentJobs.length > 0 && (
                     <div className="card">
                       <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Recent Jobs</h2>
-                        <Link to="/jobs" className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+                        <h2 className="text-xl font-bold text-white">Recent Jobs</h2>
+                        <Link to="/jobs" className="text-sm text-violet-400 hover:text-violet-300 font-semibold transition-colors">
                           View All →
                         </Link>
                       </div>
@@ -421,12 +421,12 @@ export function DashboardPage() {
                           <Link
                             key={job.id}
                             to={`/jobs/${job.id}`}
-                            className="block p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
+                            className="block p-4 border-2 border-white/10 rounded-xl hover:border-violet-500/50 hover:shadow-lg transition-all"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">{job.title}</h3>
-                                <p className="text-sm text-gray-600 line-clamp-2">{job.description || 'No description'}</p>
+                                <h3 className="text-lg font-bold text-white mb-1">{job.title}</h3>
+                                <p className="text-sm text-white/70 line-clamp-2">{job.description || 'No description'}</p>
                               </div>
                               <span className="badge badge-primary whitespace-nowrap">{job.status}</span>
                             </div>
@@ -439,8 +439,8 @@ export function DashboardPage() {
                   {recentProjects.length > 0 && (
                     <div className="card">
                       <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Recent Projects</h2>
-                        <Link to="/projects" className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
+                        <h2 className="text-xl font-bold text-white">Recent Projects</h2>
+                        <Link to="/projects" className="text-sm text-violet-400 hover:text-violet-300 font-semibold transition-colors">
                           View All →
                         </Link>
                       </div>
@@ -449,12 +449,12 @@ export function DashboardPage() {
                           <Link
                             key={project.id}
                             to={`/projects/${project.id}`}
-                            className="block p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all"
+                            className="block p-4 border-2 border-white/10 rounded-xl hover:border-violet-500/50 hover:shadow-lg transition-all"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-900 mb-1">{project.title}</h3>
-                                <p className="text-sm text-gray-600 line-clamp-2">{project.description || 'No description'}</p>
+                                <h3 className="text-lg font-bold text-white mb-1">{project.title}</h3>
+                                <p className="text-sm text-white/70 line-clamp-2">{project.description || 'No description'}</p>
                               </div>
                             </div>
                           </Link>
