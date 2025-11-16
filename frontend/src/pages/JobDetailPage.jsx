@@ -25,13 +25,18 @@ export function JobDetailPage() {
   const [editStatus, setEditStatus] = useState('OPEN')
   const [showCompareBids, setShowCompareBids] = useState(false)
   const [comparingBids, setComparingBids] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [savingJob, setSavingJob] = useState(false)
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
 
   useEffect(() => {
     loadJob()
     loadBids()
-  }, [id])
+    if (token && profile?.roles?.some(r => r.name === 'FREELANCER')) {
+      checkIfSaved()
+    }
+  }, [id, token, profile])
 
   const loadJob = async () => {
     try {
@@ -55,6 +60,39 @@ export function JobDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load bids', err)
+    }
+  }
+
+  const checkIfSaved = async () => {
+    try {
+      const saved = await api.savedJobs.check(id, token)
+      setIsSaved(saved)
+    } catch (err) {
+      console.error('Failed to check if job is saved', err)
+    }
+  }
+
+  const handleSaveJob = async () => {
+    if (!token) {
+      showError('Please login to save jobs')
+      return
+    }
+
+    setSavingJob(true)
+    try {
+      if (isSaved) {
+        await api.savedJobs.unsave(id, token)
+        setIsSaved(false)
+        showSuccess('Job removed from saved')
+      } else {
+        await api.savedJobs.save(id, token)
+        setIsSaved(true)
+        showSuccess('Job saved successfully')
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to save job')
+    } finally {
+      setSavingJob(false)
     }
   }
 
@@ -297,7 +335,26 @@ export function JobDetailPage() {
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-3xl font-extrabold text-white mb-2">{job.title}</h1>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-3xl font-extrabold text-white">{job.title}</h1>
+                      {profile?.roles?.some(r => r.name === 'FREELANCER') && (
+                        <button
+                          onClick={handleSaveJob}
+                          disabled={savingJob}
+                          className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                          title={isSaved ? 'Remove from saved' : 'Save job'}
+                        >
+                          <svg
+                            className={`w-5 h-5 ${isSaved ? 'text-yellow-400 fill-yellow-400' : 'text-white/70'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     <span className={getStatusBadge(job.status)}>{job.status}</span>
                   </div>
                 </div>
