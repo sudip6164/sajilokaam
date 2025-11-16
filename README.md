@@ -129,41 +129,30 @@ The application features a modern dark theme with:
 - CORS configuration
 - Secure API endpoints
 
+## 📚 Documentation
+
+- **[API Documentation](./API_DOCUMENTATION.md)** - Complete API reference with all endpoints
+- **[Deployment Guide](./DEPLOYMENT.md)** - Production deployment instructions
+- **[Production Checklist](./PRODUCTION_CHECKLIST.md)** - Pre-deployment checklist
+- **[Implementation Plan](./IMPLEMENTATION_PLAN_10_STEPS.md)** - Feature implementation roadmap
+- **[Project Status](./PROJECT_STATUS.md)** - Current project status and progress
+
 ## 📝 API Endpoints
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user profile
-- `PUT /api/auth/me` - Update user profile
+For complete API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
-### Jobs
-- `GET /api/jobs` - List all jobs
-- `GET /api/jobs/:id` - Get job details
-- `POST /api/jobs` - Create new job (Client only)
-- `PUT /api/jobs/:id` - Update job (Owner only)
-- `DELETE /api/jobs/:id` - Delete job (Owner only)
-- `GET /api/jobs/my-jobs` - Get current user's jobs
-- `GET /api/jobs/:id/bids` - Get bids for a job
-- `GET /api/jobs/:id/bids/count` - Get bid count
-
-### Bids
-- `POST /api/jobs/:id/bids` - Submit a bid
-- `GET /api/jobs/my-bids` - Get current user's bids
-- `POST /api/jobs/:jobId/bids/:bidId/accept` - Accept a bid
-- `POST /api/jobs/:jobId/bids/:bidId/reject` - Reject a bid
-
-### Projects
-- `GET /api/projects` - List all projects
-- `GET /api/projects/:id` - Get project details
-- `PUT /api/projects/:id` - Update project (Owner only)
-- `DELETE /api/projects/:id` - Delete project (Owner only)
-
-### Tasks
-- `GET /api/projects/:id/tasks` - Get project tasks
-- `POST /api/projects/:id/tasks` - Create task
-- `PUT /api/projects/:projectId/tasks/:taskId/status` - Update task status
-- `PUT /api/projects/:projectId/tasks/:taskId/assignee` - Assign task
+### Quick Reference
+- **Authentication**: `/api/auth/*` - Register, login, profile management
+- **Jobs**: `/api/jobs/*` - Job CRUD, bidding
+- **Projects**: `/api/projects/*` - Project management
+- **Tasks**: `/api/projects/{id}/tasks/*` - Task management
+- **Time Tracking**: `/api/timer/*`, `/api/projects/{id}/tasks/{id}/time-logs/*`
+- **Invoicing**: `/api/invoices/*` - Invoice creation and management
+- **Payments**: `/api/payments/*` - Payment processing (Khalti, eSewa)
+- **ML Document Processing**: `/api/projects/{id}/documents/*` - OCR and task extraction
+- **Search**: `/api/search/global` - Global search
+- **Sprints**: `/api/projects/{id}/sprints/*` - Sprint planning
+- **Admin**: `/api/admin/*` - Admin dashboard and management
 
 ## 🧪 Development
 
