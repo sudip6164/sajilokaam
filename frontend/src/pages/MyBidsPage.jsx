@@ -56,7 +56,7 @@ export function MyBidsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12">
+      <div className="min-h-screen py-12 bg-pattern">
         <div className="container-custom">
           <div className="max-w-6xl mx-auto">
             <div className="loading-skeleton h-10 w-64 mb-8"></div>
