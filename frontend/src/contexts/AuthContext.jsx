@@ -29,7 +29,8 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('token')
       }
     } catch (err) {
-      // Network error or invalid token
+      // Network error or invalid token - don't block the app
+      console.warn('Failed to load profile:', err)
       setToken('')
       setProfile(null)
       localStorage.removeItem('token')
