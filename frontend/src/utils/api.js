@@ -458,6 +458,36 @@ export const api = {
       apiRequest('/notifications/read-all', { method: 'PATCH', token })
   },
   
+  // Invoices
+  invoices: {
+    getAll: (token) =>
+      apiRequest('/invoices', { token }),
+    
+    getById: (id, token) =>
+      apiRequest(`/invoices/${id}`, { token }),
+    
+    create: (token, data) =>
+      apiRequest('/invoices', { method: 'POST', token, body: data }),
+    
+    update: (id, token, data) =>
+      apiRequest(`/invoices/${id}`, { method: 'PUT', token, body: data }),
+    
+    generatePdf: (id) =>
+      `${API_BASE_URL}/invoices/${id}/pdf`
+  },
+  
+  // Payments
+  payments: {
+    getByInvoice: (invoiceId, token) =>
+      apiRequest(`/payments/invoice/${invoiceId}`, { token }),
+    
+    create: (token, data) =>
+      apiRequest('/payments', { method: 'POST', token, body: data }),
+    
+    updateStatus: (id, token, data) =>
+      apiRequest(`/payments/${id}/status`, { method: 'PATCH', token, body: data })
+  },
+  
   // Admin APIs
   admin: {
     // Users
