@@ -20,6 +20,8 @@ import { KanbanBoardPage } from './pages/KanbanBoardPage'
 import { AdminDashboardPage } from './pages/AdminDashboardPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
+import { AdminActivityLogsPage } from './pages/AdminActivityLogsPage'
+import { AdminAuditTrailPage } from './pages/AdminAuditTrailPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -131,6 +133,22 @@ function AppContent() {
             element={
               <AdminRoute>
                 <AdminSettingsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/activity-logs"
+            element={
+              <AdminRoute>
+                <AdminActivityLogsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/audit-trail"
+            element={
+              <AdminRoute>
+                <AdminAuditTrailPage />
               </AdminRoute>
             }
           />
