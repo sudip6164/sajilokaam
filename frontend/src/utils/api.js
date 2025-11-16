@@ -307,6 +307,36 @@ export const api = {
       apiRequest(`/projects/${projectId}/tasks/${taskId}/time-logs/summary`, { token })
   },
   
+  // Timer
+  timer: {
+    start: (token, data) =>
+      apiRequest('/timer/start', { method: 'POST', token, body: data }),
+    
+    pause: (sessionId, token) =>
+      apiRequest(`/timer/${sessionId}/pause`, { method: 'POST', token }),
+    
+    resume: (sessionId, token) =>
+      apiRequest(`/timer/${sessionId}/resume`, { method: 'POST', token }),
+    
+    stop: (sessionId, token) =>
+      apiRequest(`/timer/${sessionId}/stop`, { method: 'POST', token }),
+    
+    getActive: (token) =>
+      apiRequest('/timer/active', { token }),
+    
+    updateActivity: (sessionId, token) =>
+      apiRequest(`/timer/${sessionId}/activity`, { method: 'POST', token })
+  },
+  
+  // Time Categories
+  timeCategories: {
+    getAll: () =>
+      apiRequest('/time-categories'),
+    
+    getById: (id) =>
+      apiRequest(`/time-categories/${id}`)
+  },
+  
   // Comments
   comments: {
     getAll: (projectId, taskId, token) => 
