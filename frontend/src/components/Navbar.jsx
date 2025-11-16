@@ -29,7 +29,7 @@ export function Navbar() {
               <span className="text-2xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent font-display">
                 Sajilo Kaam
               </span>
-              <span className="text-[10px] text-gray-500 font-medium -mt-1">Freelance Marketplace</span>
+              <span className="text-[10px] text-white/50 font-medium -mt-1">Freelance Marketplace</span>
             </div>
           </Link>
 

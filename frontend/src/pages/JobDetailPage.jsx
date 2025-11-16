@@ -462,7 +462,7 @@ export function JobDetailPage() {
             <h3 className="text-2xl font-bold text-white mb-4">Accept Bid & Create Project</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Project Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -475,7 +475,7 @@ export function JobDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Project Description</label>
+                <label className="block text-sm font-bold text-white/90 mb-2">Project Description</label>
                 <textarea
                   value={projectDescription}
                   onChange={(e) => setProjectDescription(e.target.value)}
@@ -516,7 +516,7 @@ export function JobDetailPage() {
             <h3 className="text-2xl font-bold text-white mb-6">Edit Job</h3>
             <form onSubmit={handleEditJob} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Job Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -530,7 +530,7 @@ export function JobDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-bold text-white/90 mb-2">Description</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -541,7 +541,7 @@ export function JobDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-bold text-white/90 mb-2">Status</label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
