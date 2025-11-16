@@ -63,7 +63,7 @@ export function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen py-12">
+      <div className="min-h-screen py-12 bg-pattern">
         <div className="container-custom">
           <div className="max-w-2xl mx-auto">
             <div className="card text-center py-16">

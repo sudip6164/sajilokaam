@@ -136,6 +136,12 @@
     cursor: not-allowed;
     opacity: 0.5;
   }
+
+  /* Select dropdown options dark theme */
+  .input-field option {
+    background: #101820;
+    color: rgba(255, 255, 255, 0.95);
+  }
   
   /* Premium Card System */
   .card {
@@ -161,8 +167,8 @@
   }
   
   .card-compact {
-    @apply bg-white/60 backdrop-blur-lg rounded-2xl border border-white/20 p-5;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.03);
+    @apply bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-5;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
   }
   
   /* Enhanced Badge System */
@@ -233,8 +239,8 @@
   
   /* Glass Effect */
   .glass-effect {
-    @apply bg-white/60 backdrop-blur-xl border border-white/30;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
   
   /* Gradient Text */
