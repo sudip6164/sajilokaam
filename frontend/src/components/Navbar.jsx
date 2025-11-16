@@ -41,10 +41,18 @@ export function Navbar() {
                   + Post Job
                 </Link>
                 <div className="flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">{profile.fullName}</p>
-                    <p className="text-xs text-gray-500">{profile.email}</p>
-                  </div>
+                  <Link 
+                    to="/profile"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {profile.fullName?.charAt(0) || 'U'}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{profile.fullName}</p>
+                      <p className="text-xs text-gray-500">{profile.email}</p>
+                    </div>
+                  </Link>
                   <button 
                     onClick={handleLogout} 
                     className="btn btn-ghost text-sm px-4"

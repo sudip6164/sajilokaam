@@ -97,6 +97,42 @@ public class AuthController {
         var u = userOpt.get();
         return ResponseEntity.ok(new UserProfile(u.getId(), u.getEmail(), u.getFullName(), u.getRoles()));
     }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserProfile> updateProfile(
+            @RequestBody UserUpdateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+        String token = authorization.substring("Bearer ".length()).trim();
+        var subjectOpt = jwtService.extractSubject(token);
+        if (subjectOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        String email = subjectOpt.get();
+        var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        var u = userOpt.get();
+
+        // Update full name if provided
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            u.setFullName(request.getFullName());
+        }
+
+        // Update password if provided
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            if (request.getPassword().length() < 6) {
+                return ResponseEntity.badRequest().build();
+            }
+            u.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        User updated = userRepository.save(u);
+        return ResponseEntity.ok(new UserProfile(updated.getId(), updated.getEmail(), updated.getFullName(), updated.getRoles()));
+    }
 }
 
 

@@ -12,6 +12,7 @@ import { JobDetailPage } from './pages/JobDetailPage'
 import { CreateJobPage } from './pages/CreateJobPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -67,6 +68,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ProjectDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />
