@@ -23,6 +23,8 @@ export function JobDetailPage() {
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editStatus, setEditStatus] = useState('OPEN')
+  const [showCompareBids, setShowCompareBids] = useState(false)
+  const [comparingBids, setComparingBids] = useState(false)
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
 
@@ -391,9 +393,37 @@ export function JobDetailPage() {
           )}
 
           <div className="card">
-            <h2 className="text-2xl font-bold text-white mb-6">
-              Bids <span className="text-white/60 font-normal">({bids.length})</span>
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white">
+                Bids <span className="text-white/60 font-normal">({bids.length})</span>
+              </h2>
+              {isJobOwner && bids.length > 1 && (
+                <button
+                  onClick={async () => {
+                    setComparingBids(true)
+                    try {
+                      const res = await fetch(`http://localhost:8080/api/jobs/${id}/bids/compare`, {
+                        headers: {
+                          'Authorization': `Bearer ${token}`
+                        }
+                      })
+                      if (res.ok) {
+                        const comparedBids = await res.json()
+                        setBids(comparedBids)
+                        setShowCompareBids(true)
+                      }
+                    } catch (err) {
+                      showError('Failed to load bid comparison')
+                    } finally {
+                      setComparingBids(false)
+                    }
+                  }}
+                  className="btn btn-secondary"
+                >
+                  {comparingBids ? 'Loading...' : 'Compare Bids'}
+                </button>
+              )}
+            </div>
             {bids.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
@@ -407,8 +437,16 @@ export function JobDetailPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
-                {bids.map(bid => (
+              <>
+                {showCompareBids && (
+                  <div className="mb-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
+                    <p className="text-white/70 text-sm">
+                      <strong className="text-white">Bids sorted by amount (lowest first)</strong> - Click "Compare Bids" again to return to normal view
+                    </p>
+                  </div>
+                )}
+                <div className="space-y-4">
+                  {bids.map(bid => (
                   <div key={bid.id} className="border-2 border-white/10 rounded-xl p-6 hover:border-violet-500/50 hover:shadow-lg transition-all">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
@@ -448,8 +486,9 @@ export function JobDetailPage() {
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
