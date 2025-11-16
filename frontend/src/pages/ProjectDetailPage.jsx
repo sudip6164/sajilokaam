@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 
@@ -13,6 +13,13 @@ export function ProjectDetailPage() {
   const [submittingTask, setSubmittingTask] = useState(false)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [editingProject, setEditingProject] = useState(false)
+  const [deletingProject, setDeletingProject] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const navigate = useNavigate()
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
 
@@ -145,6 +152,70 @@ export function ProjectDetailPage() {
   const stats = getTaskStats()
   const progressPercentage = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
 
+  const isProjectOwner = project && profile && project.job && project.job.client &&
+    (project.job.client.id === profile.id || (typeof project.job.client === 'object' && project.job.client.id === profile.id))
+
+  const openEditModal = () => {
+    setEditTitle(project.title)
+    setEditDescription(project.description || '')
+    setShowEditModal(true)
+  }
+
+  const handleEditProject = async (e) => {
+    e.preventDefault()
+    setEditingProject(true)
+    try {
+      const res = await fetch(`http://localhost:8080/api/projects/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to update project')
+      }
+
+      const updatedProject = await res.json()
+      setProject(updatedProject)
+      showSuccess('Project updated successfully!')
+      setShowEditModal(false)
+    } catch (err) {
+      showError(err.message || 'Failed to update project')
+    } finally {
+      setEditingProject(false)
+    }
+  }
+
+  const handleDeleteProject = async () => {
+    setDeletingProject(true)
+    try {
+      const res = await fetch(`http://localhost:8080/api/projects/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to delete project')
+      }
+
+      showSuccess('Project deleted successfully!')
+      navigate('/projects')
+    } catch (err) {
+      showError(err.message || 'Failed to delete project')
+    } finally {
+      setDeletingProject(false)
+      setShowDeleteModal(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen py-12">
@@ -200,7 +271,31 @@ export function ProjectDetailPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h1 className="text-3xl font-extrabold text-gray-900 mb-3">{project.title}</h1>
+                <div className="flex items-center justify-between mb-3">
+                  <h1 className="text-3xl font-extrabold text-gray-900">{project.title}</h1>
+                  {isProjectOwner && (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={openEditModal}
+                        className="btn btn-secondary text-sm"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
+                        className="btn btn-danger text-sm"
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <p className="text-gray-600 text-lg leading-relaxed mb-4">
                   {project.description || 'No description provided'}
                 </p>
@@ -460,6 +555,87 @@ export function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Project Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Edit Project</h3>
+            <form onSubmit={handleEditProject} className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Project Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="input-field"
+                  placeholder="e.g., Website Development Project"
+                  disabled={editingProject}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={8}
+                  className="input-field resize-none"
+                  placeholder="Describe the project..."
+                  disabled={editingProject}
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={editingProject}
+                  className="btn btn-primary flex-1"
+                >
+                  {editingProject ? 'Updating...' : 'Update Project'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="btn btn-secondary"
+                  disabled={editingProject}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card max-w-md w-full">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Delete Project</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{project?.title}"? This action cannot be undone and will also delete all associated tasks.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteProject}
+                disabled={deletingProject}
+                className="btn btn-danger flex-1"
+              >
+                {deletingProject ? 'Deleting...' : 'Delete Project'}
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="btn btn-secondary"
+                disabled={deletingProject}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
