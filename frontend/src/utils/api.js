@@ -214,17 +214,81 @@ export const api = {
     
     updateStatus: (projectId, taskId, token, status) => 
       apiRequest(`/projects/${projectId}/tasks/${taskId}/status`, { 
-        method: 'PUT', 
+        method: 'PATCH', 
         token, 
         body: { status } 
       }),
     
     updateAssignee: (projectId, taskId, token, assigneeId) => 
       apiRequest(`/projects/${projectId}/tasks/${taskId}/assignee`, { 
-        method: 'PUT', 
+        method: 'PATCH', 
         token, 
         body: { assigneeId } 
-      })
+      }),
+    
+    // Dependencies
+    getDependencies: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/dependencies`, { token }),
+    
+    createDependency: (taskId, token, data) =>
+      apiRequest(`/tasks/${taskId}/dependencies`, { method: 'POST', token, body: data }),
+    
+    deleteDependency: (taskId, dependencyId, token) =>
+      apiRequest(`/tasks/${taskId}/dependencies/${dependencyId}`, { method: 'DELETE', token }),
+    
+    // Links
+    getLinks: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/links`, { token }),
+    
+    createLink: (taskId, token, data) =>
+      apiRequest(`/tasks/${taskId}/links`, { method: 'POST', token, body: data }),
+    
+    deleteLink: (taskId, linkId, token) =>
+      apiRequest(`/tasks/${taskId}/links/${linkId}`, { method: 'DELETE', token }),
+    
+    // Watchers
+    getWatchers: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/watchers`, { token }),
+    
+    addWatcher: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/watchers`, { method: 'POST', token }),
+    
+    removeWatcher: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/watchers`, { method: 'DELETE', token }),
+    
+    checkWatcher: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/watchers/check`, { token }),
+    
+    // Activities
+    getActivities: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/activities`, { token }),
+    
+    getActivitiesPaged: (taskId, page = 0, size = 20, token) =>
+      apiRequest(`/tasks/${taskId}/activities/paged?page=${page}&size=${size}`, { token })
+  },
+  
+  // Task Labels
+  taskLabels: {
+    getAll: () =>
+      apiRequest('/task-labels'),
+    
+    getById: (id) =>
+      apiRequest(`/task-labels/${id}`),
+    
+    create: (token, data) =>
+      apiRequest('/task-labels', { method: 'POST', token, body: data })
+  },
+  
+  // Task Templates
+  taskTemplates: {
+    getAll: () =>
+      apiRequest('/task-templates'),
+    
+    getById: (id) =>
+      apiRequest(`/task-templates/${id}`),
+    
+    create: (token, data) =>
+      apiRequest('/task-templates', { method: 'POST', token, body: data })
   },
   
   // Time Logs
