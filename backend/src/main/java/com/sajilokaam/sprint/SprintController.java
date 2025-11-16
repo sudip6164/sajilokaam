@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -139,7 +140,7 @@ public class SprintController {
 
         // In a real implementation, you'd use a SprintTask join table
         // For now, we'll just return success
-        return ResponseEntity.ok(java.util.Map.of("message", "Task added to sprint"));
+        return ResponseEntity.ok(Map.of("message", "Task added to sprint"));
     }
 
     @GetMapping("/{sprintId}/tasks")
