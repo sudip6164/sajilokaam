@@ -192,13 +192,3 @@ npm run build
 ## 📄 License
 
 This project is part of an academic project.
-
-## 👤 Author
-
-Sudip Pradhan (C30105220013)
-Asia e University
-
-## 🙏 Acknowledgments
-
-- Supervisor: Ashish Koirala
-- Built with modern web technologies for Nepal's freelance sector
