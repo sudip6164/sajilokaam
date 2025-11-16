@@ -124,7 +124,45 @@ export const api = {
       apiRequest(`/jobs/${jobId}/bids/${bidId}/accept`, { method: 'POST', token, body: data }),
     
     rejectBid: (jobId, bidId, token) => 
-      apiRequest(`/jobs/${jobId}/bids/${bidId}/reject`, { method: 'POST', token })
+      apiRequest(`/jobs/${jobId}/bids/${bidId}/reject`, { method: 'PATCH', token }),
+    
+    compareBids: (jobId, token) =>
+      apiRequest(`/jobs/${jobId}/bids/compare`, { token })
+  },
+  
+  // Job Categories
+  jobCategories: {
+    getAll: () =>
+      apiRequest('/job-categories'),
+    
+    getById: (id) =>
+      apiRequest(`/job-categories/${id}`)
+  },
+  
+  // Job Skills
+  jobSkills: {
+    getAll: (categoryId = null) => {
+      const params = categoryId ? `?categoryId=${categoryId}` : ''
+      return apiRequest(`/job-skills${params}`)
+    },
+    
+    getById: (id) =>
+      apiRequest(`/job-skills/${id}`)
+  },
+  
+  // Saved Jobs
+  savedJobs: {
+    getAll: (token) =>
+      apiRequest('/saved-jobs', { token }),
+    
+    save: (jobId, token) =>
+      apiRequest(`/saved-jobs/${jobId}`, { method: 'POST', token }),
+    
+    unsave: (jobId, token) =>
+      apiRequest(`/saved-jobs/${jobId}`, { method: 'DELETE', token }),
+    
+    check: (jobId, token) =>
+      apiRequest(`/saved-jobs/check/${jobId}`, { token })
   },
   
   // Projects
