@@ -43,7 +43,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="px-4 py-2 rounded-xl border border-white/20 bg-white/5 text-white/80 font-semibold hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 backdrop-blur-sm"
       >
         Previous
       </button>
@@ -52,7 +52,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
         {pageNumbers.map((page, index) => {
           if (page === '...') {
             return (
-              <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+              <span key={`ellipsis-${index}`} className="px-2 text-white/40">
                 ...
               </span>
             )
@@ -62,10 +62,10 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
             <button
               key={page}
               onClick={() => onPageChange(page)}
-              className={`px-4 py-2 rounded-lg border font-semibold transition-colors ${
+              className={`px-4 py-2 rounded-xl border font-semibold transition-all duration-300 ${
                 currentPage === page
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-violet-500 shadow-lg shadow-violet-500/30'
+                  : 'bg-white/5 text-white/80 border-white/20 hover:bg-white/10 hover:border-white/30'
               }`}
             >
               {page}
@@ -77,11 +77,10 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="px-4 py-2 rounded-xl border border-white/20 bg-white/5 text-white/80 font-semibold hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 backdrop-blur-sm"
       >
         Next
       </button>
     </div>
   )
 }
-

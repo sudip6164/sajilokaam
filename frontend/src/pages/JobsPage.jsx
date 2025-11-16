@@ -117,7 +117,7 @@ export function JobsPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
+    <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
@@ -141,7 +141,7 @@ export function JobsPage() {
           <div className="card mb-6">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Search Jobs
                 </label>
                 <div className="relative">
@@ -153,7 +153,7 @@ export function JobsPage() {
                     className="input-field pl-10"
                   />
                   <svg
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -163,7 +163,7 @@ export function JobsPage() {
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white/70"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -173,7 +173,7 @@ export function JobsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-white/90 mb-2">
                   Filter by Status
                 </label>
                 <select
@@ -190,16 +190,16 @@ export function JobsPage() {
             </div>
             {(searchQuery || statusFilter !== 'ALL') && (
               <div className="mt-4 flex items-center gap-2 text-sm">
-                <span className="text-gray-600">
-                  Showing <span className="font-bold text-gray-900">{filteredJobs.length}</span> of{' '}
-                  <span className="font-bold text-gray-900">{jobs.length}</span> jobs
+                <span className="text-white/70">
+                  Showing <span className="font-bold text-white">{filteredJobs.length}</span> of{' '}
+                  <span className="font-bold text-white">{jobs.length}</span> jobs
                 </span>
                 <button
                   onClick={() => {
                     setSearchQuery('')
                     setStatusFilter('ALL')
                   }}
-                  className="text-blue-600 hover:text-blue-700 font-semibold"
+                  className="text-violet-400 hover:text-violet-300 font-semibold transition-colors"
                 >
                   Clear filters
                 </button>
@@ -209,21 +209,21 @@ export function JobsPage() {
           
           {filteredJobs.length === 0 ? (
             <div className="card text-center py-16">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
                 {searchQuery || statusFilter !== 'ALL' ? (
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 ) : (
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 )}
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-white mb-2">
                 {searchQuery || statusFilter !== 'ALL' ? 'No jobs match your filters' : 'No jobs available'}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-white/70 mb-6">
                 {searchQuery || statusFilter !== 'ALL'
                   ? 'Try adjusting your search or filter criteria'
                   : 'Be the first to post a job opportunity!'}
@@ -244,28 +244,28 @@ export function JobsPage() {
                 <Link
                   key={job.id}
                   to={`/jobs/${job.id}`}
-                  className="card group hover:border-blue-300 transition-all"
+                  className="card group hover-lift"
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        <h2 className="text-2xl font-bold text-white group-hover:text-violet-400 transition-colors">
                           {job.title}
                         </h2>
                         <span className={getStatusBadge(job.status)}>
                           {job.status}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
+                      <p className="text-white/70 mb-4 line-clamp-2 leading-relaxed">
                         {job.description || 'No description provided'}
                       </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-4 text-sm text-white/60">
                         {job.client && (
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            <div className="w-6 h-6 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30">
                               {job.client.fullName?.charAt(0) || 'U'}
                             </div>
-                            <span>{job.client.fullName}</span>
+                            <span className="text-white/80">{job.client.fullName}</span>
                           </div>
                         )}
                         {job.createdAt && (
@@ -280,13 +280,13 @@ export function JobsPage() {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="font-semibold text-gray-700">
+                          <span className="font-semibold text-white/90">
                             {bidCounts[job.id] !== undefined ? bidCounts[job.id] : '-'} {bidCounts[job.id] === 1 ? 'Bid' : 'Bids'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-blue-600 group-hover:translate-x-1 transition-transform">
+                    <div className="text-violet-400 group-hover:translate-x-1 transition-transform">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
