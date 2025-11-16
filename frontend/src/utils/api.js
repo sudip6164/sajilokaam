@@ -374,6 +374,60 @@ export const api = {
       `${API_BASE_URL}/reports/projects/${projectId}/time-logs/csv`
   },
   
+  // Conversations
+  conversations: {
+    getByProject: (projectId, token) =>
+      apiRequest(`/conversations/project/${projectId}`, { token }),
+    
+    create: (projectId, token, data) =>
+      apiRequest(`/conversations/project/${projectId}`, { method: 'POST', token, body: data }),
+    
+    getById: (id, token) =>
+      apiRequest(`/conversations/${id}`, { token })
+  },
+  
+  // Messages
+  messages: {
+    getAll: (conversationId, page = 0, size = 50, token) =>
+      apiRequest(`/conversations/${conversationId}/messages?page=${page}&size=${size}`, { token }),
+    
+    send: (conversationId, token, data) =>
+      apiRequest(`/conversations/${conversationId}/messages`, { method: 'POST', token, body: data }),
+    
+    edit: (conversationId, messageId, token, data) =>
+      apiRequest(`/conversations/${conversationId}/messages/${messageId}`, { method: 'PATCH', token, body: data })
+  },
+  
+  // Direct Messages
+  directMessages: {
+    getConversation: (userId, token) =>
+      apiRequest(`/direct-messages/${userId}`, { token }),
+    
+    send: (receiverId, token, data) =>
+      apiRequest(`/direct-messages/${receiverId}`, { method: 'POST', token, body: data }),
+    
+    markAsRead: (messageId, token) =>
+      apiRequest(`/direct-messages/${messageId}/read`, { method: 'PATCH', token }),
+    
+    getUnreadCount: (token) =>
+      apiRequest('/direct-messages/unread-count', { token })
+  },
+  
+  // Notifications
+  notifications: {
+    getAll: (token) =>
+      apiRequest('/notifications', { token }),
+    
+    getUnreadCount: (token) =>
+      apiRequest('/notifications/unread-count', { token }),
+    
+    markAsRead: (id, token) =>
+      apiRequest(`/notifications/${id}/read`, { method: 'PATCH', token }),
+    
+    markAllAsRead: (token) =>
+      apiRequest('/notifications/read-all', { method: 'PATCH', token })
+  },
+  
   // Admin APIs
   admin: {
     // Users
