@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import api from '../utils/api'
 
 export function JobDetailPage() {
   const { id } = useParams()
@@ -40,12 +41,20 @@ export function JobDetailPage() {
 
   const loadJob = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/jobs/${id}`)
-      if (!res.ok) throw new Error('Failed to load job')
-      const data = await res.json()
+      const data = await api.jobs.getById(id, token)
+      if (!data || !data.id) {
+        throw new Error('Invalid job data received')
+      }
       setJob(data)
     } catch (err) {
-      showError(err.message)
+      console.error('Error loading job:', err)
+      if (err.message && err.message.includes('404') || err.message && err.message.includes('not found')) {
+        showError('Job not found')
+        setTimeout(() => navigate('/jobs'), 2000)
+      } else {
+        showError(err.message || 'Failed to load job')
+      }
+      setLoading(false)
     } finally {
       setLoading(false)
     }
