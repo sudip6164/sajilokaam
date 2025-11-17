@@ -1,0 +1,8 @@
+Flask==3.0.0
+flask-cors==4.0.0
+spacy==3.7.2
+python-dateutil==2.8.2
+
+# Note: After installing, run:
+# python -m spacy download en_core_web_sm
+
