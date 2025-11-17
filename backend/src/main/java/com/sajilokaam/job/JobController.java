@@ -123,7 +123,19 @@ public class JobController {
     @GetMapping("/{id}")
     public ResponseEntity<Job> get(@PathVariable Long id) {
         return jobRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(job -> {
+                    // Force eager loading of relationships to avoid lazy loading issues
+                    if (job.getClient() != null) {
+                        job.getClient().getEmail(); // Trigger lazy load
+                    }
+                    if (job.getCategory() != null) {
+                        job.getCategory().getName(); // Trigger lazy load
+                    }
+                    if (job.getRequiredSkills() != null) {
+                        job.getRequiredSkills().size(); // Trigger lazy load
+                    }
+                    return ResponseEntity.ok(job);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

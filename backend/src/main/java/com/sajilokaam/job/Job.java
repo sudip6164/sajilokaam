@@ -25,6 +25,7 @@ public class Job {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
+    @JsonIgnore
     private User client;
 
     @Column(nullable = false, length = 255)
@@ -38,6 +39,7 @@ public class Job {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private JobCategory category;
 
     @Column(name = "job_type", length = 50)
@@ -67,6 +69,7 @@ public class Job {
             joinColumns = @JoinColumn(name = "job_id"),
             inverseJoinColumns = @JoinColumn(name = "skill_id")
     )
+    @JsonIgnore
     private Set<JobSkill> requiredSkills = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
