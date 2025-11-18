@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 
@@ -82,6 +83,35 @@ export function ProfilePage() {
           <div className="mb-10">
             <h1 className="page-title">My Profile</h1>
             <p className="page-subtitle">Manage your account information and settings</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 mb-8">
+            {profile.roles?.some(role => role.name === 'FREELANCER') && (
+              <Link
+                to="/onboarding/freelancer"
+                className="card bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 hover:border-violet-400/60 transition-all"
+              >
+                <p className="text-sm font-bold text-white/70 uppercase tracking-wide mb-1">Freelancer onboarding</p>
+                <h3 className="text-lg font-bold text-white mb-2">Complete your rich freelancer profile</h3>
+                <p className="text-white/70 text-sm mb-3">Unlock bidding, proposals, and talent search visibility.</p>
+                <span className="inline-flex items-center text-sm font-semibold text-violet-100">
+                  Go to workspace →
+                </span>
+              </Link>
+            )}
+            {profile.roles?.some(role => role.name === 'CLIENT') && (
+              <Link
+                to="/onboarding/client"
+                className="card bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 hover:border-cyan-400/60 transition-all"
+              >
+                <p className="text-sm font-bold text-white/70 uppercase tracking-wide mb-1">Client onboarding</p>
+                <h3 className="text-lg font-bold text-white mb-2">Verify your company and hiring needs</h3>
+                <p className="text-white/70 text-sm mb-3">Get priority placement and access to escrow + payments.</p>
+                <span className="inline-flex items-center text-sm font-semibold text-cyan-100">
+                  Open dashboard →
+                </span>
+              </Link>
+            )}
           </div>
 
           <div className="card mb-6">

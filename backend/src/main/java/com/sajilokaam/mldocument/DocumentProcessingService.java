@@ -32,6 +32,7 @@ public class DocumentProcessingService {
     private final TaskRepository taskRepository;
     private final OcrService ocrService;
     private final TaskExtractionService taskExtractionService;
+    private final MlTaskExtractionClient mlTaskExtractionClient;
 
     public DocumentProcessingService(
             DocumentProcessingRepository documentProcessingRepository,
@@ -39,13 +40,15 @@ public class DocumentProcessingService {
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             OcrService ocrService,
-            TaskExtractionService taskExtractionService) {
+            TaskExtractionService taskExtractionService,
+            MlTaskExtractionClient mlTaskExtractionClient) {
         this.documentProcessingRepository = documentProcessingRepository;
         this.extractedTaskSuggestionRepository = extractedTaskSuggestionRepository;
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.ocrService = ocrService;
         this.taskExtractionService = taskExtractionService;
+        this.mlTaskExtractionClient = mlTaskExtractionClient;
 
         // Create upload directory
         try {
@@ -111,10 +114,28 @@ public class DocumentProcessingService {
             processing.setOcrText(ocrText);
             documentProcessingRepository.save(processing);
 
-            // Extract tasks
+            // Extract tasks using Python ML service (with fallback to rule-based)
             Long processingId = processing.getId();
-            List<ExtractedTaskSuggestion> suggestions = taskExtractionService.extractTasks(
-                    ocrText, processingId);
+            List<ExtractedTaskSuggestion> suggestions;
+            
+            // Try Python ML service first
+            if (mlTaskExtractionClient.isServiceAvailable()) {
+                try {
+                    suggestions = mlTaskExtractionClient.extractTasksFromMlService(ocrText, processingId);
+                    if (suggestions.isEmpty()) {
+                        // Fallback to rule-based if ML returns nothing
+                        suggestions = taskExtractionService.extractTasks(ocrText, processingId);
+                    }
+                } catch (Exception e) {
+                    System.err.println("ML service error, falling back to rule-based: " + e.getMessage());
+                    // Fallback to rule-based extraction
+                    suggestions = taskExtractionService.extractTasks(ocrText, processingId);
+                }
+            } else {
+                // ML service not available, use rule-based extraction
+                System.out.println("ML service not available, using rule-based extraction");
+                suggestions = taskExtractionService.extractTasks(ocrText, processingId);
+            }
 
             // Save suggestions
             DocumentProcessing finalProcessing = processing;

@@ -23,12 +23,19 @@ import { AdminUsersPage } from './pages/AdminUsersPage'
 import { AdminSettingsPage } from './pages/AdminSettingsPage'
 import { AdminActivityLogsPage } from './pages/AdminActivityLogsPage'
 import { AdminAuditTrailPage } from './pages/AdminAuditTrailPage'
+import { AdminPaymentsPage } from './pages/AdminPaymentsPage'
 import { SavedJobsPage } from './pages/SavedJobsPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { InvoicesPage } from './pages/InvoicesPage'
 import { InvoiceDetailPage } from './pages/InvoiceDetailPage'
 import { CreateInvoicePage } from './pages/CreateInvoicePage'
 import { DocumentUploadPage } from './pages/DocumentUploadPage'
+import { FreelancerOnboardingPage } from './pages/FreelancerOnboardingPage'
+import { ClientOnboardingPage } from './pages/ClientOnboardingPage'
+import { AdminVerificationPage } from './pages/AdminVerificationPage'
+import { TeamHubPage } from './pages/TeamHubPage'
+import { SprintPlannerPage } from './pages/SprintPlannerPage'
+import { PaymentCenterPage } from './pages/PaymentCenterPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -96,6 +103,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/projects/:projectId/sprints"
+            element={
+              <ProtectedRoute>
+                <SprintPlannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/projects/:projectId/documents/upload"
             element={
               <ProtectedRoute>
@@ -104,10 +119,34 @@ function AppContent() {
             }
           />
           <Route
+            path="/teams"
+            element={
+              <ProtectedRoute>
+                <TeamHubPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/profile"
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/onboarding/freelancer"
+            element={
+              <ProtectedRoute>
+                <FreelancerOnboardingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/onboarding/client"
+            element={
+              <ProtectedRoute>
+                <ClientOnboardingPage />
               </ProtectedRoute>
             }
           />
@@ -152,6 +191,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/payments"
+            element={
+              <ProtectedRoute>
+                <PaymentCenterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/invoices/new"
             element={
               <ProtectedRoute>
@@ -192,6 +239,14 @@ function AppContent() {
             }
           />
           <Route
+            path="/admin/profiles"
+            element={
+              <AdminRoute>
+                <AdminVerificationPage />
+              </AdminRoute>
+            }
+          />
+          <Route
             path="/admin/activity-logs"
             element={
               <AdminRoute>
@@ -204,6 +259,14 @@ function AppContent() {
             element={
               <AdminRoute>
                 <AdminAuditTrailPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/payments"
+            element={
+              <AdminRoute>
+                <AdminPaymentsPage />
               </AdminRoute>
             }
           />

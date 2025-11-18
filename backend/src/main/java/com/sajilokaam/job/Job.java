@@ -1,5 +1,7 @@
 package com.sajilokaam.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.jobcategory.JobCategory;
 import com.sajilokaam.jobskill.JobSkill;
 import com.sajilokaam.user.User;

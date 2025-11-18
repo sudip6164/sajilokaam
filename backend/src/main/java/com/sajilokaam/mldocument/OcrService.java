@@ -2,13 +2,13 @@ package com.sajilokaam.mldocument;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -59,15 +59,9 @@ public class OcrService {
      * Extract text from PDF using PDFBox
      */
     private String extractTextFromPdf(Path filePath) throws IOException {
-        PDDocument document = null;
-        try {
-            document = PDDocument.load(filePath.toFile());
+        try (PDDocument document = Loader.loadPDF(filePath.toFile())) {
             PDFTextStripper stripper = new PDFTextStripper();
             return stripper.getText(document);
-        } finally {
-            if (document != null) {
-                document.close();
-            }
         }
     }
 

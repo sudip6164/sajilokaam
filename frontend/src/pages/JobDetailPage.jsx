@@ -4,6 +4,29 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
 
+const EMPTY_PROPOSAL = {
+  coverLetter: '',
+  availability: '',
+  timeline: '',
+  deliverables: [],
+  milestones: [],
+  communicationPlan: '',
+  attachmentLink: ''
+}
+
+const parseStructuredMessage = (message) => {
+  if (!message) return null
+  try {
+    const parsed = JSON.parse(message)
+    if (parsed && parsed.version === 1) {
+      return parsed
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export function JobDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -28,8 +51,13 @@ export function JobDetailPage() {
   const [comparingBids, setComparingBids] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [savingJob, setSavingJob] = useState(false)
+  const [freelancerProfileStatus, setFreelancerProfileStatus] = useState(null)
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
+  const [bidAmount, setBidAmount] = useState('')
+  const [proposal, setProposal] = useState(EMPTY_PROPOSAL)
+  const [deliverableDraft, setDeliverableDraft] = useState('')
+  const [milestoneDraft, setMilestoneDraft] = useState('')
 
   useEffect(() => {
     loadJob()
@@ -38,6 +66,34 @@ export function JobDetailPage() {
       checkIfSaved()
     }
   }, [id, token, profile])
+
+  useEffect(() => {
+    if (!token || !profile) {
+      setFreelancerProfileStatus(null)
+      return
+    }
+
+    let isMounted = true
+    const loadProfileStatuses = async () => {
+      try {
+        if (profile.roles?.some(r => r.name === 'FREELANCER')) {
+          const data = await api.profiles.freelancer.get(token)
+          if (isMounted) {
+            setFreelancerProfileStatus(data?.status || 'DRAFT')
+          }
+        } else {
+          setFreelancerProfileStatus(null)
+        }
+      } catch (err) {
+        console.warn('Unable to load verification status', err)
+      }
+    }
+
+    loadProfileStatuses()
+    return () => {
+      isMounted = false
+    }
+  }, [token, profile])
 
   const loadJob = async () => {
     try {
@@ -107,17 +163,45 @@ export function JobDetailPage() {
 
   const handleBidSubmit = async (e) => {
     e.preventDefault()
-    const formData = new FormData(e.target)
-    const amount = formData.get('amount')
-    const message = formData.get('message')
+    if (!token) {
+      showError('Please login to submit a proposal')
+      return
+    }
 
-    if (parseFloat(amount) <= 0) {
+    if (!(profile?.roles?.some(r => r.name === 'FREELANCER'))) {
+      showError('Only freelancer accounts can submit bids')
+      return
+    }
+
+    if (freelancerProfileStatus !== 'APPROVED') {
+      showError('Your freelancer profile must be approved before bidding.')
+      return
+    }
+
+    const numericAmount = parseFloat(bidAmount)
+    if (!numericAmount || numericAmount <= 0) {
       showError('Amount must be greater than 0')
+      return
+    }
+
+    if (!proposal.coverLetter.trim()) {
+      showError('Add a cover letter or summary for the client')
       return
     }
 
     setSubmittingBid(true)
     try {
+      const structuredMessage = JSON.stringify({
+        version: 1,
+        coverLetter: proposal.coverLetter,
+        availability: proposal.availability,
+        timeline: proposal.timeline,
+        deliverables: proposal.deliverables,
+        milestones: proposal.milestones,
+        communicationPlan: proposal.communicationPlan,
+        attachmentLink: proposal.attachmentLink
+      })
+
       const res = await fetch(`http://localhost:8080/api/jobs/${id}/bids`, {
         method: 'POST',
         headers: {
@@ -125,8 +209,8 @@ export function JobDetailPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          amount: parseFloat(amount),
-          message: message || '',
+          amount: numericAmount,
+          message: structuredMessage,
           status: 'PENDING'
         })
       })
@@ -136,9 +220,10 @@ export function JobDetailPage() {
         throw new Error(errorText || 'Failed to submit bid')
       }
 
-      showSuccess('Bid submitted successfully!')
+      showSuccess('Proposal submitted successfully!')
       await loadBids()
-      e.target.reset()
+      setBidAmount('')
+      setProposal(EMPTY_PROPOSAL)
     } catch (err) {
       showError(err.message || 'Failed to submit bid')
     } finally {
@@ -211,6 +296,9 @@ export function JobDetailPage() {
 
   const isJobOwner = job && profile && job.client && 
     (job.client.id === profile.id || (typeof job.client === 'object' && job.client.id === profile.id))
+  const isFreelancer = profile?.roles?.some(r => r.name === 'FREELANCER')
+  const canSubmitBid = isFreelancer && !isJobOwner && freelancerProfileStatus === 'APPROVED'
+  const friendlyFreelancerStatus = (freelancerProfileStatus || 'INCOMPLETE').replace(/_/g, ' ')
 
   const openEditModal = () => {
     setEditTitle(job.title)
@@ -467,39 +555,206 @@ export function JobDetailPage() {
             </div>
           </div>
 
-          {!isJobOwner && (
+          {!isJobOwner && isFreelancer && (
             <div className="card mb-8">
-              <h2 className="text-2xl font-bold text-white mb-6">Place a Bid</h2>
-              <form onSubmit={handleBidSubmit} className="space-y-5">
+              <h2 className="text-2xl font-bold text-white mb-6">Craft Your Proposal</h2>
+              {freelancerProfileStatus !== 'APPROVED' && (
+                <div className="mb-5 p-4 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-sm text-yellow-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">Profile approval required</p>
+                    <p className="text-yellow-100/80">
+                      Your freelancer profile is currently {friendlyFreelancerStatus}. Complete onboarding to unlock bidding.
+                    </p>
+                  </div>
+                  <Link to="/onboarding/freelancer" className="btn btn-secondary text-sm whitespace-nowrap">
+                    Go to Onboarding
+                  </Link>
+                </div>
+              )}
+              <form onSubmit={handleBidSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-white/90 mb-2">
+                      Bid Amount (NPR) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      className="input-field"
+                      placeholder="50000"
+                      value={bidAmount}
+                      onChange={(e) => setBidAmount(e.target.value)}
+                      disabled={submittingBid || !canSubmitBid}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-white/90 mb-2">
+                      Availability window
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Immediately / Next week / 20 hrs per week"
+                      value={proposal.availability}
+                      onChange={(e) => setProposal(prev => ({ ...prev, availability: e.target.value }))}
+                      disabled={submittingBid || !canSubmitBid}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-white/90 mb-2">
-                    Amount ($) <span className="text-red-500">*</span>
+                    Cover Letter <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    name="amount"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    className="input-field"
-                    placeholder="500.00"
-                    disabled={submittingBid}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-white/90 mb-2">Message</label>
                   <textarea
-                    name="message"
-                    rows={5}
+                    rows={6}
                     className="input-field resize-none"
-                    placeholder="Tell the client about your approach, timeline, and why you're the right fit..."
-                    disabled={submittingBid}
+                    placeholder="Open with outcomes, relevant case-studies, collaboration approach..."
+                    value={proposal.coverLetter}
+                    onChange={(e) => setProposal(prev => ({ ...prev, coverLetter: e.target.value }))}
+                    disabled={submittingBid || !canSubmitBid}
                   />
                 </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-white/90 mb-2">
+                      Timeline & milestones
+                    </label>
+                    <textarea
+                      rows={4}
+                      className="input-field"
+                      placeholder="Week 1: Research, Week 2: Prototype, Week 3: Final delivery..."
+                      value={proposal.timeline}
+                      onChange={(e) => setProposal(prev => ({ ...prev, timeline: e.target.value }))}
+                      disabled={submittingBid || !canSubmitBid}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-white/90 mb-2">
+                      Collaboration & communication
+                    </label>
+                    <textarea
+                      rows={4}
+                      className="input-field"
+                      placeholder="Daily Slack standups, weekly demos, availability in GMT+5:45..."
+                      value={proposal.communicationPlan}
+                      onChange={(e) => setProposal(prev => ({ ...prev, communicationPlan: e.target.value }))}
+                      disabled={submittingBid || !canSubmitBid}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Key deliverables</label>
+                  <div className="flex gap-3 mb-3">
+                    <input
+                      type="text"
+                      className="input-field flex-1"
+                      placeholder="e.g., Responsive marketing site w/ CMS"
+                      value={deliverableDraft}
+                      onChange={(e) => setDeliverableDraft(e.target.value)}
+                      disabled={submittingBid || !canSubmitBid}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        if (!deliverableDraft.trim()) return
+                        setProposal(prev => ({ ...prev, deliverables: [...prev.deliverables, deliverableDraft.trim()] }))
+                        setDeliverableDraft('')
+                      }}
+                      disabled={submittingBid || !canSubmitBid}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {proposal.deliverables.length > 0 && (
+                    <ul className="space-y-2">
+                      {proposal.deliverables.map((item, index) => (
+                        <li key={`${item}-${index}`} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2 text-sm text-white/80">
+                          <span>{item}</span>
+                          <button
+                            type="button"
+                            className="text-white/50 hover:text-white"
+                            onClick={() => setProposal(prev => ({
+                              ...prev,
+                              deliverables: prev.deliverables.filter((_, idx) => idx !== index)
+                            }))}
+                            disabled={submittingBid || !canSubmitBid}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Milestone plan</label>
+                  <div className="flex gap-3 mb-3">
+                    <input
+                      type="text"
+                      className="input-field flex-1"
+                      placeholder="Milestone description"
+                      value={milestoneDraft}
+                      onChange={(e) => setMilestoneDraft(e.target.value)}
+                      disabled={submittingBid || !canSubmitBid}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        if (!milestoneDraft.trim()) return
+                        setProposal(prev => ({ ...prev, milestones: [...prev.milestones, milestoneDraft.trim()] }))
+                        setMilestoneDraft('')
+                      }}
+                      disabled={submittingBid || !canSubmitBid}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {proposal.milestones.length > 0 && (
+                    <ol className="list-decimal list-inside text-white/80 space-y-1 text-sm">
+                      {proposal.milestones.map((milestone, index) => (
+                        <li key={`${milestone}-${index}`} className="flex items-center justify-between gap-2">
+                          <span>{milestone}</span>
+                          <button
+                            type="button"
+                            className="text-white/50 hover:text-white"
+                            onClick={() => setProposal(prev => ({
+                              ...prev,
+                              milestones: prev.milestones.filter((_, idx) => idx !== index)
+                            }))}
+                            disabled={submittingBid || !canSubmitBid}
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Attachment or portfolio link</label>
+                  <input
+                    type="url"
+                    className="input-field"
+                    placeholder="https://yourwork.com/case-study"
+                    value={proposal.attachmentLink}
+                    onChange={(e) => setProposal(prev => ({ ...prev, attachmentLink: e.target.value }))}
+                    disabled={submittingBid || !canSubmitBid}
+                  />
+                  <p className="text-xs text-white/40 mt-1">Share a Cloud folder, Loom demo, or public portfolio entry.</p>
+                </div>
+
                 <button
                   type="submit"
-                  disabled={submittingBid}
-                  className="btn btn-success w-full"
+                  disabled={submittingBid || !canSubmitBid}
+                  className={`btn ${canSubmitBid ? 'btn-success' : 'btn-secondary opacity-60 cursor-not-allowed'} w-full`}
                 >
                   {submittingBid ? (
                     <span className="flex items-center justify-center gap-2">
@@ -509,11 +764,22 @@ export function JobDetailPage() {
                       </svg>
                       Submitting...
                     </span>
+                  ) : canSubmitBid ? (
+                    'Submit Proposal'
                   ) : (
-                    'Submit Bid'
+                    'Awaiting Approval'
                   )}
                 </button>
               </form>
+            </div>
+          )}
+
+          {!isJobOwner && !isFreelancer && (
+            <div className="card mb-8 border border-white/10 bg-white/5">
+              <h2 className="text-2xl font-bold text-white mb-4">Proposals are for freelancers</h2>
+              <p className="text-white/70">
+                Switch to a freelancer account or create one to submit proposals on projects. Clients can manage postings and review bids only.
+              </p>
             </div>
           )}
 
@@ -578,47 +844,103 @@ export function JobDetailPage() {
                   </div>
                 )}
                 <div className="space-y-4">
-                  {bids.map(bid => (
-                  <div key={bid.id} className="border-2 border-white/10 rounded-xl p-6 hover:border-violet-500/50 hover:shadow-lg transition-all">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-3">
-                          <span className="text-3xl font-extrabold text-white">${bid.amount}</span>
-                          <span className={getStatusBadge(bid.status)}>{bid.status}</span>
-                        </div>
-                        {bid.freelancer && (
-                          <div className="flex items-center gap-2 mb-3 text-sm text-white/60">
-                            <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                              {bid.freelancer.fullName?.charAt(0) || 'F'}
+                  {bids.map(bid => {
+                    const structured = parseStructuredMessage(bid.message)
+                    return (
+                      <div key={bid.id} className="border-2 border-white/10 rounded-xl p-6 hover:border-violet-500/50 hover:shadow-lg transition-all">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-3">
+                              <span className="text-3xl font-extrabold text-white">Rs. {Number(bid.amount).toLocaleString()}</span>
+                              <span className={getStatusBadge(bid.status)}>{bid.status}</span>
                             </div>
-                            <span className="font-semibold">{bid.freelancer.fullName}</span>
+                            {bid.freelancer && (
+                              <div className="flex items-center gap-2 mb-3 text-sm text-white/60">
+                                <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                  {bid.freelancer.fullName?.charAt(0) || 'F'}
+                                </div>
+                                <span className="font-semibold">{bid.freelancer.fullName}</span>
+                              </div>
+                            )}
+                            {structured ? (
+                              <div className="space-y-3 text-sm text-white/80">
+                                <section>
+                                  <p className="text-white/60 text-xs uppercase">Cover Letter</p>
+                                  <p className="leading-relaxed">{structured.coverLetter || '—'}</p>
+                                </section>
+                                <div className="grid md:grid-cols-2 gap-3">
+                                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                                    <p className="text-white/50 text-xs uppercase mb-1">Availability</p>
+                                    <p>{structured.availability || '—'}</p>
+                                  </div>
+                                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                                    <p className="text-white/50 text-xs uppercase mb-1">Timeline</p>
+                                    <p>{structured.timeline || '—'}</p>
+                                  </div>
+                                </div>
+                                {structured.deliverables?.length > 0 && (
+                                  <div>
+                                    <p className="text-white/60 text-xs uppercase mb-1">Deliverables</p>
+                                    <ul className="list-disc list-inside space-y-1 text-white/80">
+                                      {structured.deliverables.map((item, index) => (
+                                        <li key={`${item}-${index}`}>{item}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {structured.milestones?.length > 0 && (
+                                  <div>
+                                    <p className="text-white/60 text-xs uppercase mb-1">Milestones</p>
+                                    <ol className="list-decimal list-inside space-y-1 text-white/80">
+                                      {structured.milestones.map((item, index) => (
+                                        <li key={`${item}-${index}`}>{item}</li>
+                                      ))}
+                                    </ol>
+                                  </div>
+                                )}
+                                {structured.communicationPlan && (
+                                  <div>
+                                    <p className="text-white/60 text-xs uppercase mb-1">Communication</p>
+                                    <p>{structured.communicationPlan}</p>
+                                  </div>
+                                )}
+                                {structured.attachmentLink && (
+                                  <a
+                                    href={structured.attachmentLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-violet-300 text-xs underline"
+                                  >
+                                    View linked asset
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-white/70 leading-relaxed mt-3">{bid.message}</p>
+                            )}
                           </div>
-                        )}
-                        {bid.message && (
-                          <p className="text-white/70 leading-relaxed mt-3">{bid.message}</p>
-                        )}
-                      </div>
-                      {isJobOwner && bid.status === 'PENDING' && (
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => openAcceptModal(bid.id)}
-                            disabled={acceptingBidId === bid.id || rejectingBidId === bid.id}
-                            className="btn btn-primary whitespace-nowrap"
-                          >
-                            {acceptingBidId === bid.id ? 'Accepting...' : 'Accept Bid'}
-                          </button>
-                          <button
-                            onClick={() => handleRejectBid(bid.id)}
-                            disabled={acceptingBidId === bid.id || rejectingBidId === bid.id}
-                            className="btn btn-danger whitespace-nowrap"
-                          >
-                            {rejectingBidId === bid.id ? 'Rejecting...' : 'Reject'}
-                          </button>
+                          {isJobOwner && bid.status === 'PENDING' && (
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => openAcceptModal(bid.id)}
+                                disabled={acceptingBidId === bid.id || rejectingBidId === bid.id}
+                                className="btn btn-primary whitespace-nowrap"
+                              >
+                                {acceptingBidId === bid.id ? 'Accepting...' : 'Accept Bid'}
+                              </button>
+                              <button
+                                onClick={() => handleRejectBid(bid.id)}
+                                disabled={acceptingBidId === bid.id || rejectingBidId === bid.id}
+                                className="btn btn-danger whitespace-nowrap"
+                              >
+                                {rejectingBidId === bid.id ? 'Rejecting...' : 'Reject'}
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  ))}
+                      </div>
+                    )
+                  })}
                 </div>
               </>
             )}

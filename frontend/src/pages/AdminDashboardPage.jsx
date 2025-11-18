@@ -113,6 +113,22 @@ export function AdminDashboardPage() {
                     </svg>
                   </div>
                 </Link>
+                <Link to="/admin/profiles" className="block p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-medium">Profile Verification</span>
+                    <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+                <Link to="/admin/payments" className="block p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-medium">Payments & Disputes</span>
+                    <svg className="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
                 <Link to="/admin/activity-logs" className="block p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
                   <div className="flex items-center justify-between">
                     <span className="text-white font-medium">Activity Logs</span>

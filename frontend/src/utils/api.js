@@ -90,7 +90,86 @@ export const api = {
     updateProfile: (token, data) => 
       apiRequest('/auth/me', { method: 'PUT', token, body: data })
   },
+
+  // Profiles & onboarding
+  profiles: {
+    freelancer: {
+      get: (token) =>
+        apiRequest('/profile/freelancer/me', { token }),
+
+      update: (token, data) =>
+        apiRequest('/profile/freelancer', { method: 'PUT', token, body: data }),
+
+      submit: (token, data) =>
+        apiRequest('/profile/freelancer/submit', { method: 'POST', token, body: data }),
+
+      listDocuments: (token) =>
+        apiRequest('/profile/freelancer/documents', { token }),
+
+      addDocument: (token, data) =>
+        apiRequest('/profile/freelancer/documents', { method: 'POST', token, body: data })
+    },
+    client: {
+      get: (token) =>
+        apiRequest('/profile/client/me', { token }),
+
+      update: (token, data) =>
+        apiRequest('/profile/client', { method: 'PUT', token, body: data }),
+
+      submit: (token, data) =>
+        apiRequest('/profile/client/submit', { method: 'POST', token, body: data }),
+
+      listDocuments: (token) =>
+        apiRequest('/profile/client/documents', { token }),
+
+      addDocument: (token, data) =>
+        apiRequest('/profile/client/documents', { method: 'POST', token, body: data })
+    },
+    admin: {
+      getPending: (token) =>
+        apiRequest('/admin/profiles/pending', { token }),
+
+      getFreelancerById: (id, token) =>
+        apiRequest(`/admin/profiles/freelancer/${id}`, { token }),
+
+      getClientById: (id, token) =>
+        apiRequest(`/admin/profiles/client/${id}`, { token }),
+
+      getDocuments: (profileType, id, token) => {
+        const typeSlug = (profileType || '').toString().toLowerCase()
+        return apiRequest(`/admin/profiles/${typeSlug}/${id}/documents`, { token })
+      },
+
+      review: (profileId, token, data) =>
+        apiRequest(`/admin/profiles/${profileId}/review`, { method: 'POST', token, body: data })
+    }
+  },
   
+  teams: {
+    getMyTeams: (token) =>
+      apiRequest('/teams', { token }),
+
+    create: (token, data) =>
+      apiRequest('/teams', { method: 'POST', token, body: data }),
+
+    getById: (teamId, token) =>
+      apiRequest(`/teams/${teamId}`, { token }),
+
+    addMember: (teamId, token, data) =>
+      apiRequest(`/teams/${teamId}/members`, { method: 'POST', token, body: data })
+  },
+
+  sprints: {
+    getAll: (projectId, token) =>
+      apiRequest(`/projects/${projectId}/sprints`, { token }),
+
+    create: (projectId, token, data) =>
+      apiRequest(`/projects/${projectId}/sprints`, { method: 'POST', token, body: data }),
+
+    update: (projectId, sprintId, token, data) =>
+      apiRequest(`/projects/${projectId}/sprints/${sprintId}`, { method: 'PUT', token, body: data })
+  },
+
   // Jobs
   jobs: {
     getAll: (token, params = {}) => {
@@ -528,26 +607,54 @@ export const api = {
   payments: {
     getByInvoice: (invoiceId, token) =>
       apiRequest(`/payments/invoice/${invoiceId}`, { token }),
-    
+
     create: (token, data) =>
       apiRequest('/payments', { method: 'POST', token, body: data }),
-    
+
     updateStatus: (id, token, data) =>
       apiRequest(`/payments/${id}/status`, { method: 'PATCH', token, body: data }),
-    
+
     initiate: (paymentId, token, data) =>
       apiRequest(`/payments/${paymentId}/initiate`, { method: 'POST', token, body: data }),
-    
+
     verify: (transactionId, token) =>
       apiRequest(`/payments/verify/${transactionId}`, { method: 'POST', token }),
-    
+
     refund: (paymentId, token, data) =>
       apiRequest(`/payments/${paymentId}/refund`, { method: 'POST', token, body: data }),
-    
+
     getTransactions: (token) =>
       apiRequest('/payments/transactions', { token })
   },
   
+  disputes: {
+    getMine: (token) =>
+      apiRequest('/payment-disputes/my', { token }),
+
+    getAll: (token) =>
+      apiRequest('/payment-disputes', { token }),
+
+    getByPayment: (paymentId, token) =>
+      apiRequest(`/payment-disputes/payment/${paymentId}`, { token }),
+
+    create: (paymentId, token, data) =>
+      apiRequest(`/payment-disputes/payment/${paymentId}`, { method: 'POST', token, body: data }),
+
+    resolve: (disputeId, token, data) =>
+      apiRequest(`/payment-disputes/${disputeId}/resolve`, { method: 'PATCH', token, body: data })
+  },
+
+  escrow: {
+    getByProject: (projectId, token) =>
+      apiRequest(`/escrow/project/${projectId}`, { token }),
+
+    create: (token, data) =>
+      apiRequest('/escrow', { method: 'POST', token, body: data }),
+
+    release: (accountId, token, data) =>
+      apiRequest(`/escrow/${accountId}/release`, { method: 'POST', token, body: data })
+  },
+
   // Admin APIs
   admin: {
     // Users
@@ -602,7 +709,10 @@ export const api = {
     
     // Analytics
     getAnalytics: (token) =>
-      apiRequest('/admin/analytics/overview', { token })
+      apiRequest('/admin/analytics/overview', { token }),
+
+    getPaymentDashboard: (token) =>
+      apiRequest('/admin/payments/dashboard', { token })
   }
 }
 

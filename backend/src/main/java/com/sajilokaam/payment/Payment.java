@@ -28,6 +28,12 @@ public class Payment {
     @Column(name = "payment_reference", length = 255)
     private String paymentReference;
 
+    @Column(name = "gateway", length = 50)
+    private String gateway;
+
+    @Column(name = "gateway_transaction_id", length = 100)
+    private String gatewayTransactionId;
+
     @Column(nullable = false, length = 50)
     private String status = "PENDING"; // PENDING, COMPLETED, FAILED, REFUNDED
 
@@ -54,6 +60,10 @@ public class Payment {
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public String getPaymentReference() { return paymentReference; }
     public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+    public String getGateway() { return gateway; }
+    public void setGateway(String gateway) { this.gateway = gateway; }
+    public String getGatewayTransactionId() { return gatewayTransactionId; }
+    public void setGatewayTransactionId(String gatewayTransactionId) { this.gatewayTransactionId = gatewayTransactionId; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public Instant getPaidAt() { return paidAt; }

@@ -53,7 +53,7 @@ public class EscrowAccount {
     public void setProject(Project project) { this.project = project; }
     public User getClient() { return client; }
     public void setClient(User client) { this.client = client; }
-    public User getFreelancer() { return freelancer; }
+   	public User getFreelancer() { return freelancer; }
     public void setFreelancer(User freelancer) { this.freelancer = freelancer; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }

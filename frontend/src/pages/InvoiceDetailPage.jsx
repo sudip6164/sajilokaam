@@ -10,8 +10,15 @@ export function InvoiceDetailPage() {
   const { success: showSuccess, error: showError } = useToast()
   const [invoice, setInvoice] = useState(null)
   const [payments, setPayments] = useState([])
+  const [invoiceItems, setInvoiceItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [gatewayChoice, setGatewayChoice] = useState('KHALTI')
+  const [initiatingPaymentId, setInitiatingPaymentId] = useState(null)
+  const [showDisputeModal, setShowDisputeModal] = useState(false)
+  const [disputeForm, setDisputeForm] = useState({ paymentId: '', disputeType: 'REFUND_REQUEST', reason: '' })
+  const [submittingDispute, setSubmittingDispute] = useState(false)
 
   useEffect(() => {
     if (token && id) {
@@ -39,6 +46,75 @@ export function InvoiceDetailPage() {
       setPayments(data || [])
     } catch (err) {
       console.error('Failed to load payments', err)
+    }
+  }
+
+  const handleCreatePaymentIntent = async () => {
+    if (!invoice) {
+      showError('Invoice not loaded yet')
+      return
+    }
+    setUpdating(true)
+    try {
+      await api.payments.create(token, {
+        invoiceId: Number(id),
+        amount: invoice.totalAmount,
+        paymentMethod: 'ONLINE',
+        status: 'PENDING'
+      })
+      showSuccess('Payment intent created. Initiate via gateway next.')
+      await loadPayments()
+    } catch (err) {
+      showError(err.message || 'Failed to create payment intent')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleInitiatePayment = async () => {
+    if (!initiatingPaymentId) return
+    try {
+      const response = await api.payments.initiate(initiatingPaymentId, token, {
+        gateway: gatewayChoice,
+        returnUrl: `${window.location.origin}/payments?status=success`,
+        cancelUrl: `${window.location.origin}/payments?status=cancel`
+      })
+      showSuccess('Gateway initiated. Complete the payment in the new window.')
+      if (response?.paymentUrl) {
+        window.open(response.paymentUrl, '_blank', 'noopener')
+      }
+      setShowPaymentModal(false)
+      setInitiatingPaymentId(null)
+      await loadPayments()
+    } catch (err) {
+      showError(err.message || 'Failed to initiate gateway payment')
+    }
+  }
+
+  const handleDisputeSubmit = async (e) => {
+    e.preventDefault()
+    if (!disputeForm.paymentId) {
+      showError('Select a payment to dispute')
+      return
+    }
+    if (!disputeForm.reason.trim()) {
+      showError('Please describe the issue')
+      return
+    }
+
+    setSubmittingDispute(true)
+    try {
+      await api.disputes.create(disputeForm.paymentId, token, {
+        disputeType: disputeForm.disputeType,
+        reason: disputeForm.reason.trim()
+      })
+      showSuccess('Dispute submitted')
+      setShowDisputeModal(false)
+      setDisputeForm({ paymentId: '', disputeType: 'REFUND_REQUEST', reason: '' })
+    } catch (err) {
+      showError(err.message || 'Failed to submit dispute')
+    } finally {
+      setSubmittingDispute(false)
     }
   }
 
@@ -95,6 +171,7 @@ export function InvoiceDetailPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="mb-8">
@@ -244,7 +321,19 @@ export function InvoiceDetailPage() {
           <div className="space-y-6">
             {/* Payments */}
             <div className="card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">Payments</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Payments</h3>
+                  <p className="text-white/60 text-sm">Track settlements for this invoice</p>
+                </div>
+                <button
+                  className="btn btn-secondary text-xs"
+                  onClick={handleCreatePaymentIntent}
+                  disabled={updating}
+                >
+                  {updating ? 'Preparing...' : 'Create Intent'}
+                </button>
+              </div>
               {payments.length === 0 ? (
                 <p className="text-white/50 text-sm">No payments recorded</p>
               ) : (
@@ -256,7 +345,7 @@ export function InvoiceDetailPage() {
                           <p className="text-sm font-semibold text-white">
                             {invoice.currency} {parseFloat(payment.amount).toFixed(2)}
                           </p>
-                          <p className="text-xs text-white/60">{payment.paymentMethod || 'N/A'}</p>
+                          <p className="text-xs text-white/60">{payment.paymentMethod || payment.gateway || 'N/A'}</p>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           payment.status === 'COMPLETED' ? 'bg-green-500/20 text-green-300' :
@@ -266,11 +355,39 @@ export function InvoiceDetailPage() {
                           {payment.status}
                         </span>
                       </div>
+                      {payment.gateway && (
+                        <p className="text-[11px] text-white/50 mb-2">
+                          Gateway: {payment.gateway}
+                        </p>
+                      )}
                       {payment.paidAt && (
                         <p className="text-xs text-white/50">
                           Paid: {new Date(payment.paidAt).toLocaleString()}
                         </p>
                       )}
+                      <div className="flex gap-3 mt-3">
+                        {payment.status === 'PENDING' && (
+                          <button
+                            className="text-xs text-violet-300 hover:text-violet-200"
+                            onClick={() => {
+                              setInitiatingPaymentId(payment.id)
+                              setGatewayChoice(payment.gateway || 'KHALTI')
+                              setShowPaymentModal(true)
+                            }}
+                          >
+                            Initiate via gateway →
+                          </button>
+                        )}
+                        <button
+                          className="text-xs text-rose-200 hover:text-rose-100"
+                          onClick={() => {
+                            setDisputeForm({ paymentId: payment.id, disputeType: 'REFUND_REQUEST', reason: '' })
+                            setShowDisputeModal(true)
+                          }}
+                        >
+                          Raise dispute
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -280,6 +397,108 @@ export function InvoiceDetailPage() {
         </div>
       </div>
     </div>
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="card max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Initiate Payment</h3>
+              <button
+                className="text-white/60 hover:text-white"
+                onClick={() => {
+                  setShowPaymentModal(false)
+                  setInitiatingPaymentId(null)
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-sm text-white/70">
+              Choose a gateway to continue. You'll be redirected to complete the payment securely.
+            </p>
+            <div className="flex gap-3 flex-wrap">
+              {['KHALTI', 'ESEWA', 'BANK_TRANSFER'].map(gateway => (
+                <button
+                  key={gateway}
+                  type="button"
+                  onClick={() => setGatewayChoice(gateway)}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold ${
+                    gatewayChoice === gateway ? 'bg-white text-slate-900' : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/20'
+                  }`}
+                >
+                  {gateway.charAt(0) + gateway.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                className="btn btn-primary flex-1"
+                onClick={handleInitiatePayment}
+                disabled={!initiatingPaymentId}
+              >
+                Launch Gateway
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowPaymentModal(false)
+                  setInitiatingPaymentId(null)
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDisputeModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="card max-w-lg w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Raise a Dispute</h3>
+              <button
+                className="text-white/60 hover:text-white"
+                onClick={() => setShowDisputeModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <form className="space-y-4" onSubmit={handleDisputeSubmit}>
+              <div>
+                <label className="text-sm text-white/70 font-semibold mb-2 block">Dispute Type</label>
+                <select
+                  className="input-field"
+                  value={disputeForm.disputeType}
+                  onChange={(e) => setDisputeForm(prev => ({ ...prev, disputeType: e.target.value }))}
+                >
+                  <option value="REFUND_REQUEST">Refund request</option>
+                  <option value="PAYMENT_ISSUE">Payment issue</option>
+                  <option value="SERVICE_NOT_DELIVERED">Service not delivered</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-white/70 font-semibold mb-2 block">Reason</label>
+                <textarea
+                  className="input-field min-h-[150px]"
+                  placeholder="Describe the issue in detail..."
+                  value={disputeForm.reason}
+                  onChange={(e) => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="btn btn-primary flex-1" disabled={submittingDispute}>
+                  {submittingDispute ? 'Submitting...' : 'Submit Dispute'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDisputeModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

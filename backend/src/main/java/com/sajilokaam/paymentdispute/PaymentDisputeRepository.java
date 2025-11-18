@@ -7,5 +7,7 @@ public interface PaymentDisputeRepository extends JpaRepository<PaymentDispute, 
     List<PaymentDispute> findByPaymentId(Long paymentId);
     List<PaymentDispute> findByStatus(String status);
     List<PaymentDispute> findByRaisedById(Long userId);
+    long countByStatus(String status);
+    List<PaymentDispute> findTop5ByOrderByCreatedAtDesc();
 }
 

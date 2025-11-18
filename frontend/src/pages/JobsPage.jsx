@@ -25,6 +25,8 @@ export function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [categories, setCategories] = useState([])
   const [skills, setSkills] = useState([])
+  const [freelancerProfileStatus, setFreelancerProfileStatus] = useState(null)
+  const [clientProfileStatus, setClientProfileStatus] = useState(null)
   const itemsPerPage = 10
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -40,6 +42,44 @@ export function JobsPage() {
   useEffect(() => {
     loadJobs()
   }, [filters, searchQuery])
+
+  useEffect(() => {
+    if (!token || !profile) {
+      setFreelancerProfileStatus(null)
+      setClientProfileStatus(null)
+      return
+    }
+
+    let isMounted = true
+    const loadProfileStatuses = async () => {
+      try {
+        if (profile.roles?.some(r => r.name === 'FREELANCER')) {
+          const data = await api.profiles.freelancer.get(token)
+          if (isMounted) {
+            setFreelancerProfileStatus(data?.status || 'DRAFT')
+          }
+        } else {
+          setFreelancerProfileStatus(null)
+        }
+
+        if (profile.roles?.some(r => r.name === 'CLIENT')) {
+          const data = await api.profiles.client.get(token)
+          if (isMounted) {
+            setClientProfileStatus(data?.status || 'DRAFT')
+          }
+        } else {
+          setClientProfileStatus(null)
+        }
+      } catch (err) {
+        console.warn('Failed to load profile statuses', err)
+      }
+    }
+
+    loadProfileStatuses()
+    return () => {
+      isMounted = false
+    }
+  }, [token, profile])
 
   const loadCategoriesAndSkills = async () => {
     try {
@@ -170,8 +210,13 @@ export function JobsPage() {
     return badges[status] || 'badge badge-gray'
   }
 
+  const formatProfileStatus = (status) =>
+    (status || 'INCOMPLETE').replace(/_/g, ' ')
+
   const isClient = profile?.roles?.some(r => r.name === 'CLIENT')
   const isFreelancer = profile?.roles?.some(r => r.name === 'FREELANCER')
+  const isFreelancerApproved = !isFreelancer || freelancerProfileStatus === 'APPROVED'
+  const isClientApproved = !isClient || clientProfileStatus === 'APPROVED'
 
   if (loading && jobs.length === 0) {
     return (
@@ -216,14 +261,60 @@ export function JobsPage() {
                 Filters
               </button>
               {isClient && (
-                <Link to="/jobs/new" className="btn btn-primary">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Post New Job
-                </Link>
+                isClientApproved ? (
+                  <Link to="/jobs/new" className="btn btn-primary">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Post New Job
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => showError('Get your client profile approved before posting new jobs.')}
+                    className="btn btn-primary opacity-60 cursor-not-allowed"
+                    title="Client profile approval required"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Awaiting Approval
+                  </button>
+                )
               )}
             </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            {isFreelancer && !isFreelancerApproved && (
+              <div className="card border border-yellow-500/40 bg-yellow-500/5 flex flex-col gap-4 md:flex-row md:items-center">
+                <div className="flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-yellow-200/80">Freelancer verification</p>
+                  <h3 className="text-lg font-bold text-white mt-1 mb-2">Finish onboarding to unlock bidding</h3>
+                  <p className="text-white/70 text-sm">
+                    Your profile status is <span className="font-semibold text-white">{formatProfileStatus(freelancerProfileStatus)}</span>.
+                    Complete the onboarding workspace to appear in search and submit proposals.
+                  </p>
+                </div>
+                <Link to="/onboarding/freelancer" className="btn btn-secondary whitespace-nowrap">
+                  Complete Profile
+                </Link>
+              </div>
+            )}
+            {isClient && !isClientApproved && (
+              <div className="card border border-cyan-500/40 bg-cyan-500/5 flex flex-col gap-4 md:flex-row md:items-center">
+                <div className="flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-cyan-200/80">Client verification</p>
+                  <h3 className="text-lg font-bold text-white mt-1 mb-2">Admins need to approve your company</h3>
+                  <p className="text-white/70 text-sm">
+                    Status <span className="font-semibold text-white">{formatProfileStatus(clientProfileStatus)}</span>.
+                    Verified clients get featured placement, escrow, and faster proposals.
+                  </p>
+                </div>
+                <Link to="/onboarding/client" className="btn btn-secondary whitespace-nowrap">
+                  Open Dashboard
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="grid lg:grid-cols-4 gap-6">

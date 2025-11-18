@@ -68,6 +68,32 @@ export function Navbar() {
                 </Link>
                 {profile?.roles?.some(r => r.name === 'FREELANCER') && (
                   <>
+                    <Link
+                      to="/onboarding/freelancer"
+                      className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                        isActive('/onboarding/freelancer')
+                          ? 'text-white bg-white/10'
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {isActive('/onboarding/freelancer') && (
+                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                      )}
+                      <span className="relative">Freelancer Profile</span>
+                    </Link>
+                    <Link
+                      to="/teams"
+                      className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                        isActive('/teams')
+                          ? 'text-white bg-white/10'
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {isActive('/teams') && (
+                        <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                      )}
+                      <span className="relative">Teams</span>
+                    </Link>
                     <Link 
                       to="/my-bids" 
                       className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
@@ -113,6 +139,19 @@ export function Navbar() {
                 )}
                 {profile?.roles?.some(r => r.name === 'CLIENT') && (
                   <>
+                    <Link
+                      to="/onboarding/client"
+                      className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                        isActive('/onboarding/client')
+                          ? 'text-white bg-white/10'
+                          : 'text-white/70 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {isActive('/onboarding/client') && (
+                        <span className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-violet-500/20 rounded-xl"></span>
+                      )}
+                      <span className="relative">Client Profile</span>
+                    </Link>
                     <Link 
                       to="/my-jobs" 
                       className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
@@ -154,6 +193,19 @@ export function Navbar() {
                     <span className="relative">Invoices</span>
                   </Link>
                 )}
+                <Link 
+                  to="/payments" 
+                  className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                    isActive('/payments')
+                      ? 'text-white bg-white/10' 
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {isActive('/payments') && (
+                    <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                  )}
+                  <span className="relative">Payments</span>
+                </Link>
               </>
             ) : null}
           </div>

@@ -37,6 +37,14 @@ export function ProjectDetailPage() {
   const [submittingMilestone, setSubmittingMilestone] = useState(false)
   const [editingMilestone, setEditingMilestone] = useState(null)
   const [deletingMilestoneId, setDeletingMilestoneId] = useState(null)
+  const [escrowAccounts, setEscrowAccounts] = useState([])
+  const [loadingEscrow, setLoadingEscrow] = useState(false)
+  const [showEscrowModal, setShowEscrowModal] = useState(false)
+  const [escrowForm, setEscrowForm] = useState({ amount: '' })
+  const [showReleaseModal, setShowReleaseModal] = useState(false)
+  const [releaseForm, setReleaseForm] = useState({ amount: '', releaseType: 'MILESTONE', notes: '' })
+  const [selectedEscrow, setSelectedEscrow] = useState(null)
+  const [submittingEscrow, setSubmittingEscrow] = useState(false)
   const navigate = useNavigate()
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -46,6 +54,7 @@ export function ProjectDetailPage() {
     loadTasks()
     loadFreelancers()
     loadMilestones()
+    loadEscrow()
   }, [id])
 
   useEffect(() => {
@@ -116,6 +125,18 @@ export function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load milestones', err)
+    }
+  }
+
+  const loadEscrow = async () => {
+    try {
+      setLoadingEscrow(true)
+      const data = await api.escrow.getByProject(id, token)
+      setEscrowAccounts(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load escrow accounts', err)
+    } finally {
+      setLoadingEscrow(false)
     }
   }
 
@@ -569,6 +590,69 @@ export function ProjectDetailPage() {
     }
   }
 
+  const projectClientId = project?.client?.id || project?.job?.client?.id
+  const projectFreelancerId = project?.freelancer?.id || project?.job?.freelancer?.id
+  const canManageEscrow = projectClientId && profile?.id && projectClientId === profile.id
+
+  const handleEscrowDeposit = async (e) => {
+    e.preventDefault()
+    const amountValue = Number(escrowForm.amount)
+    if (!amountValue || amountValue <= 0) {
+      showError('Enter a valid amount')
+      return
+    }
+    if (!projectClientId || !projectFreelancerId) {
+      showError('Project is missing client or freelancer details')
+      return
+    }
+    setSubmittingEscrow(true)
+    try {
+      await api.escrow.create(token, {
+        projectId: Number(id),
+        amount: amountValue,
+        clientId: projectClientId,
+        freelancerId: projectFreelancerId
+      })
+      showSuccess('Escrow funded successfully')
+      setShowEscrowModal(false)
+      setEscrowForm({ amount: '' })
+      await loadEscrow()
+    } catch (err) {
+      showError(err.message || 'Failed to fund escrow')
+    } finally {
+      setSubmittingEscrow(false)
+    }
+  }
+
+  const handleEscrowRelease = async (e) => {
+    e.preventDefault()
+    if (!selectedEscrow) {
+      showError('Select an escrow account')
+      return
+    }
+    const amountValue = Number(releaseForm.amount)
+    if (!amountValue || amountValue <= 0) {
+      showError('Enter a valid amount to release')
+      return
+    }
+    setSubmittingEscrow(true)
+    try {
+      await api.escrow.release(selectedEscrow.id, token, {
+        amount: amountValue,
+        releaseType: releaseForm.releaseType,
+        notes: releaseForm.notes
+      })
+      showSuccess('Funds released successfully')
+      setShowReleaseModal(false)
+      setSelectedEscrow(null)
+      await loadEscrow()
+    } catch (err) {
+      showError(err.message || 'Failed to release funds')
+    } finally {
+      setSubmittingEscrow(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen py-12">
@@ -805,6 +889,26 @@ export function ProjectDetailPage() {
                     )}
                   </div>
                 </div>
+
+                <div className="grid gap-4 md:grid-cols-2 mt-6">
+                  <Link
+                    to={`/projects/${id}/sprints`}
+                    className="card border border-violet-500/30 hover:border-violet-400/60 transition-all"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Iterations</p>
+                    <h3 className="text-lg font-bold text-white mb-1">Sprint Planner</h3>
+                    <p className="text-white/70 text-sm">Draft sprint goals, set timelines, and review accomplishments.</p>
+                  </Link>
+                  <Link
+                    to="/teams"
+                    className="card border border-cyan-500/30 hover:border-cyan-400/60 transition-all"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Collaboration</p>
+                    <h3 className="text-lg font-bold text-white mb-1">Team Hub</h3>
+                    <p className="text-white/70 text-sm">Invite specialists, assign pods, and broadcast updates.</p>
+                  </Link>
+                </div>
+
                 <p className="text-white/70 text-lg leading-relaxed mb-4">
                   {project.description || 'No description provided'}
                 </p>
@@ -817,10 +921,130 @@ export function ProjectDetailPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+        </div>
+      </div>
 
-          {/* Task Statistics */}
+      <div className="card mb-8">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-white">Escrow Accounts</h3>
+            <p className="text-white/60 text-sm">Funds on hold for this project</p>
+          </div>
+          {canManageEscrow && (
+            <button
+              className="btn btn-secondary text-sm"
+              onClick={() => {
+                setEscrowForm({ amount: '' })
+                setShowEscrowModal(true)
+              }}
+            >
+              Deposit Escrow
+            </button>
+          )}
+        </div>
+        {loadingEscrow ? (
+          <p className="text-white/60 text-sm">Loading escrow information...</p>
+        ) : escrowAccounts.length === 0 ? (
+          <p className="text-white/50 text-sm">No escrow deposits have been made yet.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {escrowAccounts.map(account => (
+              <div key={account.id} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white font-semibold text-sm">{account.status}</span>
+                  <span className="text-white text-sm font-bold">Rs. {Number(account.totalAmount).toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-white/60">
+                  Released: Rs. {Number(account.releasedAmount || 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-white/60 mb-2">
+                  Refunded: Rs. {Number(account.refundedAmount || 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-white/50">
+                  Client: {account.client?.fullName || 'N/A'}
+                </p>
+                <p className="text-xs text-white/50 mb-2">
+                  Freelancer: {account.freelancer?.fullName || 'N/A'}
+                </p>
+                {canManageEscrow && (
+                  <button
+                    className="text-xs text-violet-300 hover:text-violet-200"
+                    onClick={() => {
+                      setSelectedEscrow(account)
+                      setReleaseForm({ amount: '', releaseType: 'MILESTONE', notes: '' })
+                      setShowReleaseModal(true)
+                    }}
+                  >
+                    Release funds →
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card mb-8">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-white">Escrow Accounts</h3>
+            <p className="text-white/60 text-sm">Funds on hold for this project</p>
+          </div>
+          {canManageEscrow && (
+            <button
+              className="btn btn-secondary text-sm"
+              onClick={() => {
+                setEscrowForm({ amount: '' })
+                setShowEscrowModal(true)
+              }}
+            >
+              Deposit Escrow
+            </button>
+          )}
+        </div>
+        {loadingEscrow ? (
+          <p className="text-white/60 text-sm">Loading escrow information...</p>
+        ) : escrowAccounts.length === 0 ? (
+          <p className="text-white/50 text-sm">No escrow deposits have been made yet.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {escrowAccounts.map(account => (
+              <div key={account.id} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white font-semibold text-sm">{account.status}</span>
+                  <span className="text-white text-sm font-bold">Rs. {Number(account.totalAmount).toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-white/60">
+                  Released: Rs. {Number(account.releasedAmount || 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-white/60 mb-2">
+                  Refunded: Rs. {Number(account.refundedAmount || 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-white/50">
+                  Client: {account.client?.fullName || 'N/A'}
+                </p>
+                <p className="text-xs text-white/50 mb-2">
+                  Freelancer: {account.freelancer?.fullName || 'N/A'}
+                </p>
+                {canManageEscrow && (
+                  <button
+                    className="text-xs text-violet-300 hover:text-violet-200"
+                    onClick={() => {
+                      setSelectedEscrow(account)
+                      setReleaseForm({ amount: '', releaseType: 'MILESTONE', notes: '' })
+                      setShowReleaseModal(true)
+                    }}
+                  >
+                    Release funds →
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Task Statistics */}
           {stats.total > 0 && (
             <div className="card mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -1576,6 +1800,90 @@ export function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {showEscrowModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Deposit Escrow</h3>
+              <button className="text-white/60 hover:text-white" onClick={() => setShowEscrowModal(false)}>×</button>
+            </div>
+            <form className="space-y-4" onSubmit={handleEscrowDeposit}>
+              <div>
+                <label className="text-sm text-white/70 font-semibold mb-2 block">Amount (NPR)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  className="input-field"
+                  value={escrowForm.amount}
+                  onChange={(e) => setEscrowForm({ amount: e.target.value })}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="btn btn-primary flex-1" disabled={submittingEscrow}>
+                  {submittingEscrow ? 'Depositing...' : 'Deposit'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEscrowModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showReleaseModal && selectedEscrow && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card max-w-md w-full space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Release Funds</h3>
+              <button className="text-white/60 hover:text-white" onClick={() => setShowReleaseModal(false)}>×</button>
+            </div>
+            <form className="space-y-4" onSubmit={handleEscrowRelease}>
+              <div>
+                <label className="text-sm text-white/70 font-semibold mb-2 block">Amount (NPR)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  className="input-field"
+                  value={releaseForm.amount}
+                  onChange={(e) => setReleaseForm(prev => ({ ...prev, amount: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-white/70 font-semibold mb-2 block">Release Type</label>
+                <select
+                  className="input-field"
+                  value={releaseForm.releaseType}
+                  onChange={(e) => setReleaseForm(prev => ({ ...prev, releaseType: e.target.value }))}
+                >
+                  <option value="MILESTONE">Milestone</option>
+                  <option value="PARTIAL">Partial</option>
+                  <option value="COMPLETE">Complete</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-white/70 font-semibold mb-2 block">Notes</label>
+                <textarea
+                  className="input-field min-h-[100px]"
+                  value={releaseForm.notes}
+                  onChange={(e) => setReleaseForm(prev => ({ ...prev, notes: e.target.value }))}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="btn btn-primary flex-1" disabled={submittingEscrow}>
+                  {submittingEscrow ? 'Releasing...' : 'Release'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowReleaseModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Edit Project Modal */}
       {showEditModal && (

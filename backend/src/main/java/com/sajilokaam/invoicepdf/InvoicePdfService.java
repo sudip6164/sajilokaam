@@ -13,10 +13,8 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class InvoicePdfService {
@@ -31,10 +29,11 @@ public class InvoicePdfService {
             PDPage page = new PDPage();
             document.addPage(page);
 
-            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+            PDPageContentStream contentStream = null;
+            try {
+                contentStream = new PDPageContentStream(document, page);
                 float margin = 50;
                 float yPosition = 750;
-                float lineHeight = 20;
                 float currentY = yPosition;
 
                 // Title
@@ -127,8 +126,6 @@ public class InvoicePdfService {
                 // Invoice Items
                 List<InvoiceItem> items = invoiceItemRepository.findByInvoiceId(invoice.getId());
                 contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
-                NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("en", "NP"));
-
                 for (InvoiceItem item : items) {
                     if (currentY < 200) {
                         // New page if needed
@@ -231,6 +228,10 @@ public class InvoicePdfService {
                     contentStream.newLineAtOffset(margin, currentY);
                     contentStream.showText("Terms: " + invoice.getTerms());
                     contentStream.endText();
+                }
+            } finally {
+                if (contentStream != null) {
+                    contentStream.close();
                 }
             }
 
