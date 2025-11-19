@@ -8,7 +8,8 @@ import java.time.Instant;
 @Entity
 @Table(name = "task_activities", indexes = {
         @Index(name = "idx_activities_task", columnList = "task_id"),
-        @Index(name = "idx_activities_created", columnList = "created_at")
+        @Index(name = "idx_activities_created", columnList = "created_at"),
+        @Index(name = "idx_activities_type", columnList = "action")
 })
 public class TaskActivity {
     @Id
@@ -28,6 +29,9 @@ public class TaskActivity {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(columnDefinition = "TEXT")
+    private String metadata;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -70,6 +74,14 @@ public class TaskActivity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(String metadata) {
+        this.metadata = metadata;
     }
 
     public Instant getCreatedAt() {

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { ProjectMessaging } from '../components/ProjectMessaging'
 import { Timer } from '../components/Timer'
+import { TaskActivityTimeline } from '../components/TaskActivityTimeline'
 import api from '../utils/api'
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
