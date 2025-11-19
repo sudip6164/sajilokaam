@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -161,6 +162,32 @@ public class TaskController {
         } else {
             task.setAssignee(null);
         }
+
+        Task updated = taskRepository.save(task);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{projectId}/tasks/{taskId}/labels")
+    public ResponseEntity<Task> updateTaskLabels(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @RequestBody TaskLabelAssignmentRequest request) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOpt.get();
+        if (!task.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Long> labelIds = request.getLabelIds() != null
+                ? request.getLabelIds()
+                : Collections.emptyList();
+
+        Set<TaskLabel> labels = new HashSet<>(taskLabelRepository.findAllById(labelIds));
+        task.setLabels(labels);
 
         Task updated = taskRepository.save(task);
         return ResponseEntity.ok(updated);

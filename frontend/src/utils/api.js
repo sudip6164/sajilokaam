@@ -376,6 +376,13 @@ export const api = {
         token,
         body: { priority }
       }),
+
+    updateLabels: (projectId, taskId, token, labelIds = []) =>
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/labels`, {
+        method: 'PATCH',
+        token,
+        body: { labelIds }
+      }),
     
     // Dependencies
     getDependencies: (taskId, token) =>
@@ -427,7 +434,13 @@ export const api = {
       apiRequest(`/task-labels/${id}`),
     
     create: (token, data) =>
-      apiRequest('/task-labels', { method: 'POST', token, body: data })
+      apiRequest('/task-labels', { method: 'POST', token, body: data }),
+    
+    update: (id, token, data) =>
+      apiRequest(`/task-labels/${id}`, { method: 'PUT', token, body: data }),
+    
+    delete: (id, token) =>
+      apiRequest(`/task-labels/${id}`, { method: 'DELETE', token })
   },
   
   // Task Templates

@@ -25,12 +25,30 @@ const formatPriorityLabel = (priority = DEFAULT_PRIORITY) => {
 const getPriorityBadgeClass = (priority) =>
   PRIORITY_STYLES[priority] || PRIORITY_STYLES[DEFAULT_PRIORITY]
 
+const withAlpha = (hex, alpha = '33') => {
+  if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) {
+    return '#6366f133'
+  }
+  const normalized = hex.length === 7 ? hex : '#6366f1'
+  return `${normalized}${alpha}`
+}
+
+const getLabelChipStyles = (label) => {
+  const color = label?.color || '#6366f1'
+  return {
+    borderColor: color,
+    backgroundColor: withAlpha(color, '26'),
+    color
+  }
+}
+
 export function ProjectDetailPage() {
   const { id } = useParams()
   const [project, setProject] = useState(null)
   const [tasks, setTasks] = useState([])
   const [filteredTasks, setFilteredTasks] = useState([])
   const [freelancers, setFreelancers] = useState([])
+  const [labels, setLabels] = useState([])
   const [loading, setLoading] = useState(true)
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [submittingTask, setSubmittingTask] = useState(false)
@@ -38,6 +56,7 @@ export function ProjectDetailPage() {
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
   const [assigningTaskId, setAssigningTaskId] = useState(null)
   const [updatingPriorityId, setUpdatingPriorityId] = useState(null)
+  const [updatingLabelsTaskId, setUpdatingLabelsTaskId] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingProject, setEditingProject] = useState(false)
@@ -53,6 +72,11 @@ export function ProjectDetailPage() {
   const [submittingComment, setSubmittingComment] = useState({}) // { taskId: true/false }
   const [files, setFiles] = useState({}) // { taskId: [files] }
   const [uploadingFile, setUploadingFile] = useState({}) // { taskId: true/false }
+  const [labelPickerOpen, setLabelPickerOpen] = useState({})
+  const [labelSelections, setLabelSelections] = useState({})
+  const [labelForm, setLabelForm] = useState({ name: '', color: '#6366f1' })
+  const [creatingLabel, setCreatingLabel] = useState(false)
+  const [loadingLabels, setLoadingLabels] = useState(false)
   const [milestones, setMilestones] = useState([])
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [submittingMilestone, setSubmittingMilestone] = useState(false)
@@ -77,6 +101,10 @@ export function ProjectDetailPage() {
     loadMilestones()
     loadEscrow()
   }, [id])
+
+  useEffect(() => {
+    loadLabels()
+  }, [])
 
   useEffect(() => {
     // Load time logs, comments, and files for all tasks when tasks change
@@ -109,13 +137,10 @@ export function ProjectDetailPage() {
 
   const loadTasks = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/projects/${id}/tasks`)
-      if (res.ok) {
-        const data = await res.json()
-        const tasksList = Array.isArray(data) ? data : []
-        setTasks(tasksList)
-        setFilteredTasks(tasksList)
-      }
+      const data = await api.tasks.getAll(id, token)
+      const tasksList = Array.isArray(data) ? data : []
+      setTasks(tasksList)
+      setFilteredTasks(tasksList)
     } catch (err) {
       console.error('Failed to load tasks', err)
     }
@@ -146,6 +171,60 @@ export function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load milestones', err)
+    }
+  }
+
+  const loadLabels = async () => {
+    try {
+      setLoadingLabels(true)
+      const data = await api.taskLabels.getAll()
+      setLabels(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Failed to load task labels', err)
+    } finally {
+      setLoadingLabels(false)
+    }
+  }
+
+  const handleLabelFormChange = (field, value) => {
+    setLabelForm(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  const handleCreateLabel = async (e) => {
+    e.preventDefault()
+    if (!labelForm.name || !labelForm.name.trim()) {
+      showError('Label name is required')
+      return
+    }
+    setCreatingLabel(true)
+    try {
+      await api.taskLabels.create(token, {
+        name: labelForm.name.trim(),
+        color: labelForm.color || '#6366f1'
+      })
+      setLabelForm({ name: '', color: '#6366f1' })
+      await loadLabels()
+      showSuccess('Label created')
+    } catch (err) {
+      showError(err.message || 'Failed to create label')
+    } finally {
+      setCreatingLabel(false)
+    }
+  }
+
+  const handleDeleteLabel = async (labelId) => {
+    if (!window.confirm('Delete this label? It will be removed from all tasks.')) {
+      return
+    }
+    try {
+      await api.taskLabels.delete(labelId, token)
+      await loadLabels()
+      showSuccess('Label deleted')
+    } catch (err) {
+      showError(err.message || 'Failed to delete label')
     }
   }
 
@@ -438,6 +517,7 @@ export function ProjectDetailPage() {
     const status = formData.get('status') || 'TODO'
     const dueDate = formData.get('dueDate') || null
     const priority = formData.get('priority') || DEFAULT_PRIORITY
+    const labelIds = formData.getAll('labelIds').map(id => parseInt(id)).filter(Boolean)
 
     if (!title.trim()) {
       showError('Task title is required')
@@ -459,7 +539,8 @@ export function ProjectDetailPage() {
           dueDate: dueDate || null,
           priority,
           assigneeId: formData.get('assigneeId') ? parseInt(formData.get('assigneeId')) : null,
-          milestoneId: formData.get('milestoneId') ? parseInt(formData.get('milestoneId')) : null
+          milestoneId: formData.get('milestoneId') ? parseInt(formData.get('milestoneId')) : null,
+          labelIds
         })
       })
 
@@ -541,6 +622,55 @@ export function ProjectDetailPage() {
       setUpdatingPriorityId(null)
     }
   }
+
+  const handleToggleLabelPicker = (task) => {
+    setLabelPickerOpen(prev => {
+      const next = !prev[task.id]
+      if (next) {
+        setLabelSelections(current => ({
+          ...current,
+          [task.id]: task.labels?.map(label => label.id) || []
+        }))
+      }
+      return {
+        ...prev,
+        [task.id]: next
+      }
+    })
+  }
+
+  const handleLabelSelectionChange = (taskId, labelId, checked) => {
+    setLabelSelections(prev => {
+      const existing = new Set(prev[taskId] || [])
+      if (checked) {
+        existing.add(labelId)
+      } else {
+        existing.delete(labelId)
+      }
+      return {
+        ...prev,
+        [taskId]: Array.from(existing)
+      }
+    })
+  }
+
+  const saveTaskLabels = async (taskId) => {
+    const labelIds = labelSelections[taskId] || []
+    setUpdatingLabelsTaskId(taskId)
+    try {
+      await api.tasks.updateLabels(id, taskId, token, labelIds)
+      showSuccess('Task labels updated')
+      await loadTasks()
+      setLabelPickerOpen(prev => ({ ...prev, [taskId]: false }))
+    } catch (err) {
+      showError(err.message || 'Failed to update task labels')
+    } finally {
+      setUpdatingLabelsTaskId(null)
+    }
+  }
+
+  const getSelectedLabelIds = (task) =>
+    labelSelections[task.id] ?? (task.labels?.map(label => label.id) || [])
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -1326,6 +1456,81 @@ export function ProjectDetailPage() {
               </button>
             </div>
 
+            {isProjectOwner && (
+              <div className="mb-6 border-2 border-dashed border-white/10 rounded-xl p-5 bg-white/5 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-white/50">Label Library</p>
+                    <h3 className="text-lg font-bold text-white">Organize tasks with custom labels</h3>
+                    <p className="text-sm text-white/60">
+                      Create reusable tags for priorities, squads, or workflow states.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost border border-white/10"
+                    onClick={loadLabels}
+                    disabled={loadingLabels}
+                  >
+                    {loadingLabels ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                </div>
+                <form
+                  onSubmit={handleCreateLabel}
+                  className="grid md:grid-cols-[2fr_1fr_auto] gap-3"
+                >
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Label name (e.g., Design, Backend, Blocked)"
+                    value={labelForm.name}
+                    onChange={(e) => handleLabelFormChange('name', e.target.value)}
+                    disabled={creatingLabel}
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-white/70">Color</span>
+                    <input
+                      type="color"
+                      className="h-10 w-full rounded-lg overflow-hidden border border-white/10 bg-transparent"
+                      value={labelForm.color}
+                      onChange={(e) => handleLabelFormChange('color', e.target.value)}
+                      disabled={creatingLabel}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-secondary"
+                    disabled={creatingLabel}
+                  >
+                    {creatingLabel ? 'Creating…' : 'Create Label'}
+                  </button>
+                </form>
+                {labels.length === 0 ? (
+                  <p className="text-sm text-white/50">No labels yet. Create your first label above.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {labels.map(label => (
+                      <div
+                        key={label.id}
+                        className="flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold"
+                        style={getLabelChipStyles(label)}
+                      >
+                        <span>{label.name}</span>
+                        <button
+                          type="button"
+                          className="text-white/70 hover:text-white transition-colors"
+                          onClick={() => handleDeleteLabel(label.id)}
+                          title="Delete label"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {showTaskForm && (
               <form onSubmit={handleTaskSubmit} className="mb-6 p-5 border-2 border-white/10 rounded-xl bg-white/5 space-y-4">
                 <div>
@@ -1409,6 +1614,31 @@ export function ProjectDetailPage() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Labels</label>
+                  {labels.length === 0 ? (
+                    <p className="text-sm text-white/50">No labels defined yet.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {labels.map(label => (
+                        <label
+                          key={label.id}
+                          className="flex items-center gap-2 px-3 py-1 rounded-full border cursor-pointer text-xs font-semibold"
+                          style={getLabelChipStyles(label)}
+                        >
+                          <input
+                            type="checkbox"
+                            name="labelIds"
+                            value={label.id}
+                            className="accent-violet-500"
+                            disabled={submittingTask}
+                          />
+                          <span>{label.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   type="submit"
                   disabled={submittingTask}
@@ -1472,13 +1702,19 @@ export function ProjectDetailPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="border-2 border-white/10 rounded-xl p-5 hover:border-violet-500/50 hover:shadow-lg transition-all"
-                  >
+            {filteredTasks.map(task => {
+              const selectedLabelIds = getSelectedLabelIds(task)
+              return (
+                <div
+                  key={task.id}
+                  className="border-2 border-white/10 rounded-xl p-5 hover:border-violet-500/50 hover:shadow-lg transition-all"
+                >
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
+                    {(() => {
+                      const selectedIds = getSelectedLabelIds(task)
+                      return selectedIds
+                    })()}
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="font-bold text-lg text-white">{task.title}</h3>
                           <span className={getStatusBadge(task.status)}>{task.status}</span>
@@ -1572,6 +1808,88 @@ export function ProjectDetailPage() {
                             </div>
                           )}
                         </div>
+
+                        <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
+                          {task.labels && task.labels.length > 0 ? (
+                            task.labels.map(label => (
+                              <span
+                                key={`${task.id}-${label.id}`}
+                                className="px-2 py-1 rounded-full border font-semibold"
+                                style={getLabelChipStyles(label)}
+                              >
+                                {label.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-white/40">No labels</span>
+                          )}
+                          {isProjectOwner && labels.length > 0 && (
+                            <button
+                              type="button"
+                              className="text-violet-300 hover:text-violet-200 ml-2"
+                              onClick={() => handleToggleLabelPicker(task)}
+                            >
+                              {labelPickerOpen[task.id] ? 'Close label picker' : 'Manage labels'}
+                            </button>
+                          )}
+                        </div>
+
+                        {isProjectOwner && labelPickerOpen[task.id] && (
+                          <div className="mt-3 p-4 border border-violet-500/30 rounded-lg bg-violet-500/5 space-y-3">
+                            {labels.length === 0 ? (
+                              <p className="text-sm text-white/60">
+                                No labels available. Create labels above to start tagging tasks.
+                              </p>
+                            ) : (
+                              <div className="grid sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                                {labels.map(label => {
+                                  const isChecked = selectedLabelIds.includes(label.id)
+                                  return (
+                                    <label
+                                      key={`picker-${task.id}-${label.id}`}
+                                      className="flex items-center gap-2 text-sm text-white/80 cursor-pointer"
+                                      style={{ color: label.color || '#e0e7ff' }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) =>
+                                          handleLabelSelectionChange(task.id, label.id, e.target.checked)
+                                        }
+                                        className="accent-violet-500"
+                                      />
+                                      <span
+                                        className="px-2 py-1 rounded-full border text-xs font-semibold"
+                                        style={getLabelChipStyles(label)}
+                                      >
+                                        {label.name}
+                                      </span>
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                            )}
+                            <div className="flex gap-3">
+                              <button
+                                type="button"
+                                className="btn btn-secondary text-xs"
+                                onClick={() => saveTaskLabels(task.id)}
+                                disabled={updatingLabelsTaskId === task.id}
+                              >
+                                {updatingLabelsTaskId === task.id ? 'Saving…' : 'Save labels'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost text-xs"
+                                onClick={() =>
+                                  setLabelPickerOpen(prev => ({ ...prev, [task.id]: false }))
+                                }
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         
                         {/* Timer Component */}
                         <div className="mt-4">
@@ -1644,7 +1962,9 @@ export function ProjectDetailPage() {
                                     {new Date(log.loggedAt).toLocaleDateString()} {new Date(log.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                   </span>
                                 </div>
-                              ))}
+                </div>
+              )
+            })}
                             </div>
                           </div>
                         )}
