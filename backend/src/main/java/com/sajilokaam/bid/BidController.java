@@ -1,14 +1,18 @@
 package com.sajilokaam.bid;
 
 import com.sajilokaam.auth.JwtService;
+import com.sajilokaam.bid.dto.BidComparisonResponse;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.job.JobRepository;
+import com.sajilokaam.profile.FreelancerProfile;
+import com.sajilokaam.profile.FreelancerProfileRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,13 +25,16 @@ public class BidController {
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final FreelancerProfileRepository freelancerProfileRepository;
 
     public BidController(BidRepository bidRepository, JobRepository jobRepository,
-                        UserRepository userRepository, JwtService jwtService) {
+                        UserRepository userRepository, JwtService jwtService,
+                        FreelancerProfileRepository freelancerProfileRepository) {
         this.bidRepository = bidRepository;
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.freelancerProfileRepository = freelancerProfileRepository;
     }
 
     @GetMapping("/{jobId}/bids")
@@ -156,7 +163,7 @@ public class BidController {
     }
 
     @GetMapping("/{jobId}/bids/compare")
-    public ResponseEntity<List<Bid>> compareBids(
+    public ResponseEntity<List<BidComparisonResponse>> compareBids(
             @PathVariable Long jobId,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -188,7 +195,33 @@ public class BidController {
         List<Bid> bids = bidRepository.findByJobId(jobId);
         bids.sort((b1, b2) -> b1.getAmount().compareTo(b2.getAmount()));
         
-        return ResponseEntity.ok(bids);
+        // Enrich with freelancer profile data
+        List<BidComparisonResponse> comparisons = new ArrayList<>();
+        for (Bid bid : bids) {
+            User freelancer = bid.getFreelancer();
+            Optional<FreelancerProfile> profileOpt = freelancerProfileRepository.findByUserId(freelancer.getId());
+            
+            String experienceLevel = null;
+            if (profileOpt.isPresent() && profileOpt.get().getExperienceLevel() != null) {
+                experienceLevel = profileOpt.get().getExperienceLevel().name();
+            }
+            
+            BidComparisonResponse response = new BidComparisonResponse(
+                bid.getId(),
+                freelancer.getId(),
+                freelancer.getFullName(),
+                freelancer.getEmail(),
+                bid.getAmount(),
+                bid.getMessage(),
+                bid.getStatus(),
+                bid.getCreatedAt(),
+                experienceLevel,
+                null // Rating not implemented yet
+            );
+            comparisons.add(response);
+        }
+        
+        return ResponseEntity.ok(comparisons);
     }
 }
 

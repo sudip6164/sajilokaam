@@ -234,6 +234,23 @@ export const api = {
       apiRequest(`/job-skills/${id}`)
   },
   
+  // Job Templates
+  jobTemplates: {
+    getAll: (categoryId = null) => {
+      const params = categoryId ? `?categoryId=${categoryId}` : ''
+      return apiRequest(`/job-templates${params}`)
+    },
+    
+    getById: (id) =>
+      apiRequest(`/job-templates/${id}`)
+  },
+  
+  // Job Recommendations
+  jobRecommendations: {
+    get: (token) =>
+      apiRequest('/jobs/recommendations', { token })
+  },
+  
   // Saved Jobs
   savedJobs: {
     getAll: (token) =>

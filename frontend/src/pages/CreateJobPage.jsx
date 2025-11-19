@@ -19,6 +19,8 @@ export function CreateJobPage() {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [skills, setSkills] = useState([])
+  const [templates, setTemplates] = useState([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [loadingData, setLoadingData] = useState(true)
   const { token } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -38,12 +40,14 @@ export function CreateJobPage() {
 
   const loadCategoriesAndSkills = async () => {
     try {
-      const [catsData, skillsData] = await Promise.all([
+      const [catsData, skillsData, templatesData] = await Promise.all([
         api.jobCategories.getAll(),
-        api.jobSkills.getAll()
+        api.jobSkills.getAll(),
+        api.jobTemplates.getAll()
       ])
       setCategories(Array.isArray(catsData) ? catsData : [])
       setSkills(Array.isArray(skillsData) ? skillsData : [])
+      setTemplates(Array.isArray(templatesData) ? templatesData : [])
       
       if (!Array.isArray(catsData) || catsData.length === 0) {
         console.warn('No categories found. Make sure categories are seeded in the database.')
@@ -53,10 +57,37 @@ export function CreateJobPage() {
       showError('Failed to load categories and skills: ' + (err.message || 'Unknown error'))
       setCategories([])
       setSkills([])
+      setTemplates([])
     } finally {
       setLoadingData(false)
     }
   }
+
+  const loadTemplate = async (templateId) => {
+    if (!templateId) return
+    try {
+      const template = await api.jobTemplates.getById(templateId)
+      if (template) {
+        setTitle(template.title || '')
+        setDescription(template.description || '')
+        setJobType(template.jobType || 'FIXED_PRICE')
+        setExperienceLevel(template.experienceLevel || '')
+        if (template.category?.id) {
+          setCategoryId(template.category.id.toString())
+        }
+        showSuccess('Template loaded')
+      }
+    } catch (err) {
+      console.error('Failed to load template', err)
+      showError('Failed to load template')
+    }
+  }
+
+  useEffect(() => {
+    if (selectedTemplateId) {
+      loadTemplate(selectedTemplateId)
+    }
+  }, [selectedTemplateId])
 
   const loadSkillsForCategory = async (catId) => {
     try {
@@ -145,6 +176,28 @@ export function CreateJobPage() {
           </div>
           <div className="card">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {templates.length > 0 && (
+                <div>
+                  <label className="block text-sm font-bold text-white/90 mb-2">
+                    Use Template (Optional)
+                  </label>
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="input-field"
+                    disabled={loading}
+                  >
+                    <option value="">Start from scratch</option>
+                    {templates.map(template => (
+                      <option key={template.id} value={template.id}>{template.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-white/60 mt-1">
+                    Select a template to pre-fill job details
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-bold text-white/90 mb-2">
                   Job Title <span className="text-red-500">*</span>

@@ -5,6 +5,8 @@ import com.sajilokaam.jobcategory.JobCategory;
 import com.sajilokaam.jobcategory.JobCategoryRepository;
 import com.sajilokaam.jobskill.JobSkill;
 import com.sajilokaam.jobskill.JobSkillRepository;
+import com.sajilokaam.profile.FreelancerProfile;
+import com.sajilokaam.profile.FreelancerProfileRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -31,14 +34,17 @@ public class JobController {
     private final JwtService jwtService;
     private final JobCategoryRepository categoryRepository;
     private final JobSkillRepository skillRepository;
+    private final FreelancerProfileRepository freelancerProfileRepository;
 
     public JobController(JobRepository jobRepository, UserRepository userRepository, JwtService jwtService,
-                         JobCategoryRepository categoryRepository, JobSkillRepository skillRepository) {
+                         JobCategoryRepository categoryRepository, JobSkillRepository skillRepository,
+                         FreelancerProfileRepository freelancerProfileRepository) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.categoryRepository = categoryRepository;
         this.skillRepository = skillRepository;
+        this.freelancerProfileRepository = freelancerProfileRepository;
     }
 
     @GetMapping
@@ -274,6 +280,77 @@ public class JobController {
 
         jobRepository.delete(job);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<Job>> getRecommendations(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // Get freelancer profile to match skills
+        Optional<FreelancerProfile> profileOpt = freelancerProfileRepository.findByUserId(userOpt.get().getId());
+        if (profileOpt.isEmpty()) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+
+        FreelancerProfile profile = profileOpt.get();
+        
+        // Extract skills from profile (comma-separated)
+        Set<String> freelancerSkills = new HashSet<>();
+        if (profile.getPrimarySkills() != null && !profile.getPrimarySkills().isBlank()) {
+            String[] skills = profile.getPrimarySkills().split(",");
+            for (String skill : skills) {
+                freelancerSkills.add(skill.trim().toLowerCase());
+            }
+        }
+        if (profile.getSecondarySkills() != null && !profile.getSecondarySkills().isBlank()) {
+            String[] skills = profile.getSecondarySkills().split(",");
+            for (String skill : skills) {
+                freelancerSkills.add(skill.trim().toLowerCase());
+            }
+        }
+
+        // Get all open jobs
+        List<Job> allJobs = jobRepository.findAll();
+        
+        // Filter and score jobs based on skill matches
+        List<Job> recommendations = allJobs.stream()
+            .filter(job -> "OPEN".equals(job.getStatus()))
+            .filter(job -> job.getExpiresAt() == null || job.getExpiresAt().isAfter(LocalDateTime.now()))
+            .map(job -> {
+                // Calculate match score based on required skills
+                int matchScore = 0;
+                if (job.getRequiredSkills() != null && !job.getRequiredSkills().isEmpty()) {
+                    for (JobSkill requiredSkill : job.getRequiredSkills()) {
+                        String skillName = requiredSkill.getName().toLowerCase();
+                        if (freelancerSkills.contains(skillName)) {
+                            matchScore++;
+                        }
+                    }
+                }
+                // Store match score as a transient field (we'll use it for sorting)
+                return new Object[] { job, matchScore };
+            })
+            .filter(pair -> ((Integer) pair[1]) > 0) // Only jobs with at least one matching skill
+            .sorted((a, b) -> ((Integer) b[1]).compareTo((Integer) a[1])) // Sort by match score descending
+            .limit(10) // Top 10 recommendations
+            .map(pair -> (Job) pair[0])
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(recommendations);
     }
 }
 
