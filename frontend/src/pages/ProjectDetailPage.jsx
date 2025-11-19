@@ -42,6 +42,11 @@ const getLabelChipStyles = (label) => {
   }
 }
 
+const DEPENDENCY_OPTIONS = [
+  { value: 'BLOCKS', label: 'Blocks (this task must finish first)' },
+  { value: 'BLOCKED_BY', label: 'Blocked by (waiting on selected task)' }
+]
+
 export function ProjectDetailPage() {
   const { id } = useParams()
   const [project, setProject] = useState(null)
@@ -67,6 +72,7 @@ export function ProjectDetailPage() {
   const [timeSummaries, setTimeSummaries] = useState({}) // { taskId: { totalMinutes, totalHours, count } }
   const [showTimeLogForm, setShowTimeLogForm] = useState({}) // { taskId: true/false }
   const [loggingTime, setLoggingTime] = useState({}) // { taskId: true/false }
+  const [taskDependencies, setTaskDependencies] = useState({}) // { taskId: [dependencies] }
   const [comments, setComments] = useState({}) // { taskId: [comments] }
   const [showCommentForm, setShowCommentForm] = useState({}) // { taskId: true/false }
   const [submittingComment, setSubmittingComment] = useState({}) // { taskId: true/false }
@@ -77,6 +83,10 @@ export function ProjectDetailPage() {
   const [labelForm, setLabelForm] = useState({ name: '', color: '#6366f1' })
   const [creatingLabel, setCreatingLabel] = useState(false)
   const [loadingLabels, setLoadingLabels] = useState(false)
+  const [dependencyManagerOpen, setDependencyManagerOpen] = useState({})
+  const [dependencyForm, setDependencyForm] = useState({})
+  const [addingDependencyId, setAddingDependencyId] = useState(null)
+  const [removingDependencyId, setRemovingDependencyId] = useState(null)
   const [milestones, setMilestones] = useState([])
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [submittingMilestone, setSubmittingMilestone] = useState(false)
@@ -114,6 +124,7 @@ export function ProjectDetailPage() {
         loadTimeSummary(task.id)
         loadComments(task.id)
         loadFiles(task.id)
+        loadTaskDependencies(task.id)
       })
     }
   }, [tasks, id])
@@ -344,6 +355,19 @@ export function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load time summary', err)
+    }
+  }
+
+  const loadTaskDependencies = async (taskId) => {
+    if (!token) return
+    try {
+      const deps = await api.tasks.getDependencies(taskId, token)
+      setTaskDependencies(prev => ({
+        ...prev,
+        [taskId]: Array.isArray(deps) ? deps : []
+      }))
+    } catch (err) {
+      console.error('Failed to load dependencies', err)
     }
   }
 
@@ -623,21 +647,21 @@ export function ProjectDetailPage() {
     }
   }
 
-  const handleToggleLabelPicker = (task) => {
-    setLabelPickerOpen(prev => {
-      const next = !prev[task.id]
-      if (next) {
-        setLabelSelections(current => ({
-          ...current,
-          [task.id]: task.labels?.map(label => label.id) || []
-        }))
-      }
-      return {
-        ...prev,
-        [task.id]: next
-      }
-    })
-  }
+const handleToggleLabelPicker = (task) => {
+  setLabelPickerOpen(prev => {
+    const next = !prev[task.id]
+    if (next) {
+      setLabelSelections(current => ({
+        ...current,
+        [task.id]: task.labels?.map(label => label.id) || []
+      }))
+    }
+    return {
+      ...prev,
+      [task.id]: next
+    }
+  })
+}
 
   const handleLabelSelectionChange = (taskId, labelId, checked) => {
     setLabelSelections(prev => {
@@ -671,6 +695,69 @@ export function ProjectDetailPage() {
 
   const getSelectedLabelIds = (task) =>
     labelSelections[task.id] ?? (task.labels?.map(label => label.id) || [])
+
+const handleToggleDependencyManager = async (task) => {
+  const next = !dependencyManagerOpen[task.id]
+  setDependencyManagerOpen(prev => ({
+    ...prev,
+    [task.id]: next
+  }))
+  if (next) {
+    await loadTaskDependencies(task.id)
+    setDependencyForm(prev => ({
+      ...prev,
+      [task.id]: prev[task.id] || { dependsOnTaskId: '', dependencyType: 'BLOCKS' }
+    }))
+  }
+}
+
+const handleDependencyFormChange = (taskId, field, value) => {
+  setDependencyForm(prev => ({
+    ...prev,
+    [taskId]: {
+      dependsOnTaskId: field === 'dependsOnTaskId' ? value : prev[taskId]?.dependsOnTaskId || '',
+      dependencyType: field === 'dependencyType' ? value : prev[taskId]?.dependencyType || 'BLOCKS'
+    }
+  }))
+}
+
+const handleAddDependency = async (taskId) => {
+  const form = dependencyForm[taskId] || {}
+  if (!form.dependsOnTaskId) {
+    showError('Select a task to depend on')
+    return
+  }
+  setAddingDependencyId(taskId)
+  try {
+    await api.tasks.createDependency(taskId, token, {
+      dependsOnTaskId: parseInt(form.dependsOnTaskId),
+      dependencyType: form.dependencyType || 'BLOCKS'
+    })
+    await loadTaskDependencies(taskId)
+    showSuccess('Dependency added')
+    setDependencyForm(prev => ({
+      ...prev,
+      [taskId]: { dependsOnTaskId: '', dependencyType: form.dependencyType || 'BLOCKS' }
+    }))
+  } catch (err) {
+    showError(err.message || 'Failed to add dependency')
+  } finally {
+    setAddingDependencyId(null)
+  }
+}
+
+const handleRemoveDependency = async (taskId, dependencyId) => {
+  setRemovingDependencyId(dependencyId)
+  try {
+    await api.tasks.deleteDependency(taskId, dependencyId, token)
+    await loadTaskDependencies(taskId)
+    showSuccess('Dependency removed')
+  } catch (err) {
+    showError(err.message || 'Failed to remove dependency')
+  } finally {
+    setRemovingDependencyId(null)
+  }
+}
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -1891,6 +1978,107 @@ export function ProjectDetailPage() {
                           </div>
                         )}
                         
+                      <div className="mt-6 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold text-white/80 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Dependencies
+                          </h4>
+                          {isProjectOwner && (
+                            <button
+                              type="button"
+                              className="text-xs text-violet-300 hover:text-violet-200"
+                              onClick={() => handleToggleDependencyManager(task)}
+                            >
+                              {dependencyManagerOpen[task.id] ? 'Close manager' : 'Manage dependencies'}
+                            </button>
+                          )}
+                        </div>
+                        {taskDependencies[task.id] && taskDependencies[task.id].length > 0 ? (
+                          <ul className="space-y-2 text-sm text-white/80">
+                            {taskDependencies[task.id].map(dep => (
+                              <li
+                                key={dep.id}
+                                className="flex items-center justify-between gap-2 border border-white/10 rounded-lg px-3 py-2 bg-white/5"
+                              >
+                                <div>
+                                  <p className="font-semibold text-white">{dep.dependsOnTaskTitle}</p>
+                                  <p className="text-xs text-white/50">
+                                    {dep.dependencyType === 'BLOCKS'
+                                      ? 'This task blocks the selected task'
+                                      : 'This task is blocked by the selected task'}
+                                  </p>
+                                </div>
+                                {isProjectOwner && (
+                                  <button
+                                    type="button"
+                                    className="text-xs text-rose-300 hover:text-rose-200"
+                                    onClick={() => handleRemoveDependency(task.id, dep.id)}
+                                    disabled={removingDependencyId === dep.id}
+                                  >
+                                    {removingDependencyId === dep.id ? 'Removing…' : 'Remove'}
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-white/50">No dependencies configured.</p>
+                        )}
+
+                        {isProjectOwner && dependencyManagerOpen[task.id] && (
+                          <div className="border border-violet-500/30 rounded-lg p-4 bg-violet-500/5 space-y-3">
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-white/60 mb-1">Related task</label>
+                                <select
+                                  className="input-field text-sm"
+                                  value={dependencyForm[task.id]?.dependsOnTaskId || ''}
+                                  onChange={(e) =>
+                                    handleDependencyFormChange(task.id, 'dependsOnTaskId', e.target.value)
+                                  }
+                                >
+                                  <option value="">Select task…</option>
+                                  {tasks
+                                    .filter(t => t.id !== task.id)
+                                    .map(option => (
+                                      <option key={`dep-option-${task.id}-${option.id}`} value={option.id}>
+                                        {option.title}
+                                      </option>
+                                    ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-white/60 mb-1">Relationship</label>
+                                <select
+                                  className="input-field text-sm"
+                                  value={dependencyForm[task.id]?.dependencyType || 'BLOCKS'}
+                                  onChange={(e) =>
+                                    handleDependencyFormChange(task.id, 'dependencyType', e.target.value)
+                                  }
+                                >
+                                  {DEPENDENCY_OPTIONS.map(option => (
+                                    <option key={`${task.id}-${option.value}`} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-secondary text-xs"
+                              onClick={() => handleAddDependency(task.id)}
+                              disabled={addingDependencyId === task.id}
+                            >
+                              {addingDependencyId === task.id ? 'Adding…' : 'Add dependency'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                         {/* Timer Component */}
                         <div className="mt-4">
                           <Timer 

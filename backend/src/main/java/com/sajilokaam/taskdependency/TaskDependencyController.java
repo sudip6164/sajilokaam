@@ -2,11 +2,13 @@ package com.sajilokaam.taskdependency;
 
 import com.sajilokaam.task.Task;
 import com.sajilokaam.task.TaskRepository;
+import com.sajilokaam.taskdependency.dto.TaskDependencyResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -22,13 +24,16 @@ public class TaskDependencyController {
     }
 
     @GetMapping("/{taskId}/dependencies")
-    public ResponseEntity<List<TaskDependency>> getTaskDependencies(@PathVariable Long taskId) {
-        List<TaskDependency> dependencies = taskDependencyRepository.findByTaskId(taskId);
+    public ResponseEntity<List<TaskDependencyResponse>> getTaskDependencies(@PathVariable Long taskId) {
+        List<TaskDependencyResponse> dependencies = taskDependencyRepository.findByTaskId(taskId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(dependencies);
     }
 
     @PostMapping("/{taskId}/dependencies")
-    public ResponseEntity<TaskDependency> createDependency(
+    public ResponseEntity<TaskDependencyResponse> createDependency(
             @PathVariable Long taskId,
             @RequestBody TaskDependencyCreateRequest request) {
         if (!taskRepository.existsById(taskId) || 
@@ -56,7 +61,7 @@ public class TaskDependencyController {
 
         TaskDependency created = taskDependencyRepository.save(dependency);
         URI location = URI.create("/api/tasks/" + taskId + "/dependencies/" + created.getId());
-        return ResponseEntity.created(location).body(created);
+        return ResponseEntity.created(location).body(toResponse(created));
     }
 
     @DeleteMapping("/{taskId}/dependencies/{dependencyId}")
@@ -72,6 +77,18 @@ public class TaskDependencyController {
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private TaskDependencyResponse toResponse(TaskDependency dependency) {
+        TaskDependencyResponse response = new TaskDependencyResponse();
+        response.setId(dependency.getId());
+        response.setTaskId(dependency.getTask().getId());
+        response.setDependsOnTaskId(dependency.getDependsOnTask().getId());
+        response.setDependsOnTaskTitle(dependency.getDependsOnTask().getTitle());
+        response.setDependsOnTaskStatus(dependency.getDependsOnTask().getStatus());
+        response.setDependencyType(dependency.getDependencyType());
+        response.setCreatedAt(dependency.getCreatedAt());
+        return response;
     }
 
     public static class TaskDependencyCreateRequest {
