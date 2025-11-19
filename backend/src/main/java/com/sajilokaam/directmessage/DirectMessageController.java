@@ -1,8 +1,7 @@
 package com.sajilokaam.directmessage;
 
 import com.sajilokaam.auth.JwtService;
-import com.sajilokaam.notification.Notification;
-import com.sajilokaam.notification.NotificationRepository;
+import com.sajilokaam.notification.NotificationService;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +21,18 @@ public class DirectMessageController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public DirectMessageController(DirectMessageRepository directMessageRepository,
                                   UserRepository userRepository,
                                   JwtService jwtService,
                                   SimpMessagingTemplate messagingTemplate,
-                                  NotificationRepository notificationRepository) {
+                                  NotificationService notificationService) {
         this.directMessageRepository = directMessageRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.messagingTemplate = messagingTemplate;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/{userId}")
@@ -115,15 +114,14 @@ public class DirectMessageController {
         messagingTemplate.convertAndSend("/queue/messages/" + sender.getId(), created);
 
         // Create notification
-        Notification notification = new Notification();
-        notification.setUser(receiver);
-        notification.setType("MESSAGE");
-        notification.setTitle("New message from " + sender.getFullName());
-        notification.setMessage(request.getContent());
-        notification.setEntityType("USER");
-        notification.setEntityId(sender.getId());
-        notificationRepository.save(notification);
-        messagingTemplate.convertAndSend("/queue/notifications/" + receiverId, notification);
+        notificationService.notifyUser(
+                receiver,
+                "MESSAGE",
+                "New message from " + sender.getFullName(),
+                request.getContent(),
+                "USER",
+                sender.getId()
+        );
 
         URI location = URI.create("/api/direct-messages/" + receiverId + "/" + created.getId());
         return ResponseEntity.created(location).body(created);

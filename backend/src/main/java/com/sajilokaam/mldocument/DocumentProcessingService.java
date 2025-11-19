@@ -4,6 +4,7 @@ import com.sajilokaam.project.Project;
 import com.sajilokaam.project.ProjectRepository;
 import com.sajilokaam.task.Task;
 import com.sajilokaam.task.TaskRepository;
+import com.sajilokaam.task.TaskPriority;
 import com.sajilokaam.user.User;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -185,7 +186,7 @@ public class DocumentProcessingService {
             task.setProject(processing.getProject());
             task.setTitle(suggestion.getSuggestedTitle());
             task.setDescription(suggestion.getSuggestedDescription());
-            task.setPriority(suggestion.getSuggestedPriority());
+            task.setPriority(resolvePriority(suggestion.getSuggestedPriority()));
             task.setDueDate(suggestion.getSuggestedDueDate());
             task.setEstimatedHours(suggestion.getSuggestedEstimatedHours());
             task.setStatus("TODO"); // Default status
@@ -214,6 +215,17 @@ public class DocumentProcessingService {
                 suggestion.setStatus("REJECTED");
                 extractedTaskSuggestionRepository.save(suggestion);
             }
+        }
+    }
+
+    private TaskPriority resolvePriority(String suggestedPriority) {
+        if (suggestedPriority == null || suggestedPriority.isBlank()) {
+            return TaskPriority.MEDIUM;
+        }
+        try {
+            return TaskPriority.valueOf(suggestedPriority.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return TaskPriority.MEDIUM;
         }
     }
 

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
-import { connectWebSocket, subscribeToConversation, sendMessage, disconnectWebSocket } from '../utils/websocket'
+import { connectWebSocket, subscribeToConversation, sendMessage } from '../utils/websocket'
 
 export function ProjectMessaging({ projectId }) {
   const { token, profile } = useAuth()
@@ -19,31 +19,42 @@ export function ProjectMessaging({ projectId }) {
   useEffect(() => {
     if (projectId && token) {
       loadConversations()
-      connectWebSocket(token, null, null)
+      connectWebSocket({ token })
     }
     return () => {
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe()
+        subscriptionRef.current = null
       }
-      disconnectWebSocket()
     }
   }, [projectId, token])
 
   useEffect(() => {
+    let isMounted = true
     if (selectedConversation) {
       loadMessages()
-      // Subscribe to WebSocket for real-time updates
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe()
+        subscriptionRef.current = null
       }
-      subscriptionRef.current = subscribeToConversation(selectedConversation.id, (message) => {
+      subscribeToConversation(selectedConversation.id, (message) => {
         setMessages(prev => [...prev, message])
         scrollToBottom()
+      }).then(subscription => {
+        if (isMounted) {
+          subscriptionRef.current = subscription
+        } else {
+          subscription.unsubscribe()
+        }
+      }).catch(err => {
+        console.error('Failed to subscribe to conversation', err)
       })
     }
     return () => {
+      isMounted = false
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe()
+        subscriptionRef.current = null
       }
     }
   }, [selectedConversation])

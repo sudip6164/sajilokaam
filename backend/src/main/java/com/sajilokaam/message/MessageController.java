@@ -3,8 +3,7 @@ package com.sajilokaam.message;
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.conversation.Conversation;
 import com.sajilokaam.conversation.ConversationRepository;
-import com.sajilokaam.notification.Notification;
-import com.sajilokaam.notification.NotificationRepository;
+import com.sajilokaam.notification.NotificationService;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -29,20 +28,20 @@ public class MessageController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final SimpMessagingTemplate messagingTemplate;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public MessageController(MessageRepository messageRepository,
                             ConversationRepository conversationRepository,
                             UserRepository userRepository,
                             JwtService jwtService,
                             SimpMessagingTemplate messagingTemplate,
-                            NotificationRepository notificationRepository) {
+                            NotificationService notificationService) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.messagingTemplate = messagingTemplate;
-        this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/{conversationId}/messages")
@@ -107,18 +106,14 @@ public class MessageController {
         // Create notifications for other participants
         conversation.getParticipants().stream()
                 .filter(p -> !p.getId().equals(sender.getId()))
-                .forEach(participant -> {
-                    Notification notification = new Notification();
-                    notification.setUser(participant);
-                    notification.setType("MESSAGE");
-                    notification.setTitle("New message in " + (conversation.getTitle() != null ? conversation.getTitle() : "conversation"));
-                    notification.setMessage(sender.getFullName() + ": " + request.getContent());
-                    notification.setEntityType("CONVERSATION");
-                    notification.setEntityId(conversationId);
-                    notificationRepository.save(notification);
-                    // Send notification via WebSocket
-                    messagingTemplate.convertAndSend("/queue/notifications/" + participant.getId(), notification);
-                });
+                .forEach(participant -> notificationService.notifyUser(
+                        participant,
+                        "MESSAGE",
+                        "New message in " + (conversation.getTitle() != null ? conversation.getTitle() : "conversation"),
+                        sender.getFullName() + ": " + request.getContent(),
+                        "CONVERSATION",
+                        conversationId
+                ));
 
         URI location = URI.create("/api/conversations/" + conversationId + "/messages/" + created.getId());
         return ResponseEntity.created(location).body(created);

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { connectWebSocket, subscribeToNotifications } from '../utils/websocket'
 
 export function NotificationBell() {
   const { token, profile } = useAuth()
@@ -17,6 +18,39 @@ export function NotificationBell() {
       loadNotifications()
     }
   }, [token])
+
+  useEffect(() => {
+    let subscription
+    let isMounted = true
+
+    if (token && profile?.id) {
+      connectWebSocket({ token })
+        .then(() => {
+          if (!isMounted) return
+          return subscribeToNotifications(profile.id, (notification) => {
+            setUnreadCount(prev => prev + 1)
+            setNotifications(prev => [notification, ...prev].slice(0, 10))
+          })
+        })
+        .then((sub) => {
+          if (isMounted) {
+            subscription = sub
+          } else if (sub) {
+            sub.unsubscribe()
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to subscribe to notifications', err)
+        })
+    }
+
+    return () => {
+      isMounted = false
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+    }
+  }, [token, profile?.id])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
