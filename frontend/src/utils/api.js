@@ -422,7 +422,7 @@ export const api = {
       apiRequest(`/tasks/${taskId}/activities`, { token }),
     
     getActivitiesPaged: (taskId, page = 0, size = 20, token) =>
-      apiRequest(`/tasks/${taskId}/activities/paged?page=${page}&size=${size}`, { token })
+      apiRequest(`/tasks/${taskId}/activities?page=${page}&size=${size}`, { token })
   },
   
   // Task Labels

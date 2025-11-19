@@ -78,6 +78,8 @@ export function ProjectDetailPage() {
   const [showCommentForm, setShowCommentForm] = useState({}) // { taskId: true/false }
   const [submittingComment, setSubmittingComment] = useState({}) // { taskId: true/false }
   const [files, setFiles] = useState({}) // { taskId: [files] }
+  const [activities, setActivities] = useState({}) // { taskId: [activities] }
+  const [activityPages, setActivityPages] = useState({}) // { taskId: { page, hasMore, loading } }
   const [uploadingFile, setUploadingFile] = useState({}) // { taskId: true/false }
   const [labelPickerOpen, setLabelPickerOpen] = useState({})
   const [labelSelections, setLabelSelections] = useState({})
@@ -130,6 +132,7 @@ export function ProjectDetailPage() {
         loadFiles(task.id)
         loadTaskDependencies(task.id)
         loadTaskWatchers(task.id)
+        loadTaskActivities(task.id, 0, true)
       })
     }
   }, [tasks, id])
@@ -406,6 +409,49 @@ export function ProjectDetailPage() {
     } catch (err) {
       console.error('Failed to load files', err)
     }
+  }
+
+  const loadTaskActivities = async (taskId, page = 0, replace = false) => {
+    if (!token) return
+    setActivityPages(prev => ({
+      ...prev,
+      [taskId]: {
+        page,
+        hasMore: true,
+        loading: true
+      }
+    }))
+    try {
+      const data = await api.tasks.getActivitiesPaged(taskId, page, 20, token)
+      const content = Array.isArray(data?.content) ? data.content : data
+      setActivities(prev => ({
+        ...prev,
+        [taskId]: replace ? content : [...(prev[taskId] || []), ...content]
+      }))
+      setActivityPages(prev => ({
+        ...prev,
+        [taskId]: {
+          page,
+          hasMore: content.length === 20,
+          loading: false
+        }
+      }))
+    } catch (err) {
+      console.error('Failed to load activities', err)
+      setActivityPages(prev => ({
+        ...prev,
+        [taskId]: {
+          ...(prev[taskId] || { page: 0, hasMore: true }),
+          loading: false
+        }
+      }))
+    }
+  }
+
+  const loadMoreActivities = (taskId) => {
+    const state = activityPages[taskId] || { page: 0, hasMore: true, loading: false }
+    if (state.loading || !state.hasMore) return
+    loadTaskActivities(taskId, state.page + 1, false)
   }
 
   const loadTaskWatchers = async (taskId) => {
@@ -1146,6 +1192,32 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
                           >
                             📄 Full Project Report (PDF)
                           </a>
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-white/10">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-bold text-white/90 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Activity Timeline
+                            </h4>
+                            <button
+                              type="button"
+                              className="text-xs text-violet-300 hover:text-violet-200"
+                              onClick={() => loadTaskActivities(task.id, 0, true)}
+                              disabled={activityPages[task.id]?.loading}
+                            >
+                              Refresh
+                            </button>
+                          </div>
+                          <TaskActivityTimeline
+                            activities={activities[task.id] || []}
+                            currentUserId={profile?.id}
+                            onLoadMore={() => loadMoreActivities(task.id)}
+                            hasMore={activityPages[task.id]?.hasMore}
+                            loading={activityPages[task.id]?.loading}
+                          />
                         </div>
                       </div>
                     </div>
