@@ -27,6 +27,8 @@ export function JobsPage() {
   const [skills, setSkills] = useState([])
   const [freelancerProfileStatus, setFreelancerProfileStatus] = useState(null)
   const [clientProfileStatus, setClientProfileStatus] = useState(null)
+  const [recommendations, setRecommendations] = useState([])
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false)
   const itemsPerPage = 10
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -42,6 +44,14 @@ export function JobsPage() {
   useEffect(() => {
     loadJobs()
   }, [filters, searchQuery])
+
+  useEffect(() => {
+    if (token && profile?.roles?.some(r => r.name === 'FREELANCER')) {
+      loadRecommendations()
+    } else {
+      setRecommendations([])
+    }
+  }, [token, profile])
 
   useEffect(() => {
     if (!token || !profile) {
@@ -92,6 +102,34 @@ export function JobsPage() {
     } catch (err) {
       console.error('Failed to load categories and skills', err)
     }
+  }
+
+  const loadRecommendations = async () => {
+    if (!token) return
+    setLoadingRecommendations(true)
+    try {
+      const data = await api.jobRecommendations.get(token)
+      setRecommendations(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.warn('Failed to load job recommendations', err)
+    } finally {
+      setLoadingRecommendations(false)
+    }
+  }
+
+  const formatBudgetRange = (job) => {
+    const min = job?.budgetMin != null ? Number(job.budgetMin) : null
+    const max = job?.budgetMax != null ? Number(job.budgetMax) : null
+    if (min != null && max != null) {
+      return `Rs. ${min.toLocaleString()} - Rs. ${max.toLocaleString()}`
+    }
+    if (min != null) {
+      return `From Rs. ${min.toLocaleString()}`
+    }
+    if (max != null) {
+      return `Up to Rs. ${max.toLocaleString()}`
+    }
+    return 'Budget TBD'
   }
 
   const loadJobs = async () => {
@@ -316,6 +354,79 @@ export function JobsPage() {
               </div>
             )}
           </div>
+
+          {isFreelancer && (
+            <section className="card mb-10">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-violet-200/70">
+                    Personalized feed
+                  </p>
+                  <h2 className="text-xl font-bold text-white">Recommended jobs for you</h2>
+                  <p className="text-white/60 text-sm">
+                    Matches are based on your primary and secondary skills.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    className="btn btn-ghost border border-white/10"
+                    onClick={loadRecommendations}
+                    disabled={loadingRecommendations}
+                  >
+                    {loadingRecommendations ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                  <Link to="/profile" className="btn btn-secondary">
+                    Update skills
+                  </Link>
+                </div>
+              </div>
+              {loadingRecommendations ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[1, 2].map(n => (
+                    <div key={n} className="border border-white/10 rounded-2xl p-4 bg-white/5">
+                      <div className="loading-skeleton h-6 w-1/2 mb-3"></div>
+                      <div className="loading-skeleton h-4 w-3/4 mb-2"></div>
+                      <div className="loading-skeleton h-4 w-2/3"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : recommendations.length === 0 ? (
+                <div className="border border-dashed border-white/15 rounded-2xl p-6 text-white/60 text-sm">
+                  Complete your freelancer profile with skills to unlock personalized job suggestions.
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {recommendations.map(rec => (
+                    <div key={rec.id} className="border border-white/10 rounded-2xl p-4 bg-white/5 flex flex-col gap-3">
+                      <div>
+                        <p className="text-xs uppercase text-white/50">Matched opportunity</p>
+                        <h3 className="text-lg font-bold text-white">{rec.title}</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-sm text-white/70">
+                        {rec.category?.name && (
+                          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs uppercase tracking-wide">
+                            {rec.category.name}
+                          </span>
+                        )}
+                        {rec.experienceLevel && (
+                          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs uppercase tracking-wide">
+                            {rec.experienceLevel.replace(/_/g, ' ')}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-white/70 text-sm line-clamp-2">{rec.description}</p>
+                      <div className="flex items-center justify-between text-sm text-white">
+                        <span className="font-semibold">{formatBudgetRange(rec)}</span>
+                        <Link to={`/jobs/${rec.id}`} className="text-violet-300 hover:text-violet-200 text-xs font-semibold">
+                          View Job →
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="grid lg:grid-cols-4 gap-6">
             {/* Filter Sidebar */}

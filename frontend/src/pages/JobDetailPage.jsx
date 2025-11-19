@@ -49,6 +49,7 @@ export function JobDetailPage() {
   const [editStatus, setEditStatus] = useState('OPEN')
   const [showCompareBids, setShowCompareBids] = useState(false)
   const [comparingBids, setComparingBids] = useState(false)
+  const [comparisonBids, setComparisonBids] = useState([])
   const [isSaved, setIsSaved] = useState(false)
   const [savingJob, setSavingJob] = useState(false)
   const [freelancerProfileStatus, setFreelancerProfileStatus] = useState(null)
@@ -125,6 +126,31 @@ export function JobDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load bids', err)
+    }
+  }
+
+  const handleCompareBidsToggle = async () => {
+    if (!token) {
+      showError('Sign in to compare bids')
+      return
+    }
+
+    if (showCompareBids) {
+      setShowCompareBids(false)
+      setComparisonBids([])
+      return
+    }
+
+    setComparingBids(true)
+    try {
+      const compared = await api.jobs.compareBids(id, token)
+      setComparisonBids(Array.isArray(compared) ? compared : [])
+      setShowCompareBids(true)
+    } catch (err) {
+      console.error('Failed to load bid comparison', err)
+      showError(err.message || 'Failed to load bid comparison')
+    } finally {
+      setComparingBids(false)
     }
   }
 
@@ -790,35 +816,11 @@ export function JobDetailPage() {
               </h2>
               {isJobOwner && bids.length > 1 && (
                 <button
-                  onClick={async () => {
-                    if (showCompareBids) {
-                      // Return to normal view
-                      await loadBids()
-                      setShowCompareBids(false)
-                    } else {
-                      // Show comparison view
-                      setComparingBids(true)
-                      try {
-                        const res = await fetch(`http://localhost:8080/api/jobs/${id}/bids/compare`, {
-                          headers: {
-                            'Authorization': `Bearer ${token}`
-                          }
-                        })
-                        if (res.ok) {
-                          const comparedBids = await res.json()
-                          setBids(comparedBids)
-                          setShowCompareBids(true)
-                        }
-                      } catch (err) {
-                        showError('Failed to load bid comparison')
-                      } finally {
-                        setComparingBids(false)
-                      }
-                    }
-                  }}
+                  onClick={handleCompareBidsToggle}
                   className="btn btn-secondary"
+                  disabled={comparingBids}
                 >
-                  {comparingBids ? 'Loading...' : showCompareBids ? 'Normal View' : 'Compare Bids'}
+                  {comparingBids ? 'Loading...' : showCompareBids ? 'Close Comparison' : 'Compare Bids'}
                 </button>
               )}
             </div>
@@ -837,10 +839,63 @@ export function JobDetailPage() {
             ) : (
               <>
                 {showCompareBids && (
-                  <div className="mb-6 p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
-                    <p className="text-white/70 text-sm">
-                      <strong className="text-white">Bids sorted by amount (lowest first)</strong> - Click "Compare Bids" again to return to normal view
-                    </p>
+                  <div className="mb-6 space-y-4">
+                    <div className="p-4 bg-violet-500/10 border border-violet-500/30 rounded-lg">
+                      <p className="text-white/70 text-sm">
+                        <strong className="text-white">Bid comparison</strong> · Sorted by amount with freelancer insights
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+                      {comparisonBids.length > 0 ? (
+                        <table className="min-w-full text-left text-sm text-white/80">
+                          <thead>
+                            <tr className="bg-white/5 text-xs uppercase tracking-wide text-white/60">
+                              <th className="px-4 py-3">Freelancer</th>
+                              <th className="px-4 py-3">Experience</th>
+                              <th className="px-4 py-3">Bid Amount</th>
+                              <th className="px-4 py-3">Status</th>
+                              <th className="px-4 py-3">Submitted</th>
+                              <th className="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {comparisonBids.map(bid => (
+                              <tr key={bid.bidId} className="border-t border-white/5">
+                                <td className="px-4 py-3">
+                                  <p className="font-semibold text-white">{bid.freelancerName || 'Unknown talent'}</p>
+                                  <p className="text-xs text-white/50">{bid.freelancerEmail || '—'}</p>
+                                </td>
+                                <td className="px-4 py-3 capitalize">
+                                  {bid.experienceLevel ? bid.experienceLevel.replace(/_/g, ' ').toLowerCase() : '—'}
+                                </td>
+                                <td className="px-4 py-3 font-semibold text-white">
+                                  Rs. {Number(bid.amount || 0).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={getStatusBadge(bid.status)}>{bid.status}</span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  {bid.createdAt ? new Date(bid.createdAt).toLocaleString() : '—'}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    type="button"
+                                    className="text-xs text-violet-300 hover:text-violet-200"
+                                    onClick={() => showSuccess(`Pin ${bid.freelancerName || 'this freelancer'} in your shortlist`)}
+                                  >
+                                    Shortlist →
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="p-6 text-center text-white/60">
+                          No comparable bids yet. Invite more freelancers to unlock insights.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 <div className="space-y-4">
