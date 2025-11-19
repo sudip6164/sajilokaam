@@ -370,6 +370,13 @@ export const api = {
         body: { assigneeId } 
       }),
     
+    updatePriority: (projectId, taskId, token, priority) =>
+      apiRequest(`/projects/${projectId}/tasks/${taskId}/priority`, {
+        method: 'PATCH',
+        token,
+        body: { priority }
+      }),
+    
     // Dependencies
     getDependencies: (taskId, token) =>
       apiRequest(`/tasks/${taskId}/dependencies`, { token }),

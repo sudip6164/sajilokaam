@@ -42,8 +42,9 @@ public class Task {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
-    @Column(length = 50)
-    private String priority; // LOW, MEDIUM, HIGH, CRITICAL
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private TaskPriority priority = TaskPriority.MEDIUM;
 
     @Column(name = "estimated_hours")
     private Integer estimatedHours;
@@ -131,11 +132,11 @@ public class Task {
         this.createdAt = createdAt;
     }
 
-    public String getPriority() {
+    public TaskPriority getPriority() {
         return priority;
     }
 
-    public void setPriority(String priority) {
+    public void setPriority(TaskPriority priority) {
         this.priority = priority;
     }
 

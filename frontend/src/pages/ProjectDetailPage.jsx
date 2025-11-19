@@ -4,6 +4,26 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { ProjectMessaging } from '../components/ProjectMessaging'
 import { Timer } from '../components/Timer'
+import api from '../utils/api'
+
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+
+const PRIORITY_STYLES = {
+  LOW: 'bg-emerald-500/10 text-emerald-200 border border-emerald-400/40',
+  MEDIUM: 'bg-sky-500/10 text-sky-200 border border-sky-400/40',
+  HIGH: 'bg-amber-500/10 text-amber-200 border border-amber-400/40',
+  CRITICAL: 'bg-rose-500/10 text-rose-200 border border-rose-400/40'
+}
+
+const DEFAULT_PRIORITY = 'MEDIUM'
+
+const formatPriorityLabel = (priority = DEFAULT_PRIORITY) => {
+  const normalized = priority || DEFAULT_PRIORITY
+  return normalized.charAt(0) + normalized.slice(1).toLowerCase()
+}
+
+const getPriorityBadgeClass = (priority) =>
+  PRIORITY_STYLES[priority] || PRIORITY_STYLES[DEFAULT_PRIORITY]
 
 export function ProjectDetailPage() {
   const { id } = useParams()
@@ -17,6 +37,7 @@ export function ProjectDetailPage() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
   const [assigningTaskId, setAssigningTaskId] = useState(null)
+  const [updatingPriorityId, setUpdatingPriorityId] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingProject, setEditingProject] = useState(false)
@@ -416,6 +437,7 @@ export function ProjectDetailPage() {
     const description = formData.get('description')
     const status = formData.get('status') || 'TODO'
     const dueDate = formData.get('dueDate') || null
+    const priority = formData.get('priority') || DEFAULT_PRIORITY
 
     if (!title.trim()) {
       showError('Task title is required')
@@ -435,6 +457,7 @@ export function ProjectDetailPage() {
           description: description || '',
           status,
           dueDate: dueDate || null,
+          priority,
           assigneeId: formData.get('assigneeId') ? parseInt(formData.get('assigneeId')) : null,
           milestoneId: formData.get('milestoneId') ? parseInt(formData.get('milestoneId')) : null
         })
@@ -502,6 +525,20 @@ export function ProjectDetailPage() {
       showError(err.message || 'Failed to update task assignee')
     } finally {
       setAssigningTaskId(null)
+    }
+  }
+
+  const updateTaskPriority = async (taskId, newPriority) => {
+    if (!newPriority) return
+    setUpdatingPriorityId(taskId)
+    try {
+      await api.tasks.updatePriority(id, taskId, token, newPriority)
+      showSuccess(`Priority updated to ${formatPriorityLabel(newPriority)}`)
+      await loadTasks()
+    } catch (err) {
+      showError(err.message || 'Failed to update task priority')
+    } finally {
+      setUpdatingPriorityId(null)
     }
   }
 
@@ -1357,6 +1394,21 @@ export function ProjectDetailPage() {
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-bold text-white/90 mb-2">Priority</label>
+                  <select
+                    name="priority"
+                    className="input-field"
+                    defaultValue={DEFAULT_PRIORITY}
+                    disabled={submittingTask}
+                  >
+                    {PRIORITY_OPTIONS.map(option => (
+                      <option key={option} value={option}>
+                        {formatPriorityLabel(option)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="submit"
                   disabled={submittingTask}
@@ -1427,9 +1479,12 @@ export function ProjectDetailPage() {
                   >
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <h3 className="font-bold text-lg text-white">{task.title}</h3>
                           <span className={getStatusBadge(task.status)}>{task.status}</span>
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityBadgeClass(task.priority)}`}>
+                            {formatPriorityLabel(task.priority)}
+                          </span>
                         </div>
                         {task.description && (
                           <p className="text-white/70 mb-3 leading-relaxed">{task.description}</p>
@@ -1449,6 +1504,23 @@ export function ProjectDetailPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                               <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                          {isProjectOwner && (
+                            <div className="flex items-center gap-2 text-white/60">
+                              <span className="text-xs uppercase tracking-wide text-white/40">Priority</span>
+                              <select
+                                value={task.priority || DEFAULT_PRIORITY}
+                                onChange={(e) => updateTaskPriority(task.id, e.target.value)}
+                                disabled={updatingPriorityId === task.id}
+                                className="text-xs border border-white/20 rounded px-2 py-1 bg-white/5 text-white/90"
+                              >
+                                {PRIORITY_OPTIONS.map(option => (
+                                  <option key={option} value={option}>
+                                    {formatPriorityLabel(option)}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
                           )}
                           {task.assignee ? (

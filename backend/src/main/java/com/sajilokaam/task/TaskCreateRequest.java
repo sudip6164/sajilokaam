@@ -10,7 +10,7 @@ public class TaskCreateRequest {
     private Long assigneeId;
     private Long milestoneId;
     private LocalDate dueDate;
-    private String priority; // LOW, MEDIUM, HIGH, CRITICAL
+    private TaskPriority priority;
     private Integer estimatedHours;
     private List<Long> labelIds; // Task label IDs
 
@@ -62,11 +62,11 @@ public class TaskCreateRequest {
         this.dueDate = dueDate;
     }
 
-    public String getPriority() {
+    public TaskPriority getPriority() {
         return priority;
     }
 
-    public void setPriority(String priority) {
+    public void setPriority(TaskPriority priority) {
         this.priority = priority;
     }
 

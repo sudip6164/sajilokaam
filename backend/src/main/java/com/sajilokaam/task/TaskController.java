@@ -61,7 +61,7 @@ public class TaskController {
         task.setStatus(request.getStatus() != null ? request.getStatus() : "TODO");
         task.setDueDate(request.getDueDate());
         task.setMilestoneId(request.getMilestoneId());
-        task.setPriority(request.getPriority() != null ? request.getPriority() : "MEDIUM");
+        task.setPriority(request.getPriority() != null ? request.getPriority() : TaskPriority.MEDIUM);
         task.setEstimatedHours(request.getEstimatedHours());
 
         if (request.getAssigneeId() != null) {
@@ -109,6 +109,30 @@ public class TaskController {
         }
 
         task.setStatus(status);
+        Task updated = taskRepository.save(task);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{projectId}/tasks/{taskId}/priority")
+    public ResponseEntity<Task> updateTaskPriority(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @RequestBody TaskPriorityUpdateRequest request) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOpt.get();
+        if (!task.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (request.getPriority() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        task.setPriority(request.getPriority());
         Task updated = taskRepository.save(task);
         return ResponseEntity.ok(updated);
     }
