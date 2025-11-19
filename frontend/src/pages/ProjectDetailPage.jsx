@@ -87,6 +87,9 @@ export function ProjectDetailPage() {
   const [dependencyForm, setDependencyForm] = useState({})
   const [addingDependencyId, setAddingDependencyId] = useState(null)
   const [removingDependencyId, setRemovingDependencyId] = useState(null)
+  const [watchers, setWatchers] = useState({})
+  const [watchingStates, setWatchingStates] = useState({})
+  const [togglingWatcherId, setTogglingWatcherId] = useState(null)
   const [milestones, setMilestones] = useState([])
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [submittingMilestone, setSubmittingMilestone] = useState(false)
@@ -125,6 +128,7 @@ export function ProjectDetailPage() {
         loadComments(task.id)
         loadFiles(task.id)
         loadTaskDependencies(task.id)
+        loadTaskWatchers(task.id)
       })
     }
   }, [tasks, id])
@@ -400,6 +404,26 @@ export function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to load files', err)
+    }
+  }
+
+  const loadTaskWatchers = async (taskId) => {
+    if (!token) return
+    try {
+      const data = await api.tasks.getWatchers(taskId, token)
+      setWatchers(prev => ({
+        ...prev,
+        [taskId]: Array.isArray(data) ? data : []
+      }))
+      if (profile) {
+        const isWatching = data?.some(watcher => watcher.user?.id === profile.id)
+        setWatchingStates(prev => ({
+          ...prev,
+          [taskId]: !!isWatching
+        }))
+      }
+    } catch (err) {
+      console.error('Failed to load watchers', err)
     }
   }
 
@@ -768,6 +792,29 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
     return badges[status] || 'badge badge-gray'
   }
 
+  const handleToggleWatcher = async (taskId) => {
+    if (!token || !profile) {
+      showError('Sign in to watch tasks')
+      return
+    }
+
+    const currentlyWatching = watchingStates[taskId]
+    setTogglingWatcherId(taskId)
+    try {
+      if (currentlyWatching) {
+        await api.tasks.removeWatcher(taskId, token)
+        showSuccess('Stopped watching this task')
+      } else {
+        await api.tasks.addWatcher(taskId, token)
+        showSuccess('You will now receive updates for this task')
+      }
+      await loadTaskWatchers(taskId)
+    } catch (err) {
+      showError(err.message || 'Failed to update watcher state')
+    } finally {
+      setTogglingWatcherId(null)
+    }
+  }
   const getTaskStats = () => {
     return {
       total: tasks.length,
@@ -1978,105 +2025,168 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
                           </div>
                         )}
                         
-                      <div className="mt-6 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-bold text-white/80 flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Dependencies
-                          </h4>
-                          {isProjectOwner && (
-                            <button
-                              type="button"
-                              className="text-xs text-violet-300 hover:text-violet-200"
-                              onClick={() => handleToggleDependencyManager(task)}
-                            >
-                              {dependencyManagerOpen[task.id] ? 'Close manager' : 'Manage dependencies'}
-                            </button>
-                          )}
-                        </div>
-                        {taskDependencies[task.id] && taskDependencies[task.id].length > 0 ? (
-                          <ul className="space-y-2 text-sm text-white/80">
-                            {taskDependencies[task.id].map(dep => (
-                              <li
-                                key={dep.id}
-                                className="flex items-center justify-between gap-2 border border-white/10 rounded-lg px-3 py-2 bg-white/5"
+                      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-white/80 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Dependencies
+                            </h4>
+                            {isProjectOwner && (
+                              <button
+                                type="button"
+                                className="text-xs text-violet-300 hover:text-violet-200"
+                                onClick={() => handleToggleDependencyManager(task)}
                               >
-                                <div>
-                                  <p className="font-semibold text-white">{dep.dependsOnTaskTitle}</p>
-                                  <p className="text-xs text-white/50">
-                                    {dep.dependencyType === 'BLOCKS'
-                                      ? 'This task blocks the selected task'
-                                      : 'This task is blocked by the selected task'}
-                                  </p>
-                                </div>
-                                {isProjectOwner && (
-                                  <button
-                                    type="button"
-                                    className="text-xs text-rose-300 hover:text-rose-200"
-                                    onClick={() => handleRemoveDependency(task.id, dep.id)}
-                                    disabled={removingDependencyId === dep.id}
-                                  >
-                                    {removingDependencyId === dep.id ? 'Removing…' : 'Remove'}
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-white/50">No dependencies configured.</p>
-                        )}
-
-                        {isProjectOwner && dependencyManagerOpen[task.id] && (
-                          <div className="border border-violet-500/30 rounded-lg p-4 bg-violet-500/5 space-y-3">
-                            <div className="grid md:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-semibold text-white/60 mb-1">Related task</label>
-                                <select
-                                  className="input-field text-sm"
-                                  value={dependencyForm[task.id]?.dependsOnTaskId || ''}
-                                  onChange={(e) =>
-                                    handleDependencyFormChange(task.id, 'dependsOnTaskId', e.target.value)
-                                  }
+                                {dependencyManagerOpen[task.id] ? 'Close manager' : 'Manage'}
+                              </button>
+                            )}
+                          </div>
+                          {taskDependencies[task.id] && taskDependencies[task.id].length > 0 ? (
+                            <ul className="space-y-2 text-sm text-white/80">
+                              {taskDependencies[task.id].map(dep => (
+                                <li
+                                  key={dep.id}
+                                  className="flex items-center justify-between gap-2 border border-white/10 rounded-lg px-3 py-2 bg-white/5"
                                 >
-                                  <option value="">Select task…</option>
-                                  {tasks
-                                    .filter(t => t.id !== task.id)
-                                    .map(option => (
-                                      <option key={`dep-option-${task.id}-${option.id}`} value={option.id}>
-                                        {option.title}
+                                  <div>
+                                    <p className="font-semibold text-white">{dep.dependsOnTaskTitle}</p>
+                                    <p className="text-xs text-white/50">
+                                      {dep.dependencyType === 'BLOCKS'
+                                        ? 'This task blocks the selected task'
+                                        : 'This task is blocked by the selected task'}
+                                    </p>
+                                  </div>
+                                  {isProjectOwner && (
+                                    <button
+                                      type="button"
+                                      className="text-xs text-rose-300 hover:text-rose-200"
+                                      onClick={() => handleRemoveDependency(task.id, dep.id)}
+                                      disabled={removingDependencyId === dep.id}
+                                    >
+                                      {removingDependencyId === dep.id ? 'Removing…' : 'Remove'}
+                                    </button>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-white/50">No dependencies configured.</p>
+                          )}
+
+                          {isProjectOwner && dependencyManagerOpen[task.id] && (
+                            <div className="border border-violet-500/30 rounded-lg p-4 bg-violet-500/5 space-y-3">
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-semibold text-white/60 mb-1">Related task</label>
+                                  <select
+                                    className="input-field text-sm"
+                                    value={dependencyForm[task.id]?.dependsOnTaskId || ''}
+                                    onChange={(e) =>
+                                      handleDependencyFormChange(task.id, 'dependsOnTaskId', e.target.value)
+                                    }
+                                  >
+                                    <option value="">Select task…</option>
+                                    {tasks
+                                      .filter(t => t.id !== task.id)
+                                      .map(option => (
+                                        <option key={`dep-option-${task.id}-${option.id}`} value={option.id}>
+                                          {option.title}
+                                        </option>
+                                      ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-white/60 mb-1">Relationship</label>
+                                  <select
+                                    className="input-field text-sm"
+                                    value={dependencyForm[task.id]?.dependencyType || 'BLOCKS'}
+                                    onChange={(e) =>
+                                      handleDependencyFormChange(task.id, 'dependencyType', e.target.value)
+                                    }
+                                  >
+                                    {DEPENDENCY_OPTIONS.map(option => (
+                                      <option key={`${task.id}-${option.value}`} value={option.value}>
+                                        {option.label}
                                       </option>
                                     ))}
-                                </select>
+                                  </select>
+                                </div>
                               </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-white/60 mb-1">Relationship</label>
-                                <select
-                                  className="input-field text-sm"
-                                  value={dependencyForm[task.id]?.dependencyType || 'BLOCKS'}
-                                  onChange={(e) =>
-                                    handleDependencyFormChange(task.id, 'dependencyType', e.target.value)
-                                  }
-                                >
-                                  {DEPENDENCY_OPTIONS.map(option => (
-                                    <option key={`${task.id}-${option.value}`} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
+                              <button
+                                type="button"
+                                className="btn btn-secondary text-xs"
+                                onClick={() => handleAddDependency(task.id)}
+                                disabled={addingDependencyId === task.id}
+                              >
+                                {addingDependencyId === task.id ? 'Adding…' : 'Add dependency'}
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              className="btn btn-secondary text-xs"
-                              onClick={() => handleAddDependency(task.id)}
-                              disabled={addingDependencyId === task.id}
-                            >
-                              {addingDependencyId === task.id ? 'Adding…' : 'Add dependency'}
-                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-white/80 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                              </svg>
+                              Watchers
+                            </h4>
+                            {profile && (
+                              <button
+                                type="button"
+                                className="text-xs text-violet-300 hover:text-violet-200"
+                                onClick={() => handleToggleWatcher(task.id)}
+                                disabled={togglingWatcherId === task.id}
+                              >
+                                {togglingWatcherId === task.id
+                                  ? 'Updating…'
+                                  : watchingStates[task.id]
+                                    ? 'Unwatch'
+                                    : 'Watch task'}
+                              </button>
+                            )}
                           </div>
-                        )}
+                          {watchers[task.id] && watchers[task.id].length > 0 ? (
+                            <ul className="space-y-2 text-sm text-white/80">
+                              {watchers[task.id].map(watcher => (
+                                <li
+                                  key={`${task.id}-watcher-${watcher.user?.id}`}
+                                  className="flex items-center justify-between px-3 py-2 border border-white/10 rounded-lg bg-white/5"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold text-white">
+                                      {watcher.user?.fullName?.charAt(0) || 'U'}
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-white">
+                                        {watcher.user?.fullName || 'Unknown user'}
+                                      </p>
+                                      <p className="text-xs text-white/50">
+                                        Watching since {watcher.createdAt ? new Date(watcher.createdAt).toLocaleDateString() : '—'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {profile && watcher.user?.id === profile.id && (
+                                    <button
+                                      type="button"
+                                      className="text-xs text-rose-300 hover:text-rose-200"
+                                      onClick={() => handleToggleWatcher(task.id)}
+                                      disabled={togglingWatcherId === task.id}
+                                    >
+                                      {togglingWatcherId === task.id ? 'Updating…' : 'Unwatch'}
+                                    </button>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-white/50">No watchers yet.</p>
+                          )}
+                        </div>
                       </div>
 
                         {/* Timer Component */}
