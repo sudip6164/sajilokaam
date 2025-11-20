@@ -577,7 +577,14 @@ export const api = {
       apiRequest(`/conversations/project/${projectId}`, { method: 'POST', token, body: data }),
     
     getById: (id, token) =>
-      apiRequest(`/conversations/${id}`, { token })
+      apiRequest(`/conversations/${id}`, { token }),
+
+    typing: (conversationId, token, isTyping) =>
+      apiRequest(`/conversations/${conversationId}/typing`, {
+        method: 'POST',
+        token,
+        body: { typing: isTyping }
+      })
   },
   
   // Messages
@@ -589,7 +596,35 @@ export const api = {
       apiRequest(`/conversations/${conversationId}/messages`, { method: 'POST', token, body: data }),
     
     edit: (conversationId, messageId, token, data) =>
-      apiRequest(`/conversations/${conversationId}/messages/${messageId}`, { method: 'PATCH', token, body: data })
+      apiRequest(`/conversations/${conversationId}/messages/${messageId}`, { method: 'PATCH', token, body: data }),
+
+    uploadAttachment: (conversationId, token, file) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      return apiRequest(`/conversations/${conversationId}/attachments`, {
+        method: 'POST',
+        token,
+        body: formData
+      })
+    },
+
+    downloadAttachment: async (conversationId, attachmentId, token) => {
+      const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}/attachments/${attachmentId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      if (!response.ok) {
+        throw new Error('Failed to download attachment')
+      }
+      const blob = await response.blob()
+      const disposition = response.headers.get('content-disposition') || ''
+      const match = disposition.match(/filename="([^"]+)"/)
+      const filename = match ? match[1] : `attachment-${attachmentId}`
+      return {
+        blob,
+        filename,
+        contentType: response.headers.get('content-type') || 'application/octet-stream'
+      }
+    }
   },
   
   // Direct Messages

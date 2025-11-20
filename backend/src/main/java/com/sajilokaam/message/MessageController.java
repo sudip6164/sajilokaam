@@ -16,8 +16,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/conversations")
@@ -29,34 +32,47 @@ public class MessageController {
     private final JwtService jwtService;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
+    private final MessageAttachmentRepository attachmentRepository;
 
     public MessageController(MessageRepository messageRepository,
-                            ConversationRepository conversationRepository,
-                            UserRepository userRepository,
-                            JwtService jwtService,
-                            SimpMessagingTemplate messagingTemplate,
-                            NotificationService notificationService) {
+                             ConversationRepository conversationRepository,
+                             UserRepository userRepository,
+                             JwtService jwtService,
+                             SimpMessagingTemplate messagingTemplate,
+                             NotificationService notificationService,
+                             MessageAttachmentRepository attachmentRepository) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.messagingTemplate = messagingTemplate;
         this.notificationService = notificationService;
+        this.attachmentRepository = attachmentRepository;
     }
 
     @GetMapping("/{conversationId}/messages")
     public ResponseEntity<List<Message>> getMessages(
             @PathVariable Long conversationId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
-        if (!conversationRepository.existsById(conversationId)) {
+            @RequestParam(defaultValue = "50") int size,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        Optional<User> requesterOpt = authenticate(authorization);
+        if (requesterOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Conversation> conversationOpt = conversationRepository.findById(conversationId);
+        if (conversationOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+        Conversation conversation = conversationOpt.get();
+        if (!isParticipant(conversation, requesterOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Message> messagesPage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
         List<Message> messages = messagesPage.getContent();
-        // Reverse to show oldest first
         java.util.Collections.reverse(messages);
         return ResponseEntity.ok(messages);
     }
@@ -66,21 +82,11 @@ public class MessageController {
             @PathVariable Long conversationId,
             @RequestBody MessageCreateRequest request,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        Optional<User> senderOpt = authenticate(authorization);
+        if (senderOpt.isEmpty()) {
             return ResponseEntity.status(401).build();
         }
-
-        String token = authorization.substring("Bearer ".length()).trim();
-        Optional<String> emailOpt = jwtService.extractSubject(token);
-        if (emailOpt.isEmpty()) {
-            return ResponseEntity.status(401).build();
-        }
-
-        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.status(401).build();
-        }
-        User sender = userOpt.get();
+        User sender = senderOpt.get();
 
         Optional<Conversation> conversationOpt = conversationRepository.findById(conversationId);
         if (conversationOpt.isEmpty()) {
@@ -88,13 +94,49 @@ public class MessageController {
         }
         Conversation conversation = conversationOpt.get();
 
+        if (!isParticipant(conversation, sender.getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        if ((request.getContent() == null || request.getContent().isBlank())
+                && (request.getAttachmentIds() == null || request.getAttachmentIds().isEmpty())
+                && (request.getRichContent() == null || request.getRichContent().isBlank())) {
+            return ResponseEntity.badRequest().build();
+        }
+
         Message message = new Message();
         message.setConversation(conversation);
         message.setSender(sender);
-        message.setContent(request.getContent());
-        message.setContentType(request.getContentType() != null ? request.getContentType() : "TEXT");
+        message.setContent(
+                request.getContent() != null ? request.getContent() : (request.getRichContent() != null ? request.getRichContent() : "")
+        );
+        message.setRichContent(request.getRichContent());
+
+        String resolvedContentType = resolveContentType(request);
+        message.setContentType(resolvedContentType);
 
         Message created = messageRepository.save(message);
+
+        if (request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty()) {
+            List<MessageAttachment> attachments = attachmentRepository.findAllById(request.getAttachmentIds());
+            Set<Long> attachmentIds = new HashSet<>(request.getAttachmentIds());
+            List<MessageAttachment> linked = new ArrayList<>();
+            for (MessageAttachment attachment : attachments) {
+                if (!attachmentIds.contains(attachment.getId())) {
+                    continue;
+                }
+                if (!attachment.getConversation().getId().equals(conversationId)) {
+                    continue;
+                }
+                if (attachment.getMessage() != null) {
+                    continue;
+                }
+                attachment.setMessage(created);
+                attachmentRepository.save(attachment);
+                linked.add(attachment);
+            }
+            created.setAttachments(linked);
+        }
 
         // Update conversation updated_at
         conversation.setUpdatedAt(Instant.now());
@@ -103,6 +145,8 @@ public class MessageController {
         // Send via WebSocket
         messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, created);
 
+        final String previewContent = buildPreviewContent(request);
+
         // Create notifications for other participants
         conversation.getParticipants().stream()
                 .filter(p -> !p.getId().equals(sender.getId()))
@@ -110,7 +154,7 @@ public class MessageController {
                         participant,
                         "MESSAGE",
                         "New message in " + (conversation.getTitle() != null ? conversation.getTitle() : "conversation"),
-                        sender.getFullName() + ": " + request.getContent(),
+                        sender.getFullName() + ": " + previewContent,
                         "CONVERSATION",
                         conversationId
                 ));
@@ -166,6 +210,8 @@ public class MessageController {
     public static class MessageCreateRequest {
         private String content;
         private String contentType;
+        private String richContent;
+        private List<Long> attachmentIds;
 
         public String getContent() {
             return content;
@@ -182,6 +228,22 @@ public class MessageController {
         public void setContentType(String contentType) {
             this.contentType = contentType;
         }
+
+        public String getRichContent() {
+            return richContent;
+        }
+
+        public void setRichContent(String richContent) {
+            this.richContent = richContent;
+        }
+
+        public List<Long> getAttachmentIds() {
+            return attachmentIds;
+        }
+
+        public void setAttachmentIds(List<Long> attachmentIds) {
+            this.attachmentIds = attachmentIds;
+        }
     }
 
     public static class MessageEditRequest {
@@ -194,6 +256,54 @@ public class MessageController {
         public void setContent(String content) {
             this.content = content;
         }
+    }
+
+    private Optional<User> authenticate(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return Optional.empty();
+        }
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        return userRepository.findByEmail(emailOpt.get());
+    }
+
+    private boolean isParticipant(Conversation conversation, Long userId) {
+        return conversation.getParticipants()
+                .stream()
+                .anyMatch(participant -> participant.getId().equals(userId));
+    }
+
+    private String resolveContentType(MessageCreateRequest request) {
+        String contentType = request.getContentType();
+        boolean hasRichText = request.getRichContent() != null && !request.getRichContent().isBlank();
+        boolean hasAttachments = request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty();
+
+        if (hasAttachments) {
+            return "FILE";
+        }
+        if (contentType != null && !contentType.isBlank()) {
+            return contentType;
+        }
+        if (hasRichText) {
+            return "RICH_TEXT";
+        }
+        return "TEXT";
+    }
+
+    private String buildPreviewContent(MessageCreateRequest request) {
+        if (request.getContent() != null && !request.getContent().isBlank()) {
+            return request.getContent();
+        }
+        if (request.getAttachmentIds() != null && !request.getAttachmentIds().isEmpty()) {
+            return "sent an attachment";
+        }
+        if (request.getRichContent() != null && !request.getRichContent().isBlank()) {
+            return "sent a formatted message";
+        }
+        return "sent a message";
     }
 }
 

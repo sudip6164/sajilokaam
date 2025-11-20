@@ -65,6 +65,14 @@ export const subscribeToConversation = async (conversationId, onMessage) => {
   })
 }
 
+export const subscribeToTyping = async (conversationId, onTyping) => {
+  const client = await ensureConnected()
+  return client.subscribe(`/topic/conversation/${conversationId}/typing`, (message) => {
+    const payload = JSON.parse(message.body)
+    onTyping(payload)
+  })
+}
+
 export const subscribeToNotifications = async (userId, onNotification) => {
   const client = await ensureConnected()
   return client.subscribe(`/queue/notifications/${userId}`, (message) => {

@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast'
 import { ProjectMessaging } from '../components/ProjectMessaging'
 import { Timer } from '../components/Timer'
 import { TaskActivityTimeline } from '../components/TaskActivityTimeline'
+import { MentionInput } from '../components/MentionInput'
 import api from '../utils/api'
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
@@ -76,6 +77,8 @@ export function ProjectDetailPage() {
   const [taskDependencies, setTaskDependencies] = useState({}) // { taskId: [dependencies] }
   const [comments, setComments] = useState({}) // { taskId: [comments] }
   const [showCommentForm, setShowCommentForm] = useState({}) // { taskId: true/false }
+  const [replyTargets, setReplyTargets] = useState({}) // { taskId: commentId | null }
+  const [mentionSelections, setMentionSelections] = useState({}) // { taskId: [userId] }
   const [submittingComment, setSubmittingComment] = useState({}) // { taskId: true/false }
   const [files, setFiles] = useState({}) // { taskId: [files] }
   const [activities, setActivities] = useState({}) // { taskId: [activities] }
@@ -474,6 +477,151 @@ export function ProjectDetailPage() {
     }
   }
 
+  const resetCommentDraft = (taskId) => {
+    setReplyTargets(prev => ({
+      ...prev,
+      [taskId]: { content: '', parentCommentId: null }
+    }))
+    setMentionSelections(prev => ({
+      ...prev,
+      [taskId]: []
+    }))
+  }
+
+  const updateCommentDraft = (taskId, updates) => {
+    setReplyTargets(prev => ({
+      ...prev,
+      [taskId]: {
+        content: '',
+        parentCommentId: null,
+        ...(prev[taskId] || {}),
+        ...updates
+      }
+    }))
+  }
+
+  const handleStartReply = (taskId, comment) => {
+    setShowCommentForm(prev => ({ ...prev, [taskId]: true }))
+    updateCommentDraft(taskId, {
+      parentCommentId: comment.id,
+      content: `@${comment.user?.fullName || 'Member'} `
+    })
+    if (comment.user?.id) {
+      setMentionSelections(prev => ({
+        ...prev,
+        [taskId]: [comment.user.id]
+      }))
+    }
+  }
+
+  const findCommentById = (commentList, id) => {
+    if (!commentList) return null
+    for (const comment of commentList) {
+      if (comment.id === id) return comment
+      if (comment.replies && comment.replies.length > 0) {
+        const found = findCommentById(comment.replies, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const addUserToMap = (user, map) => {
+    if (user && user.id && !map.has(user.id)) {
+      map.set(user.id, {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email
+      })
+    }
+  }
+
+  const collectCommentUsers = (list, map) => {
+    if (!list) return
+    list.forEach(comment => {
+      addUserToMap(comment.user, map)
+      if (comment.mentionedUsers) {
+        comment.mentionedUsers.forEach(user => addUserToMap(user, map))
+      }
+      if (comment.replies && comment.replies.length > 0) {
+        collectCommentUsers(comment.replies, map)
+      }
+    })
+  }
+
+  const getMentionCandidatesForTask = (task) => {
+    const map = new Map()
+    addUserToMap(project?.client || project?.job?.client, map)
+    addUserToMap(project?.freelancer || project?.job?.freelancer, map)
+    addUserToMap(task?.assignee, map)
+    addUserToMap(profile, map)
+
+    if (watchers[task.id]) {
+      watchers[task.id].forEach(watcher => addUserToMap(watcher.user, map))
+    }
+
+    collectCommentUsers(comments[task.id], map)
+    return Array.from(map.values())
+  }
+
+  const renderCommentThread = (task, comment, depth = 0) => {
+    return (
+      <div
+        key={`${comment.id}-${depth}`}
+        className={`p-4 border border-white/10 rounded-xl bg-white/5 ${
+          depth > 0 ? 'ml-4 border-l-4 border-l-violet-500/40' : ''
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30 flex-shrink-0">
+            {comment.user?.fullName?.charAt(0) || 'U'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  {comment.user?.fullName || 'Unknown user'}
+                </p>
+                <p className="text-xs text-white/50">
+                  {comment.createdAt
+                    ? new Date(comment.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                    : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-xs text-violet-300 hover:text-violet-200 font-semibold"
+                onClick={() => handleStartReply(task.id, comment)}
+              >
+                Reply
+              </button>
+            </div>
+            <p className="text-sm text-white/80 mt-2 whitespace-pre-wrap">
+              {comment.content}
+            </p>
+            {comment.mentionedUsers && comment.mentionedUsers.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {comment.mentionedUsers.map(user => (
+                  <span
+                    key={user.id}
+                    className="px-2 py-1 text-xs rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-200"
+                  >
+                    @{user.fullName || user.email}
+                  </span>
+                ))}
+              </div>
+            )}
+            {comment.replies && comment.replies.length > 0 && (
+              <div className="mt-4 space-y-3 border-l border-white/10 pl-4">
+                {comment.replies.map(child => renderCommentThread(task, child, depth + 1))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const handleFileUpload = async (e, taskId) => {
     e.preventDefault()
     const fileInput = e.target.querySelector('input[type="file"]')
@@ -560,11 +708,12 @@ export function ProjectDetailPage() {
     }
   }
 
-  const handleCommentSubmit = async (e, taskId) => {
-    e.preventDefault()
-    const formData = new FormData(e.target)
-    const content = formData.get('content')
-    
+  const handleCommentSubmit = async (taskId) => {
+    const formState = replyTargets[taskId]
+    const mentionList = mentionSelections[taskId] || []
+    const content = formState?.content || ''
+    const parentCommentId = formState?.parentCommentId || null
+
     if (!content || !content.trim()) {
       showError('Comment cannot be empty')
       return
@@ -578,7 +727,11 @@ export function ProjectDetailPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ content: content.trim() })
+        body: JSON.stringify({
+          content: content.trim(),
+          parentCommentId,
+          mentionUserIds: mentionList
+        })
       })
 
       if (!res.ok) {
@@ -586,7 +739,7 @@ export function ProjectDetailPage() {
       }
 
       showSuccess('Comment posted successfully!')
-      e.target.reset()
+      resetCommentDraft(taskId)
       setShowCommentForm(prev => ({ ...prev, [taskId]: false }))
       await loadComments(taskId)
     } catch (err) {
@@ -2353,83 +2506,88 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
                           </button>
                         )}
 
-                        {/* Comments Section */}
+                        {/* Discussion */}
                         <div className="mt-6 pt-6 border-t border-white/10">
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-bold text-white/90 flex items-center gap-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0-4.418-4.03-8-9-8a9 9 0 00-9 9 9 9 0 009 9" />
                               </svg>
-                              Comments {comments[task.id] && `(${comments[task.id].length})`}
+                              Discussion {comments[task.id] && `(${comments[task.id].length})`}
                             </h4>
-                            {!showCommentForm[task.id] && (
-                              <button
-                                onClick={() => setShowCommentForm(prev => ({ ...prev, [task.id]: true }))}
-                                className="text-xs text-violet-400 hover:text-violet-300 font-semibold transition-colors flex items-center gap-1"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add Comment
-                              </button>
-                            )}
+                            <button
+                              onClick={() => {
+                                const next = !showCommentForm[task.id]
+                                setShowCommentForm(prev => ({ ...prev, [task.id]: next }))
+                                resetCommentDraft(task.id)
+                              }}
+                              className="text-xs text-violet-400 hover:text-violet-300 font-semibold transition-colors flex items-center gap-1"
+                            >
+                              {showCommentForm[task.id] ? 'Close composer' : 'Add comment'}
+                            </button>
                           </div>
 
-                          {/* Comment Form */}
                           {showCommentForm[task.id] && (
-                            <form onSubmit={(e) => handleCommentSubmit(e, task.id)} className="mb-4">
+                            <div className="mb-4 p-4 border-2 border-white/10 rounded-xl bg-white/5 space-y-3">
+                              {replyTargets[task.id]?.parentCommentId && (
+                                <div className="flex justify-between items-center text-xs text-white/60">
+                                  <span>
+                                    Replying to{' '}
+                                    <span className="font-semibold">
+                                      {findCommentById(comments[task.id], replyTargets[task.id].parentCommentId)?.user?.fullName || 'comment'}
+                                    </span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="text-violet-300 hover:text-violet-200"
+                                    onClick={() => updateCommentDraft(task.id, { parentCommentId: null })}
+                                  >
+                                    Clear
+                                  </button>
+                                </div>
+                              )}
                               <textarea
-                                name="content"
                                 rows={3}
-                                required
-                                placeholder="Write a comment..."
-                                className="input-field resize-none mb-2"
+                                className="input-field resize-none"
+                                placeholder="Share an update or mention teammates with @name..."
+                                value={replyTargets[task.id]?.content || ''}
+                                onChange={(e) => updateCommentDraft(task.id, { content: e.target.value })}
                                 disabled={submittingComment[task.id]}
                               />
-                              <div className="flex gap-2">
-                                <button
-                                  type="submit"
-                                  disabled={submittingComment[task.id]}
-                                  className="btn btn-primary text-sm"
-                                >
-                                  {submittingComment[task.id] ? 'Posting...' : 'Post Comment'}
-                                </button>
+                              <MentionInput
+                                users={getMentionCandidatesForTask(task)}
+                                selectedIds={mentionSelections[task.id] || []}
+                                onChange={(next) =>
+                                  setMentionSelections(prev => ({ ...prev, [task.id]: next }))
+                                }
+                              />
+                              <div className="flex justify-end gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setShowCommentForm(prev => ({ ...prev, [task.id]: false }))}
                                   className="btn btn-ghost text-sm"
+                                  onClick={() => {
+                                    setShowCommentForm(prev => ({ ...prev, [task.id]: false }))
+                                    resetCommentDraft(task.id)
+                                  }}
+                                  disabled={submittingComment[task.id]}
                                 >
                                   Cancel
                                 </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary text-sm"
+                                  onClick={() => handleCommentSubmit(task.id)}
+                                  disabled={submittingComment[task.id]}
+                                >
+                                  {submittingComment[task.id] ? 'Posting…' : 'Post comment'}
+                                </button>
                               </div>
-                            </form>
+                            </div>
                           )}
 
-                          {/* Comments List */}
                           {comments[task.id] && comments[task.id].length > 0 ? (
-                            <div className="space-y-3 max-h-64 overflow-y-auto">
-                              {comments[task.id].map(comment => (
-                                <div key={comment.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
-                                  <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30 flex-shrink-0">
-                                      {comment.user?.fullName?.charAt(0) || 'U'}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm font-semibold text-white/90">
-                                          {comment.user?.fullName || 'Unknown User'}
-                                        </span>
-                                        <span className="text-xs text-white/50">
-                                          {new Date(comment.createdAt).toLocaleDateString()} {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                      </div>
-                                      <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
-                                        {comment.content}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
+                            <div className="space-y-4">
+                              {comments[task.id].map(comment => renderCommentThread(task, comment))}
                             </div>
                           ) : (
                             !showCommentForm[task.id] && (

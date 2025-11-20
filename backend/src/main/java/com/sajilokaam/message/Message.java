@@ -1,9 +1,13 @@
 package com.sajilokaam.message;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.sajilokaam.conversation.Conversation;
 import com.sajilokaam.user.User;
 import jakarta.persistence.*;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "messages", indexes = {
@@ -30,6 +34,9 @@ public class Message {
     @Column(name = "content_type", length = 50)
     private String contentType = "TEXT"; // TEXT, RICH_TEXT, FILE
 
+    @Column(name = "rich_content", columnDefinition = "TEXT")
+    private String richContent;
+
     @Column(name = "is_edited")
     private Boolean isEdited = false;
 
@@ -38,6 +45,10 @@ public class Message {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    @OneToMany(mappedBy = "message", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonManagedReference("message-attachments")
+    private List<MessageAttachment> attachments = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -79,6 +90,14 @@ public class Message {
         this.contentType = contentType;
     }
 
+    public String getRichContent() {
+        return richContent;
+    }
+
+    public void setRichContent(String richContent) {
+        this.richContent = richContent;
+    }
+
     public Boolean getIsEdited() {
         return isEdited;
     }
@@ -101,6 +120,14 @@ public class Message {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public List<MessageAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<MessageAttachment> attachments) {
+        this.attachments = attachments;
     }
 }
 
