@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { gradients, avatars } from '../theme/designSystem'
 
 export function DashboardPage() {
   const { profile, token } = useAuth()
@@ -128,17 +129,88 @@ export function DashboardPage() {
   const isClient = profile?.roles?.some(r => r.name === 'CLIENT')
   const isFreelancer = profile?.roles?.some(r => r.name === 'FREELANCER')
 
+  const heroStats = [
+    {
+      label: 'Active projects',
+      value: stats.activeProjects || stats.projects,
+      accent: 'from-violet-500 to-purple-600',
+      detail: 'in motion today'
+    },
+    {
+      label: isClient ? 'Bids received' : 'My proposals',
+      value: isClient ? stats.totalBidsReceived : stats.bids,
+      accent: 'from-emerald-500 to-teal-500',
+      detail: 'awaiting review'
+    },
+    {
+      label: isClient ? 'Pending approvals' : 'Accepted bids',
+      value: isClient ? stats.pendingBidsToReview : stats.acceptedBids,
+      accent: 'from-amber-500 to-orange-500',
+      detail: 'need decisions'
+    }
+  ]
+
+  const quickActions = [
+    ...(isClient
+      ? [{
+          title: 'Launch a new job',
+          description: 'Publish requirements, budgets, and invite curated freelancers.',
+          cta: 'Post a job',
+          to: '/jobs/new',
+          accent: gradients.aurora
+        }]
+      : [{
+          title: 'Refresh proposals',
+          description: 'Tune bids with tailored templates and attach recent case studies.',
+          cta: 'Browse jobs',
+          to: '/jobs'
+        }]),
+    {
+      title: 'Project boards',
+      description: 'Dive into kanban, milestones, files, and watcher timelines.',
+      cta: 'View projects',
+      to: '/projects'
+    },
+    {
+      title: 'Message center',
+      description: 'Continue conversations with inline media, reactions and mentions.',
+      cta: 'Open notifications',
+      to: '/notifications'
+    }
+  ]
+
+  const timelineEntries = [
+    ...recentProjects.slice(0, 2).map(project => ({
+      type: 'Project',
+      title: project.title,
+      meta: project.job?.status ?? 'Active',
+      href: `/projects/${project.id}`
+    })),
+    ...recentJobs.slice(0, 2).map(job => ({
+      type: 'Job',
+      title: job.title,
+      meta: job.status,
+      href: `/jobs/${job.id}`
+    })),
+    ...recentBids.slice(0, 2).map(bid => ({
+      type: 'Bid',
+      title: bid.job?.title ?? 'Job',
+      meta: `$${bid.amount} • ${bid.status}`,
+      href: `/jobs/${bid.job?.id}`
+    }))
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-64 mb-8"></div>
+          <div className="max-w-6xl mx-auto space-y-8">
+            <div className="loading-skeleton h-12 w-64 rounded-2xl"></div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="card">
-                  <div className="loading-skeleton h-6 w-3/4 mb-3"></div>
-                  <div className="loading-skeleton h-4 w-full"></div>
+                <div key={i} className="card h-32">
+                  <div className="loading-skeleton h-6 w-32 mb-4"></div>
+                  <div className="loading-skeleton h-4 w-48"></div>
                 </div>
               ))}
             </div>
@@ -149,14 +221,96 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern relative">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-12">
-            <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">
-              Welcome back, <span className="font-bold gradient-text">{profile?.fullName}</span>! Here's what's happening.
-            </p>
+        <div className="max-w-6xl mx-auto space-y-12">
+          <div>
+            <div className="hero-grid">
+              <div className="space-y-6 relative">
+                <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Live operations
+                </p>
+                <div>
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight">
+                    Welcome back, <span className="gradient-text">{profile?.fullName?.split(' ')[0] || 'Operator'}</span>
+                  </h1>
+                  <p className="text-white/70 text-lg max-w-xl mt-4">
+                    Spin up jobs, orchestrate delivery, and respond to conversations with a workspace inspired by Jira flow and Upwork velocity.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Link to={isClient ? '/jobs/new' : '/jobs'} className="btn btn-primary">
+                    {isClient ? 'Launch job' : 'Discover jobs'}
+                  </Link>
+                  <Link to="/projects" className="btn btn-secondary">
+                    View project boards
+                  </Link>
+                </div>
+                <div className="stat-stack">
+                  {heroStats.map(stat => (
+                    <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-[0.65rem] font-semibold bg-gradient-to-r ${stat.accent} text-white/90 mb-3`}>
+                        {stat.label}
+                      </div>
+                      <p className="text-3xl font-black text-white">{stat.value ?? 0}</p>
+                      <p className="text-xs text-white/60 uppercase tracking-wide mt-1">{stat.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="hero-media">
+                <div className="hero-media-content space-y-6">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60">Signal</p>
+                    <h2 className="text-3xl font-black text-white">Today’s pulse</h2>
+                  </div>
+                  <div className="flex -space-x-3">
+                    {avatars.map((src, idx) => (
+                      <img
+                        key={src}
+                        src={src}
+                        alt="Collaborator avatar"
+                        className="w-12 h-12 rounded-full border-2 border-white/40 object-cover"
+                        style={{ zIndex: avatars.length - idx }}
+                      />
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    <div className="stat-pill">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      {stats.projects} active workstreams
+                    </div>
+                    <div className="stat-pill">
+                      <span className="w-2 h-2 rounded-full bg-sky-400" />
+                      {stats.jobs} live briefs
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 grid md:grid-cols-2 gap-4 lg:grid-cols-4">
+              {quickActions.map(action => (
+                <Link
+                  key={action.title}
+                  to={action.to}
+                  className="relative overflow-hidden rounded-3xl border border-white/10 p-5 bg-white/5 hover:bg-white/10 transition-all hover-lift"
+                  style={action.accent ? { backgroundImage: action.accent } : undefined}
+                >
+                  <div className="text-[0.65rem] uppercase tracking-[0.4em] text-white/60 mb-2">
+                    {action.title.split(' ')[0]}
+                  </div>
+                  <h3 className="text-lg font-bold text-white">{action.title}</h3>
+                  <p className="text-sm text-white/75 mt-2">{action.description}</p>
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-white mt-4">
+                    {action.cta}
+                    <span aria-hidden="true">→</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
           
           {profile && (
@@ -329,31 +483,6 @@ export function DashboardPage() {
                   </div>
                 </div>
                 
-                {/* Quick Actions */}
-                <div className="card group hover:scale-[1.02] transition-transform">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                    </div>
-                    <h2 className="text-xl font-bold text-white">Quick Actions</h2>
-                  </div>
-                  <div className="space-y-3">
-                    {isClient && (
-                      <Link to="/jobs/new" className="btn btn-primary w-full block text-center">
-                        Post New Job
-                      </Link>
-                    )}
-                    <Link to="/jobs" className="btn btn-secondary w-full block text-center">
-                      Browse Jobs
-                    </Link>
-                    <Link to="/projects" className="btn btn-secondary w-full block text-center">
-                      View Projects
-                    </Link>
-                  </div>
-                </div>
-
                 {/* Recent Activity */}
                 <div className="card group hover:scale-[1.02] transition-transform lg:col-span-1">
                   <div className="flex items-center gap-4 mb-4">
@@ -364,42 +493,25 @@ export function DashboardPage() {
                     </div>
                     <h2 className="text-xl font-bold text-white">Recent Activity</h2>
                   </div>
-                  <div className="space-y-3">
-                    {recentJobs.length === 0 && recentProjects.length === 0 && recentBids.length === 0 ? (
+                  <div className="space-y-4">
+                    {timelineEntries.length === 0 ? (
                       <p className="text-sm text-white/60 text-center py-4">No recent activity</p>
                     ) : (
-                      <>
-                        {recentJobs.slice(0, 2).map(job => (
-                          <Link
-                            key={job.id}
-                            to={`/jobs/${job.id}`}
-                            className="block p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/10"
-                          >
-                            <p className="text-sm font-semibold text-white truncate">{job.title}</p>
-                            <p className="text-xs text-white/60">Job • {job.status}</p>
-                          </Link>
-                        ))}
-                        {recentProjects.slice(0, 2).map(project => (
-                          <Link
-                            key={project.id}
-                            to={`/projects/${project.id}`}
-                            className="block p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/10"
-                          >
-                            <p className="text-sm font-semibold text-white truncate">{project.title}</p>
-                            <p className="text-xs text-white/60">Project</p>
-                          </Link>
-                        ))}
-                        {recentBids.slice(0, 2).map(bid => (
-                          <Link
-                            key={bid.id}
-                            to={`/jobs/${bid.job?.id}`}
-                            className="block p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/10"
-                          >
-                            <p className="text-sm font-semibold text-white truncate">{bid.job?.title || 'Job'}</p>
-                            <p className="text-xs text-white/60">Bid • ${bid.amount} • {bid.status}</p>
-                          </Link>
-                        ))}
-                      </>
+                      timelineEntries.map(entry => (
+                        <Link
+                          key={`${entry.type}-${entry.title}`}
+                          to={entry.href}
+                          className="block p-4 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.4em] text-white/50">{entry.type}</p>
+                              <p className="text-sm font-semibold text-white truncate">{entry.title}</p>
+                            </div>
+                            <span className="text-xs text-white/60">{entry.meta}</span>
+                          </div>
+                        </Link>
+                      ))
                     )}
                   </div>
                 </div>

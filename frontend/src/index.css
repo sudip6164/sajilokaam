@@ -5,6 +5,20 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-deep: #030711;
+    --bg-panel: rgba(12, 18, 32, 0.85);
+    --accent-primary: #7c5dff;
+    --accent-secondary: #23d5ab;
+    --accent-tertiary: #f97316;
+    --text-primary: #f8fbff;
+    --text-muted: #a0a8c3;
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-bg: rgba(18, 24, 38, 0.55);
+    --shadow-lg: 0 20px 80px rgba(6, 11, 25, 0.65);
+    --radius-xl: 28px;
+  }
+
   * {
     @apply border-border;
   }
@@ -15,7 +29,9 @@
   
   body {
     @apply text-foreground antialiased;
-    background: linear-gradient(135deg, #0a0f1a 0%, #101820 50%, #0d1419 100%);
+    background: radial-gradient(circle at 10% 20%, rgba(64, 59, 255, 0.25) 0%, rgba(3, 7, 17, 0) 45%),
+                radial-gradient(circle at 90% 10%, rgba(15, 208, 228, 0.25) 0%, rgba(3, 7, 17, 0) 35%),
+                linear-gradient(145deg, #02040a 0%, #050b16 50%, #01030a 100%);
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -217,6 +233,79 @@
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+  .page-shell {
+    @apply min-h-screen py-12;
+    background: radial-gradient(circle at 20% 0%, rgba(124, 93, 255, 0.2), transparent 45%),
+                radial-gradient(circle at 80% 0%, rgba(35, 213, 171, 0.18), transparent 50%);
+  }
+  .orb {
+    position: absolute;
+    inset: auto;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(124, 93, 255, 0.45) 0%, rgba(124, 93, 255, 0) 60%);
+    filter: blur(40px);
+    opacity: 0.8;
+    pointer-events: none;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2.5rem;
+    padding: 3rem;
+    border-radius: 40px;
+    background: rgba(4, 7, 16, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 50px 200px rgba(3, 7, 17, 0.65);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid::after {
+    content: '';
+    position: absolute;
+    inset: 40% auto auto 60%;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(35, 213, 171, 0.3), transparent 65%);
+    filter: blur(40px);
+  }
+  .hero-media {
+    position: relative;
+    border-radius: 32px;
+    padding: 2.5rem;
+    background: linear-gradient(160deg, rgba(124, 93, 255, 0.35), rgba(35, 213, 171, 0.25)),
+                url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80') center/cover;
+    min-height: 320px;
+    overflow: hidden;
+  }
+  .hero-media::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(145deg, rgba(5, 9, 20, 0.75), rgba(5, 9, 20, 0.2));
+  }
+  .hero-media-content {
+    position: relative;
+    z-index: 1;
+    color: white;
+  }
+  .stat-stack {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  .stat-pill {
+    border-radius: 999px;
+    padding: 0.9rem 1.25rem;
+    color: white;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
   
   /* Typography System */
   .page-title {
@@ -245,7 +334,7 @@
   
   /* Gradient Text */
   .gradient-text {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, #93c5fd 0%, #c084fc 40%, #f0abfc 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
