@@ -10,6 +10,7 @@ import api from '../utils/api'
 import { gradients } from '../theme/designSystem'
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+const TASK_STATUS_OPTIONS = ['TODO', 'IN_PROGRESS', 'DONE']
 
 const PRIORITY_STYLES = {
   LOW: 'bg-emerald-500/10 text-emerald-200 border border-emerald-400/40',
@@ -49,6 +50,8 @@ const DEPENDENCY_OPTIONS = [
   { value: 'BLOCKS', label: 'Blocks (this task must finish first)' },
   { value: 'BLOCKED_BY', label: 'Blocked by (waiting on selected task)' }
 ]
+
+const STATUS_OPTIONS = ['TODO', 'IN_PROGRESS', 'DONE']
 
 export function ProjectDetailPage() {
   const { id } = useParams()
@@ -97,6 +100,8 @@ export function ProjectDetailPage() {
   const [watchers, setWatchers] = useState({})
   const [watchingStates, setWatchingStates] = useState({})
   const [togglingWatcherId, setTogglingWatcherId] = useState(null)
+  const [activeTask, setActiveTask] = useState(null)
+  const [showTaskDrawer, setShowTaskDrawer] = useState(false)
   const [milestones, setMilestones] = useState([])
   const [showMilestoneForm, setShowMilestoneForm] = useState(false)
   const [submittingMilestone, setSubmittingMilestone] = useState(false)
@@ -107,9 +112,9 @@ export function ProjectDetailPage() {
   const [showEscrowModal, setShowEscrowModal] = useState(false)
   const [escrowForm, setEscrowForm] = useState({ amount: '' })
   const [showReleaseModal, setShowReleaseModal] = useState(false)
-  const [releaseForm, setReleaseForm] = useState({ amount: '', releaseType: 'MILESTONE', notes: '' })
-  const [selectedEscrow, setSelectedEscrow] = useState(null)
-  const [submittingEscrow, setSubmittingEscrow] = useState(false)
+const [releaseForm, setReleaseForm] = useState({ amount: '', releaseType: 'MILESTONE', notes: '' })
+const [selectedEscrow, setSelectedEscrow] = useState(null)
+const [submittingEscrow, setSubmittingEscrow] = useState(false)
   const navigate = useNavigate()
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -1016,6 +1021,16 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
       setTogglingWatcherId(null)
     }
   }
+
+  const openTaskDrawer = (task) => {
+    setActiveTask(task)
+    setShowTaskDrawer(true)
+  }
+
+  const closeTaskDrawer = () => {
+    setShowTaskDrawer(false)
+    setActiveTask(null)
+  }
   const getTaskStats = () => {
     return {
       total: tasks.length,
@@ -1215,6 +1230,11 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
       </div>
     )
   }
+
+  const activeTaskWatchers = activeTask ? watchers[activeTask.id] || [] : []
+  const activeTaskDependencies = activeTask ? taskDependencies[activeTask.id] || [] : []
+  const activeTaskTimeSummary = activeTask ? timeSummaries[activeTask.id] : null
+  const drawerStatusOptions = activeTask ? TASK_STATUS_OPTIONS.filter(status => status !== activeTask.status) : []
 
   return (
     <div className="page-shell bg-pattern">
@@ -2089,12 +2109,21 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
                       const selectedIds = getSelectedLabelIds(task)
                       return selectedIds
                     })()}
-                        <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          <h3 className="font-bold text-lg text-white">{task.title}</h3>
-                          <span className={getStatusBadge(task.status)}>{task.status}</span>
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityBadgeClass(task.priority)}`}>
-                            {formatPriorityLabel(task.priority)}
-                          </span>
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h3 className="font-bold text-lg text-white">{task.title}</h3>
+                            <span className={getStatusBadge(task.status)}>{task.status}</span>
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityBadgeClass(task.priority)}`}>
+                              {formatPriorityLabel(task.priority)}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openTaskDrawer(task)}
+                            className="text-xs font-semibold text-white/70 hover:text-white/90 transition-colors border border-white/10 rounded-full px-3 py-1"
+                          >
+                            Quick view
+                          </button>
                         </div>
                         {task.description && (
                           <p className="text-white/70 mb-3 leading-relaxed">{task.description}</p>
@@ -2869,6 +2898,168 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {activeTask && showTaskDrawer && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center p-6" onClick={closeTaskDrawer}>
+          <div
+            className="card max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/10 bg-white/10 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeTaskDrawer}
+              className="absolute top-4 right-4 text-white/60 hover:text-white text-xl"
+            >
+              ×
+            </button>
+            <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-2">Task overview</p>
+            <h3 className="text-3xl font-black text-white mb-4 flex flex-wrap items-center gap-3">
+              {activeTask.title}
+              <span className={getStatusBadge(activeTask.status)}>{activeTask.status}</span>
+              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getPriorityBadgeClass(activeTask.priority)}`}>
+                {formatPriorityLabel(activeTask.priority)}
+              </span>
+            </h3>
+            <p className="text-white/70 text-base mb-6">
+              {activeTask.description || 'No description provided for this task.'}
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-8">
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Assignee</p>
+                <p className="text-white font-semibold">
+                  {activeTask.assignee?.fullName || 'Unassigned'}
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Due date</p>
+                <p className="text-white font-semibold">
+                  {activeTask.dueDate ? new Date(activeTask.dueDate).toLocaleDateString([], { dateStyle: 'medium' }) : 'Not set'}
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Milestone</p>
+                <p className="text-white font-semibold">
+                  {activeTask.milestoneId && milestones.find(m => m.id === activeTask.milestoneId)
+                    ? milestones.find(m => m.id === activeTask.milestoneId).title
+                    : 'No milestone'}
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Time logged</p>
+                <p className="text-white font-semibold">
+                  {activeTaskTimeSummary
+                    ? `${activeTaskTimeSummary.totalHours.toFixed(1)}h (${activeTaskTimeSummary.count} entries)`
+                    : 'No logs yet'}
+                </p>
+              </div>
+            </div>
+
+            {activeTask.labels && activeTask.labels.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-2">Labels</p>
+                <div className="flex flex-wrap gap-2">
+                  {activeTask.labels.map(label => (
+                    <span
+                      key={`drawer-label-${activeTask.id}-${label.id}`}
+                      className="px-3 py-1 rounded-full text-xs font-semibold border"
+                      style={getLabelChipStyles(label)}
+                    >
+                      {label.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60">Status quick actions</p>
+                <span className="text-xs text-white/50">Drag on Kanban or use buttons</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {drawerStatusOptions.map(status => (
+                  <button
+                    key={`drawer-status-${status}`}
+                    type="button"
+                    onClick={() => updateTaskStatus(activeTask.id, status)}
+                    disabled={updatingTaskId === activeTask.id}
+                    className="btn btn-secondary text-xs"
+                  >
+                    Move to {status.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60">Watchers</p>
+                {profile && (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleWatcher(activeTask.id)}
+                    disabled={togglingWatcherId === activeTask.id}
+                    className="text-xs text-violet-300 hover:text-violet-200"
+                  >
+                    {watchingStates[activeTask.id] ? 'Unwatch' : 'Watch task'}
+                  </button>
+                )}
+              </div>
+              {activeTaskWatchers.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {activeTaskWatchers.map(watcher => (
+                    <div key={`drawer-watcher-${activeTask.id}-${watcher.user?.id}`} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold text-white">
+                        {watcher.user?.fullName?.charAt(0) || 'U'}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-sm">
+                          {watcher.user?.fullName || 'Unknown user'}
+                        </p>
+                        <p className="text-xs text-white/50">
+                          Since {watcher.createdAt ? new Date(watcher.createdAt).toLocaleDateString() : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-white/50">No watchers yet.</p>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-2">Dependencies</p>
+              {activeTaskDependencies.length > 0 ? (
+                <ul className="space-y-2">
+                  {activeTaskDependencies.map(dep => (
+                    <li key={`drawer-dep-${activeTask.id}-${dep.id}`} className="p-3 rounded-xl border border-white/10 bg-white/5">
+                      <p className="text-white font-semibold">{dep.dependsOnTaskTitle}</p>
+                      <p className="text-xs text-white/60">
+                        {dep.dependencyType === 'BLOCKS'
+                          ? 'This task blocks the related task'
+                          : 'This task is blocked by the related task'}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-white/50">No dependencies defined.</p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link to={`/projects/${id}/kanban`} className="btn btn-secondary text-sm">
+                Open Kanban lane
+              </Link>
+              <button type="button" onClick={closeTaskDrawer} className="btn btn-primary text-sm">
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
