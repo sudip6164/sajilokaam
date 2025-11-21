@@ -33,6 +33,9 @@ public class Comment {
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> replies = new ArrayList<>();
 
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentAttachment> attachments = new ArrayList<>();
+
     @Column(name = "mentions", columnDefinition = "TEXT")
     private String mentionsJson;
 
@@ -83,6 +86,14 @@ public class Comment {
 
     public void setReplies(List<Comment> replies) {
         this.replies = replies;
+    }
+
+    public List<CommentAttachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<CommentAttachment> attachments) {
+        this.attachments = attachments;
     }
 
     public String getMentionsJson() {
