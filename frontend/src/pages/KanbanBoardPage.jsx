@@ -18,6 +18,8 @@ export function KanbanBoardPage() {
   const [draggedTask, setDraggedTask] = useState(null)
   const [draggedOverColumn, setDraggedOverColumn] = useState(null)
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
+  const [activeTask, setActiveTask] = useState(null)
+  const [showTaskDrawer, setShowTaskDrawer] = useState(false)
   const navigate = useNavigate()
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -74,6 +76,16 @@ export function KanbanBoardPage() {
     } finally {
       setUpdatingTaskId(null)
     }
+  }
+
+  const openTaskDrawer = (task) => {
+    setActiveTask(task)
+    setShowTaskDrawer(true)
+  }
+
+  const closeTaskDrawer = () => {
+    setShowTaskDrawer(false)
+    setActiveTask(null)
   }
 
   const handleDragStart = (e, task) => {
@@ -175,10 +187,8 @@ export function KanbanBoardPage() {
     )
   }
 
-  const watcherCount = Object.values(watchers).reduce(
-    (sum, watcherList) => sum + (Array.isArray(watcherList) ? watcherList.length : 0),
-    0
-  )
+  const drawerColumn = activeTask ? COLUMNS.find(column => column.id === activeTask.status) : null
+  const alternateColumns = activeTask ? COLUMNS.filter(column => column.id !== activeTask.status) : []
 
   return (
     <div className="page-shell bg-pattern">
@@ -204,21 +214,19 @@ export function KanbanBoardPage() {
               </div>
               <div className="grid sm:grid-cols-3 gap-3">
                 <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Tasks</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Total tasks</p>
                   <p className="text-2xl font-black text-white">{tasks.length}</p>
-                  <p className="text-xs text-white/60">
-                    {tasks.filter(t => t.status === 'IN_PROGRESS').length} in progress
-                  </p>
+                  <p className="text-xs text-white/60">{stats.todo} in backlog</p>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Milestones</p>
-                  <p className="text-2xl font-black text-white">{project.milestones?.length || 0}</p>
-                  <p className="text-xs text-white/60">tracking checkpoints</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">In progress</p>
+                  <p className="text-2xl font-black text-white">{stats.inProgress}</p>
+                  <p className="text-xs text-white/60">actively being built</p>
                 </div>
                 <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Watchers</p>
-                  <p className="text-2xl font-black text-white">{watcherCount}</p>
-                  <p className="text-xs text-white/60">receiving updates</p>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Completed</p>
+                  <p className="text-2xl font-black text-white">{stats.done}</p>
+                  <p className="text-xs text-white/60">delivered features</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -343,13 +351,24 @@ export function KanbanBoardPage() {
                             </div>
                           )}
                         </div>
-                        <div className="mt-3 pt-3 border-t border-white/10">
+                        <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
                           <Link
                             to={`/projects/${id}`}
                             className="text-xs text-violet-400 hover:text-violet-300 font-semibold transition-colors"
                           >
                             View Details →
                           </Link>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openTaskDrawer(task)
+                            }}
+                            className="text-xs text-white/70 hover:text-white/90 font-semibold"
+                          >
+                            Quick view
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -364,6 +383,104 @@ export function KanbanBoardPage() {
             })}
           </div>
         </div>
+
+        {activeTask && showTaskDrawer && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start justify-center p-6" onClick={closeTaskDrawer}>
+            <div
+              className="card max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-white/10 bg-white/10 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={closeTaskDrawer}
+                className="absolute top-4 right-4 text-white/60 hover:text-white text-xl"
+              >
+                ×
+              </button>
+              <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-2">{drawerColumn?.title || 'Task'}</p>
+              <h3 className="text-2xl font-black text-white mb-4 flex items-center gap-2">
+                {activeTask.title}
+                {activeTask.priority && (
+                  <span className={getPriorityBadge(activeTask.priority)}>{activeTask.priority}</span>
+                )}
+              </h3>
+              <p className="text-white/70 text-sm mb-6">{activeTask.description || 'No description provided.'}</p>
+
+              <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                {activeTask.assignee && (
+                  <div className="p-3 rounded-xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-1">Assignee</p>
+                    <p className="text-white font-semibold">{activeTask.assignee.fullName}</p>
+                  </div>
+                )}
+                {activeTask.dueDate && (
+                  <div className="p-3 rounded-xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-1">Due date</p>
+                    <p className="text-white font-semibold">
+                      {new Date(activeTask.dueDate).toLocaleDateString([], { dateStyle: 'medium' })}
+                    </p>
+                  </div>
+                )}
+                {activeTask.estimatedHours && (
+                  <div className="p-3 rounded-xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-1">Estimated hours</p>
+                    <p className="text-white font-semibold">{activeTask.estimatedHours}h</p>
+                  </div>
+                )}
+                <div className="p-3 rounded-xl border border-white/10 bg-white/5">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-1">Status</p>
+                  <p className="text-white font-semibold">{drawerColumn?.title || activeTask.status}</p>
+                </div>
+              </div>
+
+              {activeTask.labels && activeTask.labels.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-2">Labels</p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeTask.labels.map(label => (
+                      <span
+                        key={`${activeTask.id}-${label.id}`}
+                        className="px-3 py-1 rounded-full text-xs font-semibold border"
+                        style={{ borderColor: `${label.color || '#a5b4fc'}40`, color: label.color || '#a5b4fc' }}
+                      >
+                        {label.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3 mb-8">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Quick actions</p>
+                <div className="flex flex-wrap gap-3">
+                  {alternateColumns.map(column => (
+                    <button
+                      key={`move-${column.id}`}
+                      type="button"
+                      onClick={() => {
+                        updateTaskStatus(activeTask.id, column.id)
+                        closeTaskDrawer()
+                      }}
+                      disabled={updatingTaskId === activeTask.id}
+                      className="btn btn-secondary text-xs"
+                    >
+                      Move to {column.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Link to={`/projects/${id}`} className="btn btn-primary text-sm">
+                  Open in project view
+                </Link>
+                <button type="button" onClick={closeTaskDrawer} className="btn btn-secondary text-sm">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
