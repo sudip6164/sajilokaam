@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { Pagination } from '../components/Pagination'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 export function JobsPage() {
   const [jobs, setJobs] = useState([])
@@ -256,18 +257,46 @@ export function JobsPage() {
   const isFreelancerApproved = !isFreelancer || freelancerProfileStatus === 'APPROVED'
   const isClientApproved = !isClient || clientProfileStatus === 'APPROVED'
 
+  const budgets = jobs
+    .filter(job => job.budgetMin != null && job.budgetMax != null)
+    .map(job => (Number(job.budgetMin) + Number(job.budgetMax)) / 2)
+  const averageBudget =
+    budgets.length > 0 ? Math.round(budgets.reduce((sum, value) => sum + value, 0) / budgets.length) : null
+  const liveBids = Object.values(bidCounts || {}).reduce((sum, value) => sum + (Number(value) || 0), 0)
+
+  const heroHighlights = [
+    {
+      label: 'Open briefs',
+      value: filteredJobs.length,
+      detail: 'actively hiring'
+    },
+    {
+      label: 'Avg. budget',
+      value: averageBudget ? `Rs. ${averageBudget.toLocaleString()}` : '—',
+      detail: 'per project'
+    },
+    {
+      label: 'Proposals today',
+      value: liveBids || '—',
+      detail: 'submitted bids'
+    }
+  ]
+
+  const featuredCategories = categories.slice(0, 6)
+  const spotlightJob = paginatedJobs[0] || filteredJobs[0] || jobs[0] || null
+
   if (loading && jobs.length === 0) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-64 mb-8"></div>
+          <div className="max-w-6xl mx-auto space-y-8">
+            <div className="loading-skeleton h-12 w-64 rounded-2xl"></div>
             <div className="grid gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="card">
-                  <div className="loading-skeleton h-6 w-3/4 mb-3"></div>
-                  <div className="loading-skeleton h-4 w-full mb-2"></div>
-                  <div className="loading-skeleton h-4 w-2/3"></div>
+                <div key={i} className="card h-36 space-y-3">
+                  <div className="loading-skeleton h-6 w-3/4"></div>
+                  <div className="loading-skeleton h-4 w-4/5"></div>
+                  <div className="loading-skeleton h-4 w-1/2"></div>
                 </div>
               ))}
             </div>
@@ -281,14 +310,110 @@ export function JobsPage() {
     <div className="min-h-screen py-12 bg-pattern">
       <div className="container-custom">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
-            <div>
-              <h1 className="page-title">Job Listings</h1>
-              <p className="page-subtitle">
-                {isClient ? 'Manage your job postings' : 'Browse available freelance opportunities'}
+          <div className="hero-grid mb-10">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Marketplace
               </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  {isClient ? 'Find elite freelancers for your next sprint' : 'Land the next high-leverage brief'}
+                </h1>
+                <p className="text-white/70 text-base mt-4 max-w-2xl">
+                  Filter by skill, experience, and budget in a workspace modeled after Jira boards and Upwork deal flows.
+                </p>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by title, tool, or deliverable…"
+                  className="input-field pl-12 pr-4 py-4 w-full text-lg"
+                />
+                <svg
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              {featuredCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {featuredCategories.map(category => {
+                    const isActive = filters.categoryId === String(category.id)
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => handleFilterChange('categoryId', category.id)}
+                        className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all ${
+                          isActive
+                            ? 'text-white shadow-lg'
+                            : 'border-white/20 text-white/80 hover:border-white/40'
+                        }`}
+                        style={isActive ? { backgroundImage: gradients.aurora, borderColor: 'transparent' } : undefined}
+                      >
+                        {category.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="grid sm:grid-cols-3 gap-3">
+                {heroHighlights.map(({ label, value, detail }) => (
+                  <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-2">{label}</p>
+                    <p className="text-2xl font-black text-white">{value}</p>
+                    <p className="text-xs text-white/60 mt-1">{detail}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-3">
+            <div className="hero-media min-h-[360px]">
+              <div className="hero-media-content space-y-4">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/60">
+                  Spotlight
+                </p>
+                <h3 className="text-2xl font-black text-white">
+                  {spotlightJob?.title || 'No spotlight brief'}
+                </h3>
+                <p className="text-white/70 text-sm">
+                  {spotlightJob?.description?.slice(0, 140) || 'New briefs will appear here once clients publish them.'}
+                </p>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  {spotlightJob?.jobType && (
+                    <span className="px-3 py-1 rounded-full border border-white/20 text-white/80">
+                      {spotlightJob.jobType.replace('_', ' ')}
+                    </span>
+                  )}
+                  {spotlightJob?.experienceLevel && (
+                    <span className="px-3 py-1 rounded-full border border-white/20 text-white/80">
+                      {spotlightJob.experienceLevel} level
+                    </span>
+                  )}
+                  {spotlightJob?.budgetMin != null && spotlightJob?.budgetMax != null && (
+                    <span className="px-3 py-1 rounded-full border border-white/20 text-white font-semibold">
+                      Rs. {spotlightJob.budgetMin.toLocaleString()} - Rs. {spotlightJob.budgetMax.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {spotlightJob && (
+                  <Link to={`/jobs/${spotlightJob.id}`} className="btn btn-secondary">
+                    View brief
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <p className="text-white/60 text-sm">
+              Showing <span className="text-white font-semibold">{filteredJobs.length}</span> active job postings
+            </p>
+            <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="btn btn-secondary"
@@ -296,7 +421,7 @@ export function JobsPage() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                Filters
+                {showFilters ? 'Hide filters' : 'Show filters'}
               </button>
               {isClient && (
                 isClientApproved ? (
@@ -304,7 +429,7 @@ export function JobsPage() {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Post New Job
+                    Post new job
                   </Link>
                 ) : (
                   <button
@@ -315,7 +440,7 @@ export function JobsPage() {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    Awaiting Approval
+                    Awaiting approval
                   </button>
                 )
               )}
@@ -534,27 +659,6 @@ export function JobsPage() {
 
             {/* Jobs List */}
             <div className={showFilters ? 'lg:col-span-3' : 'lg:col-span-4'}>
-              {/* Search Bar */}
-              <div className="card mb-6">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search jobs by title or description..."
-                    className="input-field pl-10 w-full"
-                  />
-                  <svg
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-
               {filteredJobs.length === 0 ? (
                 <div className="card text-center py-16">
                   <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
@@ -575,8 +679,9 @@ export function JobsPage() {
                       <Link
                         key={job.id}
                         to={`/jobs/${job.id}`}
-                        className="card group hover-lift relative"
+                        className="card group hover-lift relative overflow-hidden border border-white/10"
                       >
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-white/0 via-white/0 to-white/10" />
                         {isFreelancer && (
                           <button
                             onClick={(e) => handleSaveJob(e, job.id)}
@@ -593,7 +698,7 @@ export function JobsPage() {
                             </svg>
                           </button>
                         )}
-                        <div className="flex justify-between items-start gap-4">
+                        <div className="relative z-10 flex justify-between items-start gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-3 flex-wrap">
                               <h2 className="text-2xl font-bold text-white group-hover:text-violet-400 transition-colors">
@@ -635,13 +740,13 @@ export function JobsPage() {
                                   <span className="text-white/80">{job.client.fullName}</span>
                                 </div>
                               )}
-                              {job.budgetMin && job.budgetMax && (
+                              {(job.budgetMin != null || job.budgetMax != null) && (
                                 <div className="flex items-center gap-2">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                   <span className="font-semibold text-white/90">
-                                    Rs. {job.budgetMin.toLocaleString()} - Rs. {job.budgetMax.toLocaleString()}
+                                    {formatBudgetRange(job)}
                                   </span>
                                 </div>
                               )}

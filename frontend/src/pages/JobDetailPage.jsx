@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 const EMPTY_PROPOSAL = {
   coverLetter: '',
@@ -25,6 +26,21 @@ const parseStructuredMessage = (message) => {
     return null
   }
   return null
+}
+
+const formatBudgetRange = (job) => {
+  const min = job?.budgetMin != null ? Number(job.budgetMin) : null
+  const max = job?.budgetMax != null ? Number(job.budgetMax) : null
+  if (min != null && max != null) {
+    return `Rs. ${min.toLocaleString()} - Rs. ${max.toLocaleString()}`
+  }
+  if (min != null) {
+    return `From Rs. ${min.toLocaleString()}`
+  }
+  if (max != null) {
+    return `Up to Rs. ${max.toLocaleString()}`
+  }
+  return 'Budget TBD'
 }
 
 export function JobDetailPage() {
@@ -325,6 +341,24 @@ export function JobDetailPage() {
   const isFreelancer = profile?.roles?.some(r => r.name === 'FREELANCER')
   const canSubmitBid = isFreelancer && !isJobOwner && freelancerProfileStatus === 'APPROVED'
   const friendlyFreelancerStatus = (freelancerProfileStatus || 'INCOMPLETE').replace(/_/g, ' ')
+  const postedDate = job?.createdAt ? new Date(job.createdAt).toLocaleDateString([], { dateStyle: 'medium' }) : null
+  const heroStats = job ? [
+    {
+      label: 'Budget range',
+      value: job.budgetMin != null || job.budgetMax != null ? formatBudgetRange(job) : 'TBD',
+      detail: job.jobType ? job.jobType.replace('_', ' ') : 'Contract type'
+    },
+    {
+      label: 'Experience',
+      value: job.experienceLevel || 'Any level',
+      detail: 'preferred profile'
+    },
+    {
+      label: 'Proposals',
+      value: bids.length,
+      detail: 'submitted bids'
+    }
+  ] : []
 
   const openEditModal = () => {
     setEditTitle(job.title)
@@ -403,13 +437,21 @@ export function JobDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12">
+      <div className="page-shell">
         <div className="container-custom">
-          <div className="max-w-4xl mx-auto">
-            <div className="loading-skeleton h-10 w-48 mb-8"></div>
-            <div className="card">
-              <div className="loading-skeleton h-8 w-3/4 mb-4"></div>
-              <div className="loading-skeleton h-4 w-full"></div>
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div className="loading-skeleton h-10 w-48 rounded-2xl" />
+            <div className="hero-grid min-h-[260px]">
+              <div className="space-y-4">
+                <div className="loading-skeleton h-6 w-1/3" />
+                <div className="loading-skeleton h-10 w-3/4" />
+                <div className="loading-skeleton h-4 w-full" />
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3].map(n => (
+                    <div key={n} className="loading-skeleton h-20 rounded-2xl" />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -419,16 +461,16 @@ export function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="min-h-screen py-12">
+      <div className="page-shell">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
-            <div className="card text-center py-16">
-              <p className="text-red-500 text-lg font-semibold mb-4">Job not found</p>
+            <div className="card text-center py-16 border border-white/10 bg-white/5">
+              <p className="text-red-400 text-lg font-semibold mb-4">Job not found</p>
               <Link to="/jobs" className="btn btn-primary inline-flex items-center">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Back to Jobs
+                Back to jobs
               </Link>
             </div>
           </div>
@@ -438,9 +480,9 @@ export function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-10">
           <Link to="/jobs" className="text-violet-400 hover:text-violet-300 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -448,132 +490,109 @@ export function JobDetailPage() {
             Back to Jobs
           </Link>
 
-          <div className="card mb-8">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-extrabold text-white">{job.title}</h1>
-                      {profile?.roles?.some(r => r.name === 'FREELANCER') && (
-                        <button
-                          onClick={handleSaveJob}
-                          disabled={savingJob}
-                          className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                          title={isSaved ? 'Remove from saved' : 'Save job'}
-                        >
-                          <svg
-                            className={`w-5 h-5 ${isSaved ? 'text-yellow-400 fill-yellow-400' : 'text-white/70'}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <span className={getStatusBadge(job.status)}>{job.status}</span>
-                  </div>
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Opportunity
+              </p>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-start gap-3">
+                  <h1 className="text-4xl font-black text-white flex-1">{job.title}</h1>
+                  {isFreelancer && !isJobOwner && (
+                    <button
+                      onClick={handleSaveJob}
+                      disabled={savingJob}
+                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                      title={isSaved ? 'Remove from saved' : 'Save job'}
+                    >
+                      <svg
+                        className={`w-5 h-5 ${isSaved ? 'text-yellow-400 fill-yellow-400' : 'text-white/70'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-                {isJobOwner && (
-                  <div className="flex gap-3 mb-4">
-                    <button
-                      onClick={openEditModal}
-                      className="btn btn-secondary text-sm"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit Job
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteModal(true)}
-                      className="btn btn-danger text-sm"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Delete Job
-                    </button>
-                  </div>
-                )}
-                <p className="text-white/70 text-lg leading-relaxed mb-6">
-                  {job.description || 'No description provided'}
-                </p>
-                
-                {/* Job Details */}
-                <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className={getStatusBadge(job.status)}>{job.status}</span>
                   {job.category && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-sm font-semibold text-white/60 mb-1">Category</p>
-                      <p className="text-base font-bold text-white">{job.category.name}</p>
-                    </div>
+                    <span className="badge badge-gray">{job.category.name}</span>
                   )}
                   {job.jobType && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-sm font-semibold text-white/60 mb-1">Job Type</p>
-                      <p className="text-base font-bold text-white">{job.jobType.replace('_', ' ')}</p>
-                    </div>
+                    <span className="badge badge-primary">{job.jobType.replace('_', ' ')}</span>
                   )}
-                  {job.budgetMin && job.budgetMax && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-sm font-semibold text-white/60 mb-1">Budget Range</p>
-                      <p className="text-base font-bold text-white">
-                        Rs. {job.budgetMin.toLocaleString()} - Rs. {job.budgetMax.toLocaleString()}
-                      </p>
-                    </div>
-                  )}
-                  {job.experienceLevel && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-sm font-semibold text-white/60 mb-1">Experience Level</p>
-                      <p className="text-base font-bold text-white">{job.experienceLevel} Level</p>
-                    </div>
-                  )}
-                  {job.durationHours && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-sm font-semibold text-white/60 mb-1">Estimated Duration</p>
-                      <p className="text-base font-bold text-white">{job.durationHours} hours</p>
-                    </div>
-                  )}
-                  {job.expiresAt && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <p className="text-sm font-semibold text-white/60 mb-1">Expires At</p>
-                      <p className="text-base font-bold text-white">
-                        {new Date(job.expiresAt).toLocaleString()}
-                      </p>
-                    </div>
+                  {postedDate && (
+                    <span className="badge badge-secondary">Posted {postedDate}</span>
                   )}
                 </div>
-
-                {/* Required Skills */}
+              </div>
+              <p className="text-white/70 text-lg leading-relaxed">
+                {job.description || 'No description provided'}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {isJobOwner ? (
+                  <>
+                    <button onClick={openEditModal} className="btn btn-secondary text-sm">
+                      Edit job
+                    </button>
+                    <button onClick={() => setShowDeleteModal(true)} className="btn btn-danger text-sm">
+                      Delete job
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {isFreelancer && (
+                      <a href="#proposal" className="btn btn-primary">
+                        Submit proposal
+                      </a>
+                    )}
+                    <button onClick={handleSaveJob} disabled={savingJob || !isFreelancer} className="btn btn-secondary">
+                      {isSaved ? 'Saved' : 'Save job'}
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {heroStats.map(stat => (
+                  <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-white">{stat.value}</p>
+                    <p className="text-xs text-white/60">{stat.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="hero-media min-h-[320px]">
+              <div className="hero-media-content space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60">Client</p>
+                  {job.client ? (
+                    <>
+                      <h3 className="text-xl font-bold text-white">{job.client.fullName}</h3>
+                      <p className="text-sm text-white/70">{job.client.email}</p>
+                    </>
+                  ) : (
+                    <h3 className="text-xl font-bold text-white">Hidden client</h3>
+                  )}
+                </div>
+                <div className="space-y-2 text-sm text-white/80">
+                  {job.expiresAt && <p>Closes {new Date(job.expiresAt).toLocaleDateString([], { dateStyle: 'medium' })}</p>}
+                  {job.durationHours && <p>Estimated duration: {job.durationHours} hours</p>}
+                  <p>Bids in review: {bids.length}</p>
+                </div>
                 {job.requiredSkills && job.requiredSkills.length > 0 && (
-                  <div className="mb-6">
-                    <p className="text-sm font-semibold text-white/60 mb-3">Required Skills</p>
-                    <div className="flex flex-wrap gap-2">
-                      {job.requiredSkills.map(skill => (
-                        <span key={skill.id} className="badge badge-secondary">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-2">Focus skills</p>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {job.requiredSkills.slice(0, 4).map(skill => (
+                        <span key={skill.id} className="px-3 py-1 rounded-full border border-white/20 text-white/80">
                           {skill.name}
                         </span>
                       ))}
-                    </div>
-                  </div>
-                )}
-
-                {job.client && (
-                  <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30">
-                      {job.client.fullName?.charAt(0) || 'U'}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white/60">Posted by</p>
-                      <p className="text-base font-bold text-white">{job.client.fullName}</p>
-                      <p className="text-xs text-white/50">{job.client.email}</p>
                     </div>
                   </div>
                 )}
@@ -581,8 +600,75 @@ export function JobDetailPage() {
             </div>
           </div>
 
+          <div className="grid md:grid-cols-2 gap-4">
+            {job.category && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-sm font-semibold text-white/60 mb-1">Category</p>
+                <p className="text-base font-bold text-white">{job.category.name}</p>
+              </div>
+            )}
+            {job.jobType && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-sm font-semibold text-white/60 mb-1">Job type</p>
+                <p className="text-base font-bold text-white">{job.jobType.replace('_', ' ')}</p>
+              </div>
+            )}
+            {(job.budgetMin != null || job.budgetMax != null) && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-sm font-semibold text-white/60 mb-1">Budget</p>
+                <p className="text-base font-bold text-white">{formatBudgetRange(job)}</p>
+              </div>
+            )}
+            {job.experienceLevel && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-sm font-semibold text-white/60 mb-1">Experience level</p>
+                <p className="text-base font-bold text-white">{job.experienceLevel} level</p>
+              </div>
+            )}
+            {job.durationHours && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-sm font-semibold text-white/60 mb-1">Estimated duration</p>
+                <p className="text-base font-bold text-white">{job.durationHours} hours</p>
+              </div>
+            )}
+            {job.expiresAt && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/5">
+                <p className="text-sm font-semibold text-white/60 mb-1">Closes</p>
+                <p className="text-base font-bold text-white">
+                  {new Date(job.expiresAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {job.requiredSkills && job.requiredSkills.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-white/60 mb-3">Required skills</p>
+              <div className="flex flex-wrap gap-2">
+                {job.requiredSkills.map(skill => (
+                  <span key={skill.id} className="badge badge-secondary">
+                    {skill.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {job.client && (
+            <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+              <div className="w-11 h-11 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30">
+                {job.client.fullName?.charAt(0) || 'U'}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white/60">Posted by</p>
+                <p className="text-base font-bold text-white">{job.client.fullName}</p>
+                <p className="text-xs text-white/50">{job.client.email}</p>
+              </div>
+            </div>
+          )}
+
           {!isJobOwner && isFreelancer && (
-            <div className="card mb-8">
+            <div id="proposal" className="card mb-8">
               <h2 className="text-2xl font-bold text-white mb-6">Craft Your Proposal</h2>
               {freelancerProfileStatus !== 'APPROVED' && (
                 <div className="mb-5 p-4 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-sm text-yellow-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
