@@ -7,6 +7,7 @@ import { Timer } from '../components/Timer'
 import { TaskActivityTimeline } from '../components/TaskActivityTimeline'
 import { MentionInput } from '../components/MentionInput'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 
@@ -1026,6 +1027,31 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
 
   const stats = getTaskStats()
   const progressPercentage = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
+  const totalEscrowBalance = escrowAccounts.reduce(
+    (sum, account) => sum + Number(account.availableAmount ?? account.balance ?? account.amount ?? 0),
+    0
+  )
+  const totalWatchers = Object.values(watchers).reduce(
+    (sum, watcherList) => sum + (Array.isArray(watcherList) ? watcherList.length : 0),
+    0
+  )
+  const heroStats = [
+    {
+      label: 'Progress',
+      value: `${progressPercentage}%`,
+      detail: `${stats.done}/${stats.total || 0} tasks done`
+    },
+    {
+      label: 'Active milestones',
+      value: milestones.length,
+      detail: 'scheduled checkpoints'
+    },
+    {
+      label: 'Escrow balance',
+      value: totalEscrowBalance > 0 ? `Rs. ${totalEscrowBalance.toLocaleString()}` : 'No funds',
+      detail: 'secured payouts'
+    }
+  ]
 
   const isProjectOwner = project && profile && project.job && project.job.client &&
     (project.job.client.id === profile.id || (typeof project.job.client === 'object' && project.job.client.id === profile.id))
@@ -1191,267 +1217,255 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-4xl mx-auto">
-          <Link to="/projects" className="text-violet-400 hover:text-violet-300 font-semibold mb-8 inline-flex items-center gap-2 transition-colors">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <Link to="/projects" className="text-violet-400 hover:text-violet-300 font-semibold inline-flex items-center gap-2 transition-colors">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Projects
           </Link>
 
-          <div className="card mb-8">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Mission control
+              </p>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-4xl font-black text-white flex-1">{project.title}</h1>
+                  {project.job?.status && (
+                    <span className={getStatusBadge(project.job.status)}>{project.job.status}</span>
+                  )}
+                  {project.job?.category && (
+                    <span className="badge badge-gray">{project.job.category.name}</span>
+                  )}
+                </div>
+                {project.job?.jobType && (
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+                    {project.job.jobType.replace('_', ' ')}
+                  </p>
+                )}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <h1 className="text-3xl font-extrabold text-white">{project.title}</h1>
-                  <div className="flex gap-3">
-                    <div className="relative group">
-                      <button className="btn btn-secondary text-sm">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Export Reports
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      <div className="absolute right-0 mt-2 w-56 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                        <div className="p-2 space-y-1">
-                          <a
-                            href={`http://localhost:8080/api/reports/projects/${id}/csv`}
-                            download
-                            onClick={(e) => {
-                              e.preventDefault()
-                              const link = document.createElement('a')
-                              link.href = `http://localhost:8080/api/reports/projects/${id}/csv`
-                              link.setAttribute('download', `project_${id}_report.csv`)
-                              link.setAttribute('Authorization', `Bearer ${token}`)
-                              document.body.appendChild(link)
-                              link.click()
-                              document.body.removeChild(link)
-                              // Trigger download with auth header
-                              fetch(`http://localhost:8080/api/reports/projects/${id}/csv`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
-                              })
-                                .then(res => res.blob())
-                                .then(blob => {
-                                  const url = window.URL.createObjectURL(blob)
-                                  const a = document.createElement('a')
-                                  a.href = url
-                                  a.download = `project_${id}_report.csv`
-                                  document.body.appendChild(a)
-                                  a.click()
-                                  window.URL.revokeObjectURL(url)
-                                  document.body.removeChild(a)
-                                  showSuccess('Project report downloaded!')
-                                })
-                                .catch(() => showError('Failed to download report'))
-                            }}
-                            className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
-                          >
-                            📊 Full Project Report
-                          </a>
-                          <a
-                            href={`http://localhost:8080/api/reports/projects/${id}/tasks/csv`}
-                            download
-                            onClick={(e) => {
-                              e.preventDefault()
-                              fetch(`http://localhost:8080/api/reports/projects/${id}/tasks/csv`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
-                              })
-                                .then(res => res.blob())
-                                .then(blob => {
-                                  const url = window.URL.createObjectURL(blob)
-                                  const a = document.createElement('a')
-                                  a.href = url
-                                  a.download = `tasks_report_${id}.csv`
-                                  document.body.appendChild(a)
-                                  a.click()
-                                  window.URL.revokeObjectURL(url)
-                                  document.body.removeChild(a)
-                                  showSuccess('Tasks report downloaded!')
-                                })
-                                .catch(() => showError('Failed to download report'))
-                            }}
-                            className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
-                          >
-                            📋 Tasks Report
-                          </a>
-                          <a
-                            href={`http://localhost:8080/api/reports/projects/${id}/time-logs/csv`}
-                            download
-                            onClick={(e) => {
-                              e.preventDefault()
-                              fetch(`http://localhost:8080/api/reports/projects/${id}/time-logs/csv`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
-                              })
-                                .then(res => res.blob())
-                                .then(blob => {
-                                  const url = window.URL.createObjectURL(blob)
-                                  const a = document.createElement('a')
-                                  a.href = url
-                                  a.download = `time_logs_report_${id}.csv`
-                                  document.body.appendChild(a)
-                                  a.click()
-                                  window.URL.revokeObjectURL(url)
-                                  document.body.removeChild(a)
-                                  showSuccess('Time logs report downloaded!')
-                                })
-                                .catch(() => showError('Failed to download report'))
-                            }}
-                            className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
-                          >
-                            ⏱️ Time Logs Report (CSV)
-                          </a>
-                          <div className="border-t border-white/20 my-1"></div>
-                          <a
-                            href={`http://localhost:8080/api/reports/projects/${id}/pdf`}
-                            download
-                            onClick={(e) => {
-                              e.preventDefault()
-                              fetch(`http://localhost:8080/api/reports/projects/${id}/pdf`, {
-                                headers: {
-                                  'Authorization': `Bearer ${token}`
-                                }
-                              })
-                                .then(res => res.blob())
-                                .then(blob => {
-                                  const url = window.URL.createObjectURL(blob)
-                                  const a = document.createElement('a')
-                                  a.href = url
-                                  a.download = `project_${id}_report.pdf`
-                                  document.body.appendChild(a)
-                                  a.click()
-                                  window.URL.revokeObjectURL(url)
-                                  document.body.removeChild(a)
-                                  showSuccess('PDF report downloaded!')
-                                })
-                                .catch(() => showError('Failed to download PDF report'))
-                            }}
-                            className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
-                          >
-                            📄 Full Project Report (PDF)
-                          </a>
-                        </div>
-
-                        <div className="mt-6 pt-6 border-t border-white/10">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-sm font-bold text-white/90 flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              Activity Timeline
-                            </h4>
-                            <button
-                              type="button"
-                              className="text-xs text-violet-300 hover:text-violet-200"
-                              onClick={() => loadTaskActivities(task.id, 0, true)}
-                              disabled={activityPages[task.id]?.loading}
-                            >
-                              Refresh
-                            </button>
-                          </div>
-                          <TaskActivityTimeline
-                            activities={activities[task.id] || []}
-                            currentUserId={profile?.id}
-                            onLoadMore={() => loadMoreActivities(task.id)}
-                            hasMore={activityPages[task.id]?.hasMore}
-                            loading={activityPages[task.id]?.loading}
-                          />
-                        </div>
-                      </div>
+              <p className="text-white/70 text-lg leading-relaxed">
+                {project.description || 'No description provided.'}
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs text-white/60">
+                  <span>Overall progress</span>
+                  <span>{progressPercentage}%</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${progressPercentage}%`, backgroundImage: gradients.aurora }}
+                  />
+                </div>
+                <p className="text-xs text-white/50">
+                  {stats.done} of {stats.total || 0} tasks completed
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {heroStats.map(stat => (
+                  <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-white">{stat.value}</p>
+                    <p className="text-xs text-white/60">{stat.detail}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link to={`/projects/${id}/kanban`} className="btn btn-primary text-sm">
+                  Open Kanban
+                </Link>
+                <Link to={`/projects/${id}/documents/upload`} className="btn btn-secondary text-sm">
+                  Extract Tasks
+                </Link>
+                {isProjectOwner && (
+                  <>
+                    <button onClick={openEditModal} className="btn btn-secondary text-sm">
+                      Edit
+                    </button>
+                    <button onClick={() => setShowDeleteModal(true)} className="btn btn-danger text-sm">
+                      Delete
+                    </button>
+                  </>
+                )}
+                <div className="relative group">
+                  <button className="btn btn-secondary text-sm inline-flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export Reports
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className="absolute right-0 mt-2 w-56 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <div className="p-2 space-y-1">
+                      <a
+                        href={`http://localhost:8080/api/reports/projects/${id}/csv`}
+                        download
+                        onClick={(e) => {
+                          e.preventDefault()
+                          fetch(`http://localhost:8080/api/reports/projects/${id}/csv`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          })
+                            .then(res => res.blob())
+                            .then(blob => {
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `project_${id}_report.csv`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                              showSuccess('Project report downloaded!')
+                            })
+                            .catch(() => showError('Failed to download report'))
+                        }}
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
+                      >
+                        📊 Full Project Report
+                      </a>
+                      <a
+                        href={`http://localhost:8080/api/reports/projects/${id}/tasks/csv`}
+                        download
+                        onClick={(e) => {
+                          e.preventDefault()
+                          fetch(`http://localhost:8080/api/reports/projects/${id}/tasks/csv`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          })
+                            .then(res => res.blob())
+                            .then(blob => {
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `tasks_report_${id}.csv`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                              showSuccess('Tasks report downloaded!')
+                            })
+                            .catch(() => showError('Failed to download report'))
+                        }}
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
+                      >
+                        📋 Tasks Report
+                      </a>
+                      <a
+                        href={`http://localhost:8080/api/reports/projects/${id}/time-logs/csv`}
+                        download
+                        onClick={(e) => {
+                          e.preventDefault()
+                          fetch(`http://localhost:8080/api/reports/projects/${id}/time-logs/csv`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          })
+                            .then(res => res.blob())
+                            .then(blob => {
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `time_logs_report_${id}.csv`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                              showSuccess('Time logs report downloaded!')
+                            })
+                            .catch(() => showError('Failed to download report'))
+                        }}
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
+                      >
+                        ⏱️ Time Logs Report
+                      </a>
+                      <div className="border-t border-white/20 my-1"></div>
+                      <a
+                        href={`http://localhost:8080/api/reports/projects/${id}/pdf`}
+                        download
+                        onClick={(e) => {
+                          e.preventDefault()
+                          fetch(`http://localhost:8080/api/reports/projects/${id}/pdf`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          })
+                            .then(res => res.blob())
+                            .then(blob => {
+                              const url = window.URL.createObjectURL(blob)
+                              const a = document.createElement('a')
+                              a.href = url
+                              a.download = `project_${id}_report.pdf`
+                              document.body.appendChild(a)
+                              a.click()
+                              window.URL.revokeObjectURL(url)
+                              document.body.removeChild(a)
+                              showSuccess('PDF report downloaded!')
+                            })
+                            .catch(() => showError('Failed to download PDF report'))
+                        }}
+                        className="block px-4 py-2 text-sm text-white/90 hover:bg-white/10 rounded transition-colors"
+                      >
+                        📄 Project Report (PDF)
+                      </a>
                     </div>
-                    <Link
-                      to={`/projects/${id}/kanban`}
-                      className="btn btn-primary text-sm"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                      </svg>
-                      Kanban Board
-                    </Link>
-                    <Link
-                      to={`/projects/${id}/documents/upload`}
-                      className="btn btn-secondary text-sm"
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Extract Tasks from Document
-                    </Link>
-                    {isProjectOwner && (
-                      <>
-                        <button
-                          onClick={openEditModal}
-                          className="btn btn-secondary text-sm"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => setShowDeleteModal(true)}
-                          className="btn btn-danger text-sm"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Delete
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
-
-                <div className="grid gap-4 md:grid-cols-2 mt-6">
-                  <Link
-                    to={`/projects/${id}/sprints`}
-                    className="card border border-violet-500/30 hover:border-violet-400/60 transition-all"
-                  >
-                    <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Iterations</p>
-                    <h3 className="text-lg font-bold text-white mb-1">Sprint Planner</h3>
-                    <p className="text-white/70 text-sm">Draft sprint goals, set timelines, and review accomplishments.</p>
-                  </Link>
-                  <Link
-                    to="/teams"
-                    className="card border border-cyan-500/30 hover:border-cyan-400/60 transition-all"
-                  >
-                    <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Collaboration</p>
-                    <h3 className="text-lg font-bold text-white mb-1">Team Hub</h3>
-                    <p className="text-white/70 text-sm">Invite specialists, assign pods, and broadcast updates.</p>
-                  </Link>
+              </div>
+            </div>
+            <div className="hero-media min-h-[320px]">
+              <div className="hero-media-content space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60">Client</p>
+                  {project.job?.client ? (
+                    <>
+                      <h3 className="text-xl font-bold text-white">{project.job.client.fullName}</h3>
+                      <p className="text-sm text-white/70">{project.job.client.email}</p>
+                    </>
+                  ) : (
+                    <h3 className="text-xl font-bold text-white">No client assigned</h3>
+                  )}
                 </div>
-
-                <p className="text-white/70 text-lg leading-relaxed mb-4">
-                  {project.description || 'No description provided'}
-                </p>
-                {project.job && (
-                  <div className="flex items-center gap-2 text-sm text-white/60 pt-4 border-t border-white/10">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <span>From job: <span className="font-semibold">{project.job.title}</span></span>
+                <div className="space-y-2 text-sm text-white/80">
+                  {project.job?.title && (
+                    <p>Origin job: <span className="font-semibold">{project.job.title}</span></p>
+                  )}
+                  <p>Tasks: {stats.total} total • {stats.inProgress} in-progress</p>
+                  <p>Watchers: {totalWatchers}</p>
+                  <p>Upcoming milestones: {milestones.length}</p>
+                </div>
+                {project.job?.budgetMin != null && project.job?.budgetMax != null && (
+                  <div className="text-sm text-white/80">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Budget range</p>
+                    <p className="font-semibold">{`Rs. ${project.job.budgetMin.toLocaleString()} - Rs. ${project.job.budgetMax.toLocaleString()}`}</p>
                   </div>
                 )}
               </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="card mb-8">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Link
+              to={`/projects/${id}/sprints`}
+              className="card border border-violet-500/30 hover:border-violet-400/60 transition-all"
+            >
+              <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Iterations</p>
+              <h3 className="text-lg font-bold text-white mb-1">Sprint Planner</h3>
+              <p className="text-white/70 text-sm">Draft sprint goals, set timelines, and review accomplishments.</p>
+            </Link>
+            <Link
+              to="/teams"
+              className="card border border-cyan-500/30 hover:border-cyan-400/60 transition-all"
+            >
+              <p className="text-xs uppercase tracking-wide text-white/60 mb-1">Collaboration</p>
+              <h3 className="text-lg font-bold text-white mb-1">Team Hub</h3>
+              <p className="text-white/70 text-sm">Invite specialists, assign pods, and broadcast updates.</p>
+            </Link>
+          </div>
+
+          <div className="card mb-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-white">Escrow Accounts</h3>
@@ -2889,6 +2903,8 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   )
 }
