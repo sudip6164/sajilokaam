@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { gradients } from '../theme/designSystem'
 
 const COLUMNS = [
   { id: 'TODO', title: 'To Do', color: 'from-gray-500 to-gray-600' },
@@ -133,13 +134,13 @@ export function KanbanBoardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell">
         <div className="container-custom">
-          <div className="max-w-7xl mx-auto">
-            <div className="loading-skeleton h-10 w-48 mb-8"></div>
-            <div className="grid grid-cols-3 gap-6">
+          <div className="max-w-7xl mx-auto space-y-8">
+            <div className="loading-skeleton h-12 w-48 rounded-2xl"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="card">
+                <div key={i} className="card min-h-[320px]">
                   <div className="loading-skeleton h-8 w-32 mb-4"></div>
                   <div className="space-y-3">
                     <div className="loading-skeleton h-24 w-full"></div>
@@ -156,9 +157,9 @@ export function KanbanBoardPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell">
         <div className="container-custom">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="card text-center py-16">
               <p className="text-red-500 text-lg font-semibold mb-4">Project not found</p>
               <Link to="/projects" className="btn btn-primary inline-flex items-center">
@@ -174,33 +175,82 @@ export function KanbanBoardPage() {
     )
   }
 
+  const watcherCount = Object.values(watchers).reduce(
+    (sum, watcherList) => sum + (Array.isArray(watcherList) ? watcherList.length : 0),
+    0
+  )
+
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <Link to={`/projects/${id}`} className="text-violet-400 hover:text-violet-300 font-semibold mb-4 inline-flex items-center gap-2 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Project Details
-            </Link>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-extrabold text-white mb-2">{project.title}</h1>
-                <p className="text-white/70">Kanban Board View</p>
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Flow runway
+              </p>
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-4xl font-black text-white flex-1">{project.title}</h1>
+                  {project.job?.status && (
+                    <span className="badge badge-primary">{project.job.status}</span>
+                  )}
+                  <Link to={`/projects/${id}`} className="btn btn-secondary text-sm">
+                    List view
+                  </Link>
+                </div>
+                <p className="text-white/70 text-base">Kanban board for this project</p>
               </div>
-              <Link to={`/projects/${id}`} className="btn btn-secondary">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                List View
-              </Link>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Tasks</p>
+                  <p className="text-2xl font-black text-white">{tasks.length}</p>
+                  <p className="text-xs text-white/60">
+                    {tasks.filter(t => t.status === 'IN_PROGRESS').length} in progress
+                  </p>
+                </div>
+                <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Milestones</p>
+                  <p className="text-2xl font-black text-white">{project.milestones?.length || 0}</p>
+                  <p className="text-xs text-white/60">tracking checkpoints</p>
+                </div>
+                <div className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">Watchers</p>
+                  <p className="text-2xl font-black text-white">{watcherCount}</p>
+                  <p className="text-xs text-white/60">receiving updates</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link to={`/projects/${id}`} className="btn btn-secondary text-sm">
+                  Project detail
+                </Link>
+                <Link to={`/projects/${id}/documents/upload`} className="btn btn-secondary text-sm">
+                  Extract tasks
+                </Link>
+              </div>
+            </div>
+            <div className="hero-media min-h-[280px]">
+              <div className="hero-media-content space-y-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.4em] text-white/60">Snapshot</p>
+                  <h3 className="text-xl font-bold text-white">Workflow lanes</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm text-white/80">
+                  {COLUMNS.map(column => (
+                    <div key={column.id} className="text-center">
+                      <p className="text-xs uppercase tracking-[0.4em] text-white/50">{column.title}</p>
+                      <p className="text-2xl font-black text-white">{getTasksByStatus(column.id).length}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-white/60">
+                  Drag any card between columns to update status. Click into a card to see full details, watchers, and timeline.
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Kanban Board */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {COLUMNS.map(column => {
               const columnTasks = getTasksByStatus(column.id)
