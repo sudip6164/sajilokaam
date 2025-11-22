@@ -114,7 +114,9 @@ export function ProjectDetailPage() {
   const [showReleaseModal, setShowReleaseModal] = useState(false)
 const [releaseForm, setReleaseForm] = useState({ amount: '', releaseType: 'MILESTONE', notes: '' })
 const [selectedEscrow, setSelectedEscrow] = useState(null)
-const [submittingEscrow, setSubmittingEscrow] = useState(false)
+  const [submittingEscrow, setSubmittingEscrow] = useState(false)
+  const [togglingReaction, setTogglingReaction] = useState({}) // { 'commentId-reactionType': true }
+  const [uploadingAttachment, setUploadingAttachment] = useState({}) // { commentId: true }
   const navigate = useNavigate()
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -570,55 +572,177 @@ const [submittingEscrow, setSubmittingEscrow] = useState(false)
     return Array.from(map.values())
   }
 
+  const isImageType = (contentType) => {
+    return contentType && contentType.startsWith('image/')
+  }
+
+  const REACTION_TYPES = [
+    { type: 'THUMBS_UP', emoji: '👍', label: 'Like' },
+    { type: 'HEART', emoji: '❤️', label: 'Love' },
+    { type: 'FIRE', emoji: '🔥', label: 'Fire' },
+    { type: 'EYES', emoji: '👀', label: 'Eyes' },
+    { type: 'CHECK', emoji: '✅', label: 'Check' }
+  ]
+
   const renderCommentThread = (task, comment, depth = 0) => {
+    const userReactions = comment.currentUserReactions || []
+    const hasReactions = comment.reactions && comment.reactions.length > 0
+    const hasAttachments = comment.attachments && comment.attachments.length > 0
+
     return (
       <div
         key={`${comment.id}-${depth}`}
-        className={`p-4 border border-white/10 rounded-xl bg-white/5 ${
-          depth > 0 ? 'ml-4 border-l-4 border-l-violet-500/40' : ''
+        className={`group p-5 border-2 border-white/10 rounded-2xl bg-white/5 hover:border-violet-500/30 hover:bg-white/10 transition-all ${
+          depth > 0 ? 'ml-6 border-l-4 border-l-violet-500/40' : ''
         }`}
       >
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30 flex-shrink-0">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-purple-500/30 flex-shrink-0">
             {comment.user?.fullName?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-white">
-                  {comment.user?.fullName || 'Unknown user'}
-                </p>
-                <p className="text-xs text-white/50">
-                  {comment.createdAt
-                    ? new Date(comment.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-                    : ''}
-                </p>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-bold text-white">
+                    {comment.user?.fullName || 'Unknown user'}
+                  </p>
+                  {comment.edited && (
+                    <span className="text-xs text-white/40 italic">(edited)</span>
+                  )}
+                  <p className="text-xs text-white/50">
+                    {comment.createdAt
+                      ? new Date(comment.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                      : ''}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                className="text-xs text-violet-300 hover:text-violet-200 font-semibold"
+                className="text-xs text-violet-300 hover:text-violet-200 font-semibold px-3 py-1 rounded-lg hover:bg-white/5 transition-colors"
                 onClick={() => handleStartReply(task.id, comment)}
               >
                 Reply
               </button>
             </div>
-            <p className="text-sm text-white/80 mt-2 whitespace-pre-wrap">
-              {comment.content}
-            </p>
+
+            {comment.content && (
+              <p className="text-sm text-white/80 mb-3 whitespace-pre-wrap leading-relaxed">
+                {comment.content}
+              </p>
+            )}
+
             {comment.mentionedUsers && comment.mentionedUsers.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mb-3">
                 {comment.mentionedUsers.map(user => (
                   <span
                     key={user.id}
-                    className="px-2 py-1 text-xs rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-200"
+                    className="px-2.5 py-1 text-xs rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-200 font-semibold"
                   >
                     @{user.fullName || user.email}
                   </span>
                 ))}
               </div>
             )}
+
+            {hasAttachments && (
+              <div className="grid gap-3 mb-3">
+                {comment.attachments.map(attachment => {
+                  const isImage = isImageType(attachment.contentType)
+                  return (
+                    <div
+                      key={attachment.id}
+                      className="border border-white/10 rounded-xl bg-white/5 p-3 hover:bg-white/10 transition-colors"
+                    >
+                      {isImage && attachment.downloadUrl ? (
+                        <div className="space-y-2">
+                          <img
+                            src={attachment.downloadUrl}
+                            alt={attachment.filename || 'Attachment'}
+                            className="rounded-lg border border-white/10 max-h-64 w-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(attachment.downloadUrl, '_blank')}
+                          />
+                          <div className="flex items-center justify-between text-xs text-white/60">
+                            <span className="truncate flex-1">{attachment.filename}</span>
+                            <span className="ml-2">{formatFileSize(attachment.sizeBytes)}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <a
+                          href={attachment.downloadUrl}
+                          download={attachment.filename}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{attachment.filename}</p>
+                            <p className="text-xs text-white/50">{formatFileSize(attachment.sizeBytes)}</p>
+                          </div>
+                          <svg className="w-4 h-4 text-white/40 group-hover:text-white/60 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {hasReactions && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {comment.reactions.map(reaction => {
+                    const isActive = userReactions.includes(reaction.type)
+                    return (
+                      <button
+                        key={reaction.type}
+                        type="button"
+                        onClick={() => handleToggleReaction(task.id, comment.id, reaction.type)}
+                        disabled={togglingReaction[`${comment.id}-${reaction.type}`]}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
+                          isActive
+                            ? 'bg-violet-500/20 border-violet-500/40 text-violet-200 hover:bg-violet-500/30'
+                            : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        <span>{reaction.emoji}</span>
+                        <span>{reaction.count}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1">
+                {REACTION_TYPES.map(reaction => {
+                  const isActive = userReactions.includes(reaction.type)
+                  return (
+                    <button
+                      key={reaction.type}
+                      type="button"
+                      onClick={() => handleToggleReaction(task.id, comment.id, reaction.type)}
+                      disabled={togglingReaction[`${comment.id}-${reaction.type}`]}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${
+                        isActive
+                          ? 'bg-violet-500/20 border-2 border-violet-500/40 hover:bg-violet-500/30'
+                          : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'
+                      }`}
+                      title={reaction.label}
+                    >
+                      {reaction.emoji}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             {comment.replies && comment.replies.length > 0 && (
-              <div className="mt-4 space-y-3 border-l border-white/10 pl-4">
+              <div className="mt-5 space-y-4 border-l-2 border-violet-500/20 pl-5">
                 {comment.replies.map(child => renderCommentThread(task, child, depth + 1))}
               </div>
             )}
@@ -672,6 +796,7 @@ const [submittingEscrow, setSubmittingEscrow] = useState(false)
   }
 
   const formatFileSize = (bytes) => {
+    if (!bytes) return '0 B'
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
@@ -744,14 +869,86 @@ const [submittingEscrow, setSubmittingEscrow] = useState(false)
         throw new Error('Failed to post comment')
       }
 
+      const newComment = await res.json()
       showSuccess('Comment posted successfully!')
       resetCommentDraft(taskId)
       setShowCommentForm(prev => ({ ...prev, [taskId]: false }))
       await loadComments(taskId)
+      
+      // If there's a file to upload, upload it now
+      const fileInput = document.querySelector(`input[type="file"][data-task-id="${taskId}"]`)
+      if (fileInput?.files?.[0] && newComment?.id) {
+        await handleCommentAttachmentUpload(taskId, newComment.id, fileInput.files[0])
+        fileInput.value = ''
+      }
     } catch (err) {
       showError(err.message || 'Failed to post comment')
     } finally {
       setSubmittingComment(prev => ({ ...prev, [taskId]: false }))
+    }
+  }
+
+  const handleToggleReaction = async (taskId, commentId, reactionType) => {
+    if (!token) {
+      showError('Sign in to react to comments')
+      return
+    }
+
+    const key = `${commentId}-${reactionType}`
+    setTogglingReaction(prev => ({ ...prev, [key]: true }))
+    try {
+      const res = await fetch(`http://localhost:8080/api/projects/${id}/tasks/${taskId}/comments/${commentId}/reactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reactionType })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to toggle reaction')
+      }
+
+      await loadComments(taskId)
+    } catch (err) {
+      showError(err.message || 'Failed to toggle reaction')
+    } finally {
+      setTogglingReaction(prev => ({ ...prev, [key]: false }))
+    }
+  }
+
+  const handleCommentAttachmentUpload = async (taskId, commentId, file) => {
+    if (!file) return
+
+    if (file.size > 10 * 1024 * 1024) {
+      showError('File size must be less than 10MB')
+      return
+    }
+
+    setUploadingAttachment(prev => ({ ...prev, [commentId]: true }))
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch(`http://localhost:8080/api/projects/${id}/tasks/${taskId}/comments/${commentId}/attachments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to upload attachment')
+      }
+
+      showSuccess('Attachment uploaded successfully!')
+      await loadComments(taskId)
+    } catch (err) {
+      showError(err.message || 'Failed to upload attachment')
+    } finally {
+      setUploadingAttachment(prev => ({ ...prev, [commentId]: false }))
     }
   }
 
