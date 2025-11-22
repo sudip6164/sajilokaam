@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { Pagination } from '../components/Pagination'
+import { gradients } from '../theme/designSystem'
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState([])
@@ -61,12 +62,46 @@ export function ProjectsPage() {
   const endIndex = startIndex + itemsPerPage
   const paginatedProjects = filteredProjects.slice(startIndex, endIndex)
 
+  // Calculate stats
+  const stats = {
+    total: projects.length,
+    active: projects.filter(p => p.job?.status === 'IN_PROGRESS' || p.job?.status === 'ACCEPTED').length,
+    completed: projects.filter(p => p.job?.status === 'COMPLETED').length
+  }
+
+  const heroStats = [
+    {
+      label: 'Total projects',
+      value: stats.total,
+      accent: 'from-violet-500 to-purple-600',
+      detail: 'all time'
+    },
+    {
+      label: 'Active',
+      value: stats.active,
+      accent: 'from-emerald-500 to-teal-500',
+      detail: 'in progress'
+    },
+    {
+      label: 'Completed',
+      value: stats.completed,
+      accent: 'from-amber-500 to-orange-500',
+      detail: 'delivered'
+    }
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-64 mb-8"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="grid gap-6">
               {[1, 2, 3].map(i => (
                 <div key={i} className="card">
@@ -83,12 +118,33 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-10">
-            <h1 className="page-title">Projects</h1>
-            <p className="page-subtitle">Manage your active projects and track progress</p>
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Project workspace
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Your <span className="gradient-text">project boards</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Track delivery, manage milestones, and collaborate with teams across all active projects.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {heroStats.map(stat => (
+                  <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-white">{stat.value}</p>
+                    <p className="text-xs text-white/60">{stat.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {projects.length > 0 && (
@@ -154,45 +210,63 @@ export function ProjectsPage() {
             </div>
           ) : (
             <>
-              <div className="grid gap-6">
-                {paginatedProjects.map(project => (
-                <Link
-                  key={project.id}
-                  to={`/projects/${project.id}`}
-                  className="card group hover-lift"
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
+              <div className="grid gap-4">
+                {paginatedProjects.map(project => {
+                  const status = project.job?.status || 'UNKNOWN'
+                  const statusBadge = {
+                    'IN_PROGRESS': 'badge badge-warning',
+                    'ACCEPTED': 'badge badge-warning',
+                    'COMPLETED': 'badge badge-success',
+                    'CANCELLED': 'badge badge-gray',
+                    'UNKNOWN': 'badge badge-gray'
+                  }[status] || 'badge badge-gray'
+
+                  return (
+                    <Link
+                      key={project.id}
+                      to={`/projects/${project.id}`}
+                      className="group block"
+                    >
+                      <div className="card border-2 border-white/10 hover:border-violet-500/50 hover:shadow-lg transition-all">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3 flex-wrap">
+                              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30 flex-shrink-0">
+                                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h2 className="text-2xl font-bold text-white group-hover:text-violet-400 transition-colors mb-1">
+                                  {project.title}
+                                </h2>
+                                {project.job?.status && (
+                                  <span className={statusBadge}>{status.replace('_', ' ')}</span>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-white/70 mb-4 line-clamp-2 leading-relaxed">
+                              {project.description || 'No description provided'}
+                            </p>
+                            {project.job && (
+                              <div className="flex items-center gap-2 text-sm text-white/60">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                <span>From job: <span className="font-semibold">{project.job.title}</span></span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-violet-400 group-hover:translate-x-1 transition-transform flex-shrink-0">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-white group-hover:text-violet-400 transition-colors">
-                          {project.title}
-                        </h2>
                       </div>
-                      <p className="text-white/70 mb-4 line-clamp-2 leading-relaxed">
-                        {project.description || 'No description provided'}
-                      </p>
-                      {project.job && (
-                        <div className="flex items-center gap-2 text-sm text-white/60">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                          <span>From job: {project.job.title}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-violet-400 group-hover:translate-x-1 transition-transform">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                    </Link>
+                  )
+                })}
               </div>
               <Pagination
                 currentPage={currentPage}
