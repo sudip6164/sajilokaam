@@ -414,6 +414,26 @@ export const api = {
     removeWatcher: (taskId, token) =>
       apiRequest(`/tasks/${taskId}/watchers`, { method: 'DELETE', token }),
     
+    // Subtasks
+    getSubtasks: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/subtasks`, { token }),
+    
+    createSubtask: (taskId, token, data) =>
+      apiRequest(`/tasks/${taskId}/subtasks`, { method: 'POST', token, body: data }),
+    
+    updateSubtaskStatus: (taskId, subtaskId, token, status) =>
+      apiRequest(`/tasks/${taskId}/subtasks/${subtaskId}/status`, {
+        method: 'PATCH',
+        token,
+        body: { status }
+      }),
+    
+    deleteSubtask: (taskId, subtaskId, token) =>
+      apiRequest(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'DELETE', token })(`/tasks/${taskId}/watchers`, { method: 'POST', token }),
+    
+    removeWatcher: (taskId, token) =>
+      apiRequest(`/tasks/${taskId}/watchers`, { method: 'DELETE', token }),
+    
     checkWatcher: (taskId, token) =>
       apiRequest(`/tasks/${taskId}/watchers/check`, { token }),
     
