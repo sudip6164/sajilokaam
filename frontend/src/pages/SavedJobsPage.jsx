@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 export function SavedJobsPage() {
   const { token } = useAuth()
@@ -64,12 +65,45 @@ export function SavedJobsPage() {
     return badges[status] || 'badge badge-gray'
   }
 
+  const stats = {
+    total: savedJobs.length,
+    open: savedJobs.filter(j => j.status === 'OPEN').length,
+    totalBids: Object.values(bidCounts).reduce((sum, count) => sum + (count || 0), 0)
+  }
+
+  const heroStats = [
+    {
+      label: 'Saved jobs',
+      value: stats.total,
+      accent: 'from-violet-500 to-purple-600',
+      detail: 'bookmarked'
+    },
+    {
+      label: 'Open',
+      value: stats.open,
+      accent: 'from-emerald-500 to-teal-500',
+      detail: 'accepting bids'
+    },
+    {
+      label: 'Total bids',
+      value: stats.totalBids,
+      accent: 'from-amber-500 to-orange-500',
+      detail: 'across saved jobs'
+    }
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-48 mb-8"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="grid gap-6">
               {[1, 2, 3].map(i => (
                 <div key={i} className="card">
@@ -86,12 +120,40 @@ export function SavedJobsPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-10">
-            <h1 className="page-title">Saved Jobs</h1>
-            <p className="page-subtitle">Your bookmarked job opportunities</p>
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Bookmarks
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  <span className="gradient-text">Saved jobs</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Your bookmarked job opportunities ready for review and bidding.
+                </p>
+              </div>
+              {savedJobs.length > 0 && (
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {heroStats.map(stat => (
+                    <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                      <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                      <p className="text-2xl font-black text-white">{stat.value}</p>
+                      <p className="text-xs text-white/60">{stat.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <Link to="/jobs" className="btn btn-primary">
+                  Browse More Jobs
+                </Link>
+              </div>
+            </div>
           </div>
 
           {savedJobs.length === 0 ? (
@@ -108,13 +170,14 @@ export function SavedJobsPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-4">
               {savedJobs.map(job => (
                 <Link
                   key={job.id}
                   to={`/jobs/${job.id}`}
-                  className="card group hover-lift relative"
+                  className="group block relative"
                 >
+                  <div className="card border-2 border-white/10 hover:border-violet-500/50 hover:shadow-lg transition-all">
                   <button
                     onClick={(e) => handleUnsave(e, job.id)}
                     className="absolute top-4 right-4 z-10 p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
@@ -206,6 +269,7 @@ export function SavedJobsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
+                  </div>
                   </div>
                 </Link>
               ))}
