@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { api } from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 const STEPS = [
   { id: 'brand', title: 'Brand & Story', description: 'Headline, overview, intro video' },
@@ -204,10 +205,19 @@ export function FreelancerOnboardingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern py-12">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="card p-10 text-center">
-            <p className="text-white/70">Loading onboarding workspace...</p>
+          <div className="max-w-7xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
+            <div className="card p-10 text-center">
+              <p className="text-white/70">Loading onboarding workspace...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -218,32 +228,45 @@ export function FreelancerOnboardingPage() {
   const canSubmit = completion >= 80 && !['UNDER_REVIEW', 'APPROVED'].includes(status)
 
   return (
-    <div className="min-h-screen bg-pattern py-10">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Profile Setup
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Freelancer <span className="gradient-text">onboarding</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Craft a rich profile so clients can evaluate your expertise. Submit for admin verification to start bidding.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-start gap-4">
+              <div className="stat-pill">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Completion</div>
+                <div className="text-2xl font-black text-white">{completion}%</div>
+              </div>
+              <div className="stat-pill">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Status</div>
+                <div className={`text-sm font-bold ${statusClass.replace('border', '')}`}>
+                  {status?.replace(/_/g, ' ') || 'DRAFT'}
+                </div>
+              </div>
+            </div>
+          </div>
+
         <div className="flex flex-col gap-8 xl:flex-row">
           <div className="xl:w-1/4 space-y-6">
             <div className="card sticky top-32">
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-bold text-white">Freelancer Onboarding</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusClass}`}>
-                  {status?.replace(/_/g, ' ') || 'DRAFT'}
-                </span>
-              </div>
-              <p className="text-white/70 text-sm mb-6">
-                Craft a rich profile so clients can evaluate your expertise. Submit for admin verification to start bidding.
-              </p>
-
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-white/70">Completion</span>
-                  <span className="text-xs font-bold text-white">{completion}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
-                    style={{ width: `${completion}%` }}
-                  ></div>
-                </div>
+                <p className="text-white/70 text-sm">
+                  Craft a rich profile so clients can evaluate your expertise. Submit for admin verification to start bidding.
+                </p>
               </div>
 
               <div className="space-y-3">
