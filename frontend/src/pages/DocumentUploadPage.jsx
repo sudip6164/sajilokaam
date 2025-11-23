@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 export function DocumentUploadPage() {
   const { projectId } = useParams()
@@ -179,20 +180,34 @@ export function DocumentUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-pattern text-white p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <button
-            onClick={() => navigate(`/projects/${projectId}`)}
-            className="text-violet-400 hover:text-violet-300 mb-4"
-          >
-            ← Back to Project
-          </button>
-          <h1 className="text-3xl font-bold mb-2">ML Document Task Extraction</h1>
-          {project && (
-            <p className="text-white/70">Project: {project.title}</p>
-          )}
-        </div>
+    <div className="page-shell bg-pattern">
+      <div className="container-custom">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <button
+                onClick={() => navigate(`/projects/${projectId}`)}
+                className="text-violet-400 hover:text-violet-300 font-semibold inline-flex items-center gap-2 transition-colors text-sm"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Project
+              </button>
+              <div>
+                <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  AI-Powered Extraction
+                </p>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Document <span className="gradient-text">task extraction</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  {project ? `Upload documents for ${project.title} and let AI extract tasks automatically using OCR and NLP.` : 'Upload PDF or image files to automatically extract tasks using advanced OCR and NLP technology.'}
+                </p>
+              </div>
+            </div>
+          </div>
 
         {!processing && (
           <div className="bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10">
