@@ -64,6 +64,11 @@ export function ProjectDetailPage() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [submittingTask, setSubmittingTask] = useState(false)
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [priorityFilter, setPriorityFilter] = useState('ALL')
+  const [labelFilter, setLabelFilter] = useState('ALL')
+  const [assigneeFilter, setAssigneeFilter] = useState('ALL')
+  const [dueDateFilter, setDueDateFilter] = useState('ALL') // ALL, OVERDUE, TODAY, THIS_WEEK, UPCOMING
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
   const [assigningTaskId, setAssigningTaskId] = useState(null)
   const [updatingPriorityId, setUpdatingPriorityId] = useState(null)
@@ -155,7 +160,7 @@ const [selectedEscrow, setSelectedEscrow] = useState(null)
 
   useEffect(() => {
     filterTasks()
-  }, [statusFilter, tasks])
+  }, [statusFilter, priorityFilter, labelFilter, assigneeFilter, dueDateFilter, tasks])
 
   const loadProject = async () => {
     try {
@@ -958,11 +963,65 @@ const [selectedEscrow, setSelectedEscrow] = useState(null)
   }
 
   const filterTasks = () => {
-    if (statusFilter === 'ALL') {
-      setFilteredTasks(tasks)
-    } else {
-      setFilteredTasks(tasks.filter(task => task.status === statusFilter))
+    let filtered = [...tasks]
+
+    // Status filter
+    if (statusFilter !== 'ALL') {
+      filtered = filtered.filter(task => task.status === statusFilter)
     }
+
+    // Priority filter
+    if (priorityFilter !== 'ALL') {
+      filtered = filtered.filter(task => (task.priority || DEFAULT_PRIORITY) === priorityFilter)
+    }
+
+    // Label filter
+    if (labelFilter !== 'ALL') {
+      const labelId = parseInt(labelFilter)
+      filtered = filtered.filter(task => {
+        const taskLabelIds = getSelectedLabelIds(task)
+        return taskLabelIds.includes(labelId)
+      })
+    }
+
+    // Assignee filter
+    if (assigneeFilter !== 'ALL') {
+      const assigneeId = parseInt(assigneeFilter)
+      filtered = filtered.filter(task => task.assignee?.id === assigneeId)
+    }
+
+    // Due date filter
+    if (dueDateFilter !== 'ALL') {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const nextWeek = new Date(today)
+      nextWeek.setDate(nextWeek.getDate() + 7)
+
+      filtered = filtered.filter(task => {
+        if (!task.dueDate) {
+          return dueDateFilter === 'NO_DUE_DATE'
+        }
+        const dueDate = new Date(task.dueDate)
+        dueDate.setHours(0, 0, 0, 0)
+
+        switch (dueDateFilter) {
+          case 'OVERDUE':
+            return dueDate < today
+          case 'TODAY':
+            return dueDate.getTime() === today.getTime()
+          case 'THIS_WEEK':
+            return dueDate >= today && dueDate < nextWeek
+          case 'UPCOMING':
+            return dueDate >= nextWeek
+          default:
+            return true
+        }
+      })
+    }
+
+    setFilteredTasks(filtered)
   }
 
   const handleTaskSubmit = async (e) => {
@@ -2330,20 +2389,120 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
               </form>
             )}
 
-            {/* Task Filter */}
+            {/* Task Filters */}
             {tasks.length > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-white/90 mb-2">Filter by Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="ALL">All Tasks ({stats.total})</option>
-                  <option value="TODO">To Do ({stats.todo})</option>
-                  <option value="IN_PROGRESS">In Progress ({stats.inProgress})</option>
-                  <option value="DONE">Done ({stats.done})</option>
-                </select>
+              <div className="mb-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white/90">Filters</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className="text-xs text-violet-300 hover:text-violet-200"
+                  >
+                    {showAdvancedFilters ? 'Hide' : 'Show'} Advanced
+                  </button>
+                </div>
+                
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-white/70 mb-1">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="input-field text-sm"
+                    >
+                      <option value="ALL">All ({stats.total})</option>
+                      <option value="TODO">To Do ({stats.todo})</option>
+                      <option value="IN_PROGRESS">In Progress ({stats.inProgress})</option>
+                      <option value="DONE">Done ({stats.done})</option>
+                    </select>
+                  </div>
+
+                  {showAdvancedFilters && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-semibold text-white/70 mb-1">Priority</label>
+                        <select
+                          value={priorityFilter}
+                          onChange={(e) => setPriorityFilter(e.target.value)}
+                          className="input-field text-sm"
+                        >
+                          <option value="ALL">All Priorities</option>
+                          {PRIORITY_OPTIONS.map(priority => (
+                            <option key={priority} value={priority}>
+                              {formatPriorityLabel(priority)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-white/70 mb-1">Label</label>
+                        <select
+                          value={labelFilter}
+                          onChange={(e) => setLabelFilter(e.target.value)}
+                          className="input-field text-sm"
+                        >
+                          <option value="ALL">All Labels</option>
+                          {labels.map(label => (
+                            <option key={label.id} value={label.id}>
+                              {label.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-white/70 mb-1">Assignee</label>
+                        <select
+                          value={assigneeFilter}
+                          onChange={(e) => setAssigneeFilter(e.target.value)}
+                          className="input-field text-sm"
+                        >
+                          <option value="ALL">All Assignees</option>
+                          <option value="UNASSIGNED">Unassigned</option>
+                          {freelancers.map(freelancer => (
+                            <option key={freelancer.id} value={freelancer.id}>
+                              {freelancer.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-white/70 mb-1">Due Date</label>
+                        <select
+                          value={dueDateFilter}
+                          onChange={(e) => setDueDateFilter(e.target.value)}
+                          className="input-field text-sm"
+                        >
+                          <option value="ALL">All Dates</option>
+                          <option value="OVERDUE">Overdue</option>
+                          <option value="TODAY">Today</option>
+                          <option value="THIS_WEEK">This Week</option>
+                          <option value="UPCOMING">Upcoming</option>
+                          <option value="NO_DUE_DATE">No Due Date</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {(statusFilter !== 'ALL' || priorityFilter !== 'ALL' || labelFilter !== 'ALL' || assigneeFilter !== 'ALL' || dueDateFilter !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter('ALL')
+                      setPriorityFilter('ALL')
+                      setLabelFilter('ALL')
+                      setAssigneeFilter('ALL')
+                      setDueDateFilter('ALL')
+                    }}
+                    className="text-xs text-violet-300 hover:text-violet-200"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             )}
 
