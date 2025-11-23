@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { api } from '../utils/api'
 import { gradients } from '../theme/designSystem'
 
 const COLUMNS = [
@@ -20,6 +21,11 @@ export function KanbanBoardPage() {
   const [updatingTaskId, setUpdatingTaskId] = useState(null)
   const [activeTask, setActiveTask] = useState(null)
   const [showTaskDrawer, setShowTaskDrawer] = useState(false)
+  const [subtasks, setSubtasks] = useState({}) // { taskId: [subtasks] }
+  const [subtaskForms, setSubtaskForms] = useState({}) // { taskId: { title: '', show: false } }
+  const [creatingSubtask, setCreatingSubtask] = useState({}) // { taskId: true/false }
+  const [updatingSubtask, setUpdatingSubtask] = useState({}) // { subtaskId: true/false }
+  const [deletingSubtask, setDeletingSubtask] = useState({}) // { subtaskId: true/false }
   const navigate = useNavigate()
   const { token, profile } = useAuth()
   const { success: showSuccess, error: showError } = useToast()
@@ -78,9 +84,71 @@ export function KanbanBoardPage() {
     }
   }
 
+  const loadSubtasks = async (taskId) => {
+    try {
+      const data = await api.tasks.getSubtasks(taskId, token)
+      setSubtasks(prev => ({ ...prev, [taskId]: Array.isArray(data) ? data : [] }))
+    } catch (err) {
+      console.error('Failed to load subtasks', err)
+    }
+  }
+
+  const handleCreateSubtask = async (taskId, e) => {
+    e.preventDefault()
+    const form = subtaskForms[taskId]
+    if (!form || !form.title.trim()) {
+      showError('Subtask title is required')
+      return
+    }
+
+    setCreatingSubtask(prev => ({ ...prev, [taskId]: true }))
+    try {
+      await api.tasks.createSubtask(taskId, token, {
+        title: form.title.trim(),
+        status: 'TODO'
+      })
+      showSuccess('Subtask created')
+      setSubtaskForms(prev => ({ ...prev, [taskId]: { title: '', show: false } }))
+      await loadSubtasks(taskId)
+    } catch (err) {
+      showError(err.message || 'Failed to create subtask')
+    } finally {
+      setCreatingSubtask(prev => ({ ...prev, [taskId]: false }))
+    }
+  }
+
+  const handleUpdateSubtaskStatus = async (taskId, subtaskId, newStatus) => {
+    setUpdatingSubtask(prev => ({ ...prev, [subtaskId]: true }))
+    try {
+      await api.tasks.updateSubtaskStatus(taskId, subtaskId, token, newStatus)
+      await loadSubtasks(taskId)
+    } catch (err) {
+      showError(err.message || 'Failed to update subtask')
+    } finally {
+      setUpdatingSubtask(prev => ({ ...prev, [subtaskId]: false }))
+    }
+  }
+
+  const handleDeleteSubtask = async (taskId, subtaskId) => {
+    if (!window.confirm('Delete this subtask?')) {
+      return
+    }
+    setDeletingSubtask(prev => ({ ...prev, [subtaskId]: true }))
+    try {
+      await api.tasks.deleteSubtask(taskId, subtaskId, token)
+      showSuccess('Subtask deleted')
+      await loadSubtasks(taskId)
+    } catch (err) {
+      showError(err.message || 'Failed to delete subtask')
+    } finally {
+      setDeletingSubtask(prev => ({ ...prev, [subtaskId]: false }))
+    }
+  }
+
   const openTaskDrawer = (task) => {
     setActiveTask(task)
     setShowTaskDrawer(true)
+    loadSubtasks(task.id)
   }
 
   const closeTaskDrawer = () => {
@@ -449,6 +517,99 @@ export function KanbanBoardPage() {
                   </div>
                 </div>
               )}
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Subtasks</p>
+                  <button
+                    type="button"
+                    onClick={() => setSubtaskForms(prev => ({ 
+                      ...prev, 
+                      [activeTask.id]: { title: '', show: !prev[activeTask.id]?.show } 
+                    }))}
+                    className="text-xs text-violet-300 hover:text-violet-200"
+                  >
+                    {subtaskForms[activeTask.id]?.show ? 'Cancel' : '+ Add Subtask'}
+                  </button>
+                </div>
+
+                {subtaskForms[activeTask.id]?.show && (
+                  <form onSubmit={(e) => handleCreateSubtask(activeTask.id, e)} className="mb-4 p-4 rounded-xl border border-violet-500/30 bg-violet-500/5">
+                    <input
+                      type="text"
+                      placeholder="Subtask title..."
+                      className="input-field mb-3"
+                      value={subtaskForms[activeTask.id]?.title || ''}
+                      onChange={(e) => setSubtaskForms(prev => ({
+                        ...prev,
+                        [activeTask.id]: { ...prev[activeTask.id], title: e.target.value }
+                      }))}
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={creatingSubtask[activeTask.id]}
+                        className="btn btn-primary text-xs flex-1"
+                      >
+                        {creatingSubtask[activeTask.id] ? 'Creating...' : 'Create'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSubtaskForms(prev => ({ 
+                          ...prev, 
+                          [activeTask.id]: { title: '', show: false } 
+                        }))}
+                        className="btn btn-secondary text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {subtasks[activeTask.id] && subtasks[activeTask.id].length > 0 ? (
+                  <div className="space-y-2">
+                    {subtasks[activeTask.id].map(subtask => (
+                      <div key={subtask.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5">
+                        <input
+                          type="checkbox"
+                          checked={subtask.status === 'DONE'}
+                          onChange={(e) => handleUpdateSubtaskStatus(
+                            activeTask.id,
+                            subtask.id,
+                            e.target.checked ? 'DONE' : 'TODO'
+                          )}
+                          disabled={updatingSubtask[subtask.id]}
+                          className="w-5 h-5 rounded accent-violet-500 cursor-pointer"
+                        />
+                        <span className={`flex-1 text-sm ${subtask.status === 'DONE' ? 'line-through text-white/50' : 'text-white'}`}>
+                          {subtask.title}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          subtask.status === 'DONE' 
+                            ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30'
+                            : subtask.status === 'IN_PROGRESS'
+                            ? 'bg-blue-500/20 text-blue-200 border border-blue-500/30'
+                            : 'bg-gray-500/20 text-gray-200 border border-gray-500/30'
+                        }`}>
+                          {subtask.status}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubtask(activeTask.id, subtask.id)}
+                          disabled={deletingSubtask[subtask.id]}
+                          className="text-xs text-rose-300 hover:text-rose-200"
+                        >
+                          {deletingSubtask[subtask.id] ? '...' : 'Delete'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/50">No subtasks yet. Add one to break down this task.</p>
+                )}
+              </div>
 
               <div className="space-y-3 mb-8">
                 <p className="text-xs uppercase tracking-[0.3em] text-white/60">Quick actions</p>
