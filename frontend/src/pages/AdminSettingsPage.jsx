@@ -56,10 +56,16 @@ export function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-4xl mx-auto">
-            <div className="loading-skeleton h-10 w-48 mb-8"></div>
+          <div className="max-w-4xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="card">
               <div className="loading-skeleton h-8 w-3/4 mb-4"></div>
               <div className="loading-skeleton h-4 w-full"></div>
@@ -71,10 +77,25 @@ export function AdminSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="page-title mb-8">System Settings</h1>
+        <div className="max-w-4xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Admin Console
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  System <span className="gradient-text">settings</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Configure platform-wide settings and system parameters.
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="card">
             <div className="space-y-4">

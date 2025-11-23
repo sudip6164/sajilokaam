@@ -139,14 +139,25 @@ export function AdminVerificationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-pattern py-10">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="page-title">Profile Verification Queue</h1>
-            <p className="page-subtitle">Review submissions from freelancers and clients before they join the marketplace</p>
-          </div>
-          <div className="flex gap-2">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Admin Console
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Profile <span className="gradient-text">verification</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Review submissions from freelancers and clients before they join the marketplace.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
             {['ALL', 'FREELANCER', 'CLIENT'].map(type => (
               <button
                 key={type}
