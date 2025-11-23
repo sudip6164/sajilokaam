@@ -307,10 +307,10 @@ export function JobsPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-7xl mx-auto">
-          <div className="hero-grid mb-10">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="hero-grid">
             <div className="space-y-6">
               <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

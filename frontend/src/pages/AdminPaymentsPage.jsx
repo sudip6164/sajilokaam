@@ -85,10 +85,16 @@ export function AdminPaymentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto space-y-6">
-            <div className="loading-skeleton h-10 w-60" />
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div key={idx} className="card p-6">
@@ -110,14 +116,23 @@ export function AdminPaymentsPage() {
 
   if (!dashboard) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-4xl mx-auto text-center card py-16">
-            <h2 className="text-2xl font-bold text-white mb-4">Unable to load payment data</h2>
-            <p className="text-white/70 mb-6">Check your connection or try refreshing the dashboard.</p>
-            <button className="btn btn-primary" onClick={loadDashboard}>
-              Retry
-            </button>
+          <div className="max-w-4xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
+            <div className="card text-center py-16">
+              <h2 className="text-2xl font-bold text-white mb-4">Unable to load payment data</h2>
+              <p className="text-white/70 mb-6">Check your connection or try refreshing the dashboard.</p>
+              <button className="btn btn-primary" onClick={loadDashboard}>
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       </div>

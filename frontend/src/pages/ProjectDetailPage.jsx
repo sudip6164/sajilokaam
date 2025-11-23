@@ -1394,10 +1394,16 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-4xl mx-auto">
-            <div className="loading-skeleton h-10 w-48 mb-8"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="card">
               <div className="loading-skeleton h-8 w-3/4 mb-4"></div>
               <div className="loading-skeleton h-4 w-full"></div>
@@ -1410,9 +1416,16 @@ const handleRemoveDependency = async (taskId, dependencyId) => {
 
   if (!project) {
     return (
-      <div className="min-h-screen py-12">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="card text-center py-16">
               <p className="text-red-500 text-lg font-semibold mb-4">Project not found</p>
               <Link to="/projects" className="btn btn-primary inline-flex items-center">
