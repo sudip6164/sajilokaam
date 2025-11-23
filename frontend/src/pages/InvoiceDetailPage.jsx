@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 export function InvoiceDetailPage() {
   const { id } = useParams()
@@ -144,10 +145,17 @@ export function InvoiceDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="loading-skeleton h-10 w-48 mb-8"></div>
-          <div className="card">
+          <div className="max-w-4xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
+            <div className="card">
             <div className="loading-skeleton h-40 w-full"></div>
           </div>
         </div>
@@ -157,38 +165,65 @@ export function InvoiceDetailPage() {
 
   if (!invoice) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="card text-center py-16">
-            <h3 className="text-xl font-bold text-white mb-2">Invoice not found</h3>
-            <Link to="/invoices" className="btn btn-primary mt-4">
-              Back to Invoices
-            </Link>
+          <div className="max-w-4xl mx-auto">
+            <div className="card text-center py-16">
+              <h3 className="text-xl font-bold text-white mb-2">Invoice not found</h3>
+              <Link to="/invoices" className="btn btn-primary mt-4">
+                Back to Invoices
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
+  const totalPaid = payments.filter(p => p.status === 'COMPLETED').reduce((sum, p) => sum + (p.amount || 0), 0)
+  const pendingAmount = invoice.totalAmount - totalPaid
+
   return (
     <>
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="mb-8">
-          <Link to="/invoices" className="text-violet-400 hover:text-violet-300 font-semibold mb-4 inline-flex items-center gap-2 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Invoices
-          </Link>
-          <div className="flex items-center justify-between mt-4">
-            <div>
-              <h1 className="page-title">Invoice {invoice.invoiceNumber}</h1>
-              <p className="page-subtitle">
-                {invoice.project?.title || 'No project'}
-              </p>
+        <div className="max-w-4xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <Link to="/invoices" className="text-violet-400 hover:text-violet-300 font-semibold inline-flex items-center gap-2 transition-colors text-sm">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Invoices
+              </Link>
+              <div>
+                <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2 mb-4">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Invoice #{invoice.invoiceNumber}
+                </p>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  {invoice.project?.title || 'Invoice Details'}
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  {invoice.client?.username ? `Client: ${invoice.client.username}` : 'View invoice details, payment history, and manage status.'}
+                </p>
+              </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap items-start gap-4">
+              <div className="stat-pill">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Total Amount</div>
+                <div className="text-2xl font-black text-white">{invoice.currency} {invoice.totalAmount?.toLocaleString() || '0.00'}</div>
+              </div>
+              <div className="stat-pill">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Paid</div>
+                <div className="text-2xl font-black text-emerald-400">{invoice.currency} {totalPaid.toLocaleString()}</div>
+              </div>
+              <div className="stat-pill">
+                <div className="text-xs text-white/60 uppercase tracking-wider">Pending</div>
+                <div className="text-2xl font-black text-amber-400">{invoice.currency} {pendingAmount.toLocaleString()}</div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
               <a
                 href={api.invoices.generatePdf(invoice.id)}
                 target="_blank"

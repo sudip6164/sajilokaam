@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 export function CreateInvoicePage() {
   const navigate = useNavigate()
@@ -118,11 +119,19 @@ export function CreateInvoicePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="loading-skeleton h-10 w-48 mb-8"></div>
-          <div className="card">
-            <div className="loading-skeleton h-40 w-full"></div>
+          <div className="max-w-4xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="loading-skeleton h-40 w-full"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -130,12 +139,25 @@ export function CreateInvoicePage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="mb-8">
-          <h1 className="page-title">Create Invoice</h1>
-          <p className="page-subtitle">Create a new invoice for your client</p>
-        </div>
+        <div className="max-w-4xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Billing
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Create <span className="gradient-text">invoice</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Generate a professional invoice for your client with line items, taxes, and payment terms.
+                </p>
+              </div>
+            </div>
+          </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
