@@ -227,16 +227,6 @@ export function SprintPlannerPage() {
               </div>
             </div>
           </div>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Project
-              </Link>
-              <h1 className="text-4xl font-extrabold text-white">{project?.title || 'Sprint Planner'}</h1>
-              <p className="text-white/70">Plan iterations, define goals, and track progress.</p>
-            </div>
-            <button className="btn btn-primary" onClick={() => setShowCreateForm(true)}>
-              Schedule Sprint
             </button>
           </div>
 
