@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { api } from '../utils/api'
 import { Link } from 'react-router-dom'
+import { gradients } from '../theme/designSystem'
 
 const GATEWAY_COLORS = {
   KHALTI: 'bg-purple-500/20 text-purple-100 border-purple-500/30',
@@ -148,12 +149,47 @@ export function PaymentCenterPage() {
     }
   }
 
+  const stats = {
+    totalTransactions: transactions.length,
+    successful: transactions.filter(t => t.status === 'SUCCESS').length,
+    pending: transactions.filter(t => t.status === 'PENDING').length,
+    totalAmount: transactions.filter(t => t.status === 'SUCCESS').reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
+    activeDisputes: disputes.filter(d => d.status === 'OPEN').length
+  }
+
+  const heroStats = [
+    {
+      label: 'Transactions',
+      value: stats.totalTransactions,
+      accent: 'from-violet-500 to-purple-600',
+      detail: 'all time'
+    },
+    {
+      label: 'Successful',
+      value: stats.successful,
+      accent: 'from-emerald-500 to-teal-500',
+      detail: stats.totalAmount > 0 ? `$${stats.totalAmount.toFixed(2)}` : 'completed'
+    },
+    {
+      label: 'Active disputes',
+      value: stats.activeDisputes,
+      accent: 'from-amber-500 to-orange-500',
+      detail: 'needs attention'
+    }
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern py-12">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-64 mb-6"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="card h-[300px] loading-skeleton"></div>
           </div>
         </div>
@@ -163,17 +199,38 @@ export function PaymentCenterPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-pattern py-12">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="page-title">Payment Center</h1>
-              <p className="page-subtitle">Track invoices, initiate online payments, and manage escrow.</p>
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Financial hub
+              </p>
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                    <span className="gradient-text">Payment center</span>
+                  </h1>
+                  <p className="text-white/70 text-lg max-w-xl mt-4">
+                    Track invoices, initiate online payments, manage escrow, and resolve disputes.
+                  </p>
+                </div>
+                <Link to="/invoices" className="btn btn-secondary text-sm whitespace-nowrap">
+                  Manage Invoices
+                </Link>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {heroStats.map(stat => (
+                  <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                    <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-white">{stat.value}</p>
+                    <p className="text-xs text-white/60">{stat.detail}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <Link to="/invoices" className="btn btn-secondary text-sm">
-              Manage Invoices
-            </Link>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
