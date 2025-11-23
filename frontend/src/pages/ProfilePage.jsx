@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { gradients } from '../theme/designSystem'
 
 export function ProfilePage() {
   const { profile, token, refreshProfile } = useAuth()
@@ -64,9 +65,9 @@ export function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-4xl mx-auto">
             <div className="card text-center py-16">
               <p className="text-white/70 text-lg">Loading profile...</p>
             </div>
@@ -76,13 +77,28 @@ export function ProfilePage() {
     )
   }
 
+  const isFreelancer = profile.roles?.some(role => role.name === 'FREELANCER')
+  const isClient = profile.roles?.some(role => role.name === 'CLIENT')
+
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-10">
-            <h1 className="page-title">My Profile</h1>
-            <p className="page-subtitle">Manage your account information and settings</p>
+        <div className="max-w-4xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Account settings
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  My <span className="gradient-text">profile</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Manage your account information, roles, and onboarding status.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 mb-8">
@@ -114,18 +130,18 @@ export function ProfilePage() {
             )}
           </div>
 
-          <div className="card mb-6">
+          <div className="card border-2 border-white/10">
             <div className="flex items-center gap-6 mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-purple-500/30">
+              <div className="w-24 h-24 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-lg shadow-purple-500/30 flex-shrink-0">
                 {profile.fullName?.charAt(0) || 'U'}
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">{profile.fullName}</h2>
-                <p className="text-white/70">{profile.email}</p>
-                <div className="flex gap-2 mt-2">
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-white mb-2">{profile.fullName}</h2>
+                <p className="text-white/70 text-lg mb-3">{profile.email}</p>
+                <div className="flex gap-2 flex-wrap">
                   {profile.roles?.map(role => (
-                    <span key={role.id} className="badge badge-primary">
-                      {role.name}
+                    <span key={role.id} className="badge badge-primary text-sm">
+                      {role.name.replace('_', ' ')}
                     </span>
                   ))}
                 </div>
