@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { api } from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 const STATUS_COLORS = {
   PLANNED: 'bg-slate-500/20 text-slate-200 border border-slate-500/30',
@@ -128,12 +129,46 @@ export function SprintPlannerPage() {
     }
   }
 
+  const stats = {
+    total: sprints.length,
+    active: sprints.filter(s => s.status === 'ACTIVE').length,
+    completed: sprints.filter(s => s.status === 'COMPLETED').length,
+    planned: sprints.filter(s => s.status === 'PLANNED').length
+  }
+
+  const heroStats = [
+    {
+      label: 'Total sprints',
+      value: stats.total,
+      accent: 'from-violet-500 to-purple-600',
+      detail: 'all time'
+    },
+    {
+      label: 'Active',
+      value: stats.active,
+      accent: 'from-emerald-500 to-teal-500',
+      detail: 'in progress'
+    },
+    {
+      label: 'Completed',
+      value: stats.completed,
+      accent: 'from-amber-500 to-orange-500',
+      detail: 'delivered'
+    }
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern py-12">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-64 mb-6"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="card h-[400px] loading-skeleton"></div>
           </div>
         </div>
@@ -142,12 +177,56 @@ export function SprintPlannerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-pattern py-12">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-            <div>
-              <Link to={`/projects/${projectId}`} className="text-violet-400 hover:text-violet-300 font-semibold mb-2 inline-flex items-center gap-2 transition-colors">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <Link to={`/projects/${projectId}`} className="text-violet-400 hover:text-violet-300 font-semibold inline-flex items-center gap-2 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Project
+              </Link>
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Sprint planning
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  {project?.title ? (
+                    <>
+                      <span className="gradient-text">Sprint planner</span> · {project.title}
+                    </>
+                  ) : (
+                    <span className="gradient-text">Sprint planner</span>
+                  )}
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Plan sprints, set goals, and track iterations for this project.
+                </p>
+              </div>
+              {sprints.length > 0 && (
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {heroStats.map(stat => (
+                    <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                      <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                      <p className="text-2xl font-black text-white">{stat.value}</p>
+                      <p className="text-xs text-white/60">{stat.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  Create Sprint
+                </button>
+              </div>
+            </div>
+          </div>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>

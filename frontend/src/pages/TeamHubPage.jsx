@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import { api } from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 const ROLE_OPTIONS = [
   { value: 'LEAD', label: 'Team Lead' },
@@ -91,12 +92,45 @@ export function TeamHubPage() {
 
   const isLead = selectedTeam && selectedTeam.lead?.id === profile?.id
 
+  const stats = {
+    total: teams.length,
+    asLead: teams.filter(t => t.lead?.id === profile?.id).length,
+    totalMembers: teams.reduce((sum, t) => sum + (t.members?.length || 0), 0)
+  }
+
+  const heroStats = [
+    {
+      label: 'Total teams',
+      value: stats.total,
+      accent: 'from-violet-500 to-purple-600',
+      detail: 'joined'
+    },
+    {
+      label: 'As lead',
+      value: stats.asLead,
+      accent: 'from-emerald-500 to-teal-500',
+      detail: 'leading'
+    },
+    {
+      label: 'Total members',
+      value: stats.totalMembers,
+      accent: 'from-amber-500 to-orange-500',
+      detail: 'across teams'
+    }
+  ]
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-pattern py-12">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-64 mb-6"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="grid md:grid-cols-[320px,1fr] gap-6">
               <div className="card h-[400px] loading-skeleton"></div>
               <div className="card h-[400px] loading-skeleton"></div>
@@ -108,20 +142,43 @@ export function TeamHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-pattern py-12">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col gap-4 mb-10 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="page-title">Team Collaboration Hub</h1>
-              <p className="page-subtitle">Form pods, manage members, and coordinate delivery.</p>
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Collaboration
+              </p>
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                    Team <span className="gradient-text">collaboration hub</span>
+                  </h1>
+                  <p className="text-white/70 text-lg max-w-xl mt-4">
+                    Form pods, manage members, and coordinate delivery across your teams.
+                  </p>
+                </div>
+                <button
+                  className="btn btn-primary whitespace-nowrap"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  Create Team
+                </button>
+              </div>
+              {teams.length > 0 && (
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {heroStats.map(stat => (
+                    <div key={stat.label} className="p-4 rounded-2xl border border-white/10 bg-white/5">
+                      <p className="text-xs uppercase tracking-[0.4em] text-white/60 mb-1">{stat.label}</p>
+                      <p className="text-2xl font-black text-white">{stat.value}</p>
+                      <p className="text-xs text-white/60">{stat.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowCreateForm(true)}
-            >
-              Create Team
-            </button>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
