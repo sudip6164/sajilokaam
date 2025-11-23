@@ -154,15 +154,25 @@ export function AdminPaymentsPage() {
   ]
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm uppercase tracking-wider text-white/50 font-semibold">Admin Console</p>
-              <h1 className="page-title mt-1">Payments & Disputes</h1>
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Admin Console
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Payments & <span className="gradient-text">disputes</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Monitor payment transactions, handle disputes, and manage financial operations.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button className="btn btn-secondary" onClick={loadDashboard}>
                 Refresh
               </button>

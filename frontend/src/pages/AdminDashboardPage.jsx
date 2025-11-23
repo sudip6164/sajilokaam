@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
 import api from '../utils/api'
+import { gradients } from '../theme/designSystem'
 
 export function AdminDashboardPage() {
   const { token, profile } = useAuth()
@@ -35,10 +36,16 @@ export function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-12 bg-pattern">
+      <div className="page-shell bg-pattern">
         <div className="container-custom">
-          <div className="max-w-6xl mx-auto">
-            <div className="loading-skeleton h-10 w-48 mb-8"></div>
+          <div className="max-w-6xl mx-auto space-y-10">
+            <div className="hero-grid">
+              <div className="space-y-6">
+                <div className="loading-skeleton h-8 w-48"></div>
+                <div className="loading-skeleton h-12 w-3/4"></div>
+                <div className="loading-skeleton h-6 w-1/2"></div>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} className="card">
@@ -62,12 +69,25 @@ export function AdminDashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen py-12 bg-pattern">
+    <div className="page-shell bg-pattern">
       <div className="container-custom">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="page-title">Admin Dashboard</h1>
-            <div className="flex gap-3">
+        <div className="max-w-6xl mx-auto space-y-10">
+          <div className="hero-grid">
+            <div className="space-y-6">
+              <p className="text-[0.65rem] uppercase tracking-[0.5em] text-white/60 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Admin Console
+              </p>
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight">
+                  Admin <span className="gradient-text">dashboard</span>
+                </h1>
+                <p className="text-white/70 text-lg max-w-xl mt-4">
+                  Monitor platform activity, manage users, and oversee system operations.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
               <Link to="/admin/users" className="btn btn-primary">
                 Manage Users
               </Link>
