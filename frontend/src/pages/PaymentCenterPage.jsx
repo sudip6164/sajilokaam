@@ -430,15 +430,20 @@ export function PaymentCenterPage() {
                 <h3 className="text-lg font-semibold text-white">Your Disputes</h3>
                 <p className="text-white/60 text-sm">Monitor open payment disputes</p>
               </div>
-              <button
-                className="btn btn-secondary text-xs"
-                onClick={() => {
-                  setDisputeForm({ paymentId: '', disputeType: 'REFUND_REQUEST', reason: '' })
-                  setShowDisputeModal(true)
-                }}
-              >
-                New Dispute
-              </button>
+              <div className="flex gap-2">
+                <Link to="/disputes" className="btn btn-primary text-xs">
+                  View All Disputes
+                </Link>
+                <button
+                  className="btn btn-secondary text-xs"
+                  onClick={() => {
+                    setDisputeForm({ paymentId: '', disputeType: 'REFUND_REQUEST', reason: '' })
+                    setShowDisputeModal(true)
+                  }}
+                >
+                  New Dispute
+                </button>
+              </div>
             </div>
 
             {disputes.length === 0 ? (

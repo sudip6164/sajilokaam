@@ -206,6 +206,19 @@ export function Navbar() {
                   )}
                   <span className="relative">Payments</span>
                 </Link>
+                <Link 
+                  to="/disputes" 
+                  className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                    isActive('/disputes')
+                      ? 'text-white bg-white/10' 
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {isActive('/disputes') && (
+                    <span className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-xl"></span>
+                  )}
+                  <span className="relative">Disputes</span>
+                </Link>
               </>
             ) : null}
           </div>

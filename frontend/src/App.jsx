@@ -36,6 +36,7 @@ import { AdminVerificationPage } from './pages/AdminVerificationPage'
 import { TeamHubPage } from './pages/TeamHubPage'
 import { SprintPlannerPage } from './pages/SprintPlannerPage'
 import { PaymentCenterPage } from './pages/PaymentCenterPage'
+import { DisputesPage } from './pages/DisputesPage'
 
 function AppContent() {
   const { toasts, removeToast } = useToast()
@@ -195,6 +196,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <PaymentCenterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/disputes"
+            element={
+              <ProtectedRoute>
+                <DisputesPage />
               </ProtectedRoute>
             }
           />
