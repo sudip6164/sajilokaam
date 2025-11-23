@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
@@ -27,13 +26,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * 
  * Run with: ./mvnw test -Dtest=ApiIntegrationTest
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
 @DisplayName("API Integration Tests")
 public class ApiIntegrationTest {
-
-    @LocalServerPort
-    private int port;
 
     private static RestTemplate restTemplate;
     private static ObjectMapper objectMapper;
@@ -48,6 +44,7 @@ public class ApiIntegrationTest {
     static void setUp() {
         restTemplate = new RestTemplate();
         objectMapper = new ObjectMapper();
+        // Connect to running Docker backend, not embedded server
         baseUrl = "http://localhost:8080/api";
         
         // Authenticate as admin
