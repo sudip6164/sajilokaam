@@ -373,6 +373,7 @@ export function DocumentUploadPage() {
           </div>
         )}
       </div>
+      </div>
     </div>
   )
 }

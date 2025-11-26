@@ -156,7 +156,8 @@ export function InvoiceDetailPage() {
               </div>
             </div>
             <div className="card">
-            <div className="loading-skeleton h-40 w-full"></div>
+              <div className="loading-skeleton h-40 w-full"></div>
+            </div>
           </div>
         </div>
       </div>

@@ -227,8 +227,6 @@ export function SprintPlannerPage() {
               </div>
             </div>
           </div>
-            </button>
-          </div>
 
           <div className="grid lg:grid-cols-3 gap-6 mb-10">
             {Object.entries(groupedSprints).map(([status, list]) => (

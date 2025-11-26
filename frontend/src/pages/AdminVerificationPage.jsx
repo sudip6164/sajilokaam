@@ -158,17 +158,18 @@ export function AdminVerificationPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-            {['ALL', 'FREELANCER', 'CLIENT'].map(type => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                  filterType === type ? 'bg-white text-slate-900' : 'bg-white/10 text-white/70 hover:text-white'
-                }`}
-              >
-                {type === 'ALL' ? 'All Profiles' : PROFILE_LABELS[type]}
-              </button>
-            ))}
+              {['ALL', 'FREELANCER', 'CLIENT'].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    filterType === type ? 'bg-white text-slate-900' : 'bg-white/10 text-white/70 hover:text-white'
+                  }`}
+                >
+                  {type === 'ALL' ? 'All Profiles' : PROFILE_LABELS[type]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

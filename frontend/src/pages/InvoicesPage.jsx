@@ -237,6 +237,7 @@ export function InvoicesPage() {
           </div>
         )}
       </div>
+      </div>
     </div>
   )
 }
