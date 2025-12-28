@@ -359,9 +359,6 @@ const VerificationQueue = () => {
 
               {/* Rejection Notes */}
               {selectedRequest.notes && (
-
-              {/* Rejection Notes */}
-              {selectedRequest.notes && (
                 <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                   <div className="flex items-center gap-2 text-destructive mb-2">
                     <AlertTriangle className="h-4 w-4" />
