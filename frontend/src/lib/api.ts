@@ -499,6 +499,58 @@ export const adminApi = {
     return response.data;
   },
 
+  // Verification Queue
+  getPendingProfiles: async () => {
+    const response = await api.get<Array<{
+      profileId: number;
+      profileType: string;
+      userId: number;
+      userName: string;
+      userEmail: string;
+      submittedAt?: string;
+      status: string;
+    }>>("/admin/profiles/pending");
+    return response.data;
+  },
+
+  getFreelancerProfile: async (id: number) => {
+    const response = await api.get<{
+      id: number;
+      userId: number;
+      bio?: string;
+      hourlyRate?: number;
+      location?: string;
+      phone?: string;
+      website?: string;
+      linkedin?: string;
+      github?: string;
+      verificationStatus: string;
+      submittedAt?: string;
+    }>(`/admin/profiles/freelancer/${id}`);
+    return response.data;
+  },
+
+  getFreelancerDocuments: async (id: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      documentType: string;
+      fileName: string;
+      fileUrl: string;
+      uploadedAt: string;
+    }>>(`/admin/profiles/freelancer/${id}/documents`);
+    return response.data;
+  },
+
+  reviewProfile: async (profileId: number, data: {
+    profileType: "FREELANCER" | "CLIENT";
+    decision: "APPROVED" | "REJECTED" | "NEEDS_UPDATE";
+    verificationNotes?: string;
+    rejectionReason?: string;
+  }) => {
+    const response = await api.post(`/admin/profiles/${profileId}/review`, data);
+    return response.data;
+  },
+
   // Payments Dashboard
   getPaymentDashboard: async () => {
     const response = await api.get<{

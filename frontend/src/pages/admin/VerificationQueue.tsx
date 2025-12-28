@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,98 +20,65 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { adminApi } from "@/lib/api";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
 interface VerificationRequest {
-  id: string;
+  profileId: number;
+  userId: number;
   name: string;
   email: string;
-  submittedAt: string;
+  submittedAt?: string;
   documents: { name: string; type: string; url: string }[];
   skills: string[];
-  experience: string;
-  status: "Pending" | "Approved" | "Rejected";
+  experience?: string;
+  status: "UNDER_REVIEW" | "APPROVED" | "REJECTED" | "PENDING";
+  profileType: "FREELANCER" | "CLIENT";
   notes?: string;
 }
 
-const initialRequests: VerificationRequest[] = [
-  {
-    id: "1",
-    name: "Bikash Gurung",
-    email: "bikash@email.com",
-    submittedAt: "2024-06-15",
-    documents: [
-      { name: "ID Card", type: "Identity", url: "#" },
-      { name: "Degree Certificate", type: "Education", url: "#" },
-      { name: "Portfolio", type: "Work", url: "#" },
-    ],
-    skills: ["Web Development", "React", "Node.js"],
-    experience: "5 years",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    name: "Sarita Poudel",
-    email: "sarita@email.com",
-    submittedAt: "2024-06-14",
-    documents: [
-      { name: "Citizenship", type: "Identity", url: "#" },
-      { name: "Certificate", type: "Education", url: "#" },
-    ],
-    skills: ["Graphic Design", "UI/UX", "Figma"],
-    experience: "3 years",
-    status: "Pending",
-  },
-  {
-    id: "3",
-    name: "Ram Bahadur",
-    email: "ram@email.com",
-    submittedAt: "2024-06-13",
-    documents: [
-      { name: "License", type: "Identity", url: "#" },
-    ],
-    skills: ["Content Writing", "SEO"],
-    experience: "2 years",
-    status: "Pending",
-  },
-  {
-    id: "4",
-    name: "Sunita Maharjan",
-    email: "sunita@email.com",
-    submittedAt: "2024-06-10",
-    documents: [
-      { name: "ID Card", type: "Identity", url: "#" },
-      { name: "Masters Degree", type: "Education", url: "#" },
-    ],
-    skills: ["Data Analysis", "Python", "Machine Learning"],
-    experience: "4 years",
-    status: "Approved",
-  },
-  {
-    id: "5",
-    name: "Kiran Thapa",
-    email: "kiran@email.com",
-    submittedAt: "2024-06-08",
-    documents: [
-      { name: "Passport", type: "Identity", url: "#" },
-    ],
-    skills: ["Mobile Development", "Flutter"],
-    experience: "1 year",
-    status: "Rejected",
-    notes: "Incomplete documentation",
-  },
-];
-
 const VerificationQueue = () => {
-  const [requests, setRequests] = useState<VerificationRequest[]>(initialRequests);
+  const [requests, setRequests] = useState<VerificationRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
+  const [filterStatus, setFilterStatus] = useState<"All" | "UNDER_REVIEW" | "APPROVED" | "REJECTED">("All");
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
+  const [selectedProfileDetails, setSelectedProfileDetails] = useState<any>(null);
+  const [selectedDocuments, setSelectedDocuments] = useState<any[]>([]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
-  const { toast } = useToast();
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  useEffect(() => {
+    loadPendingProfiles();
+  }, []);
+
+  const loadPendingProfiles = async () => {
+    try {
+      setIsLoading(true);
+      const data = await adminApi.getPendingProfiles();
+      // Transform backend data to match our interface
+      const transformed = data.map((item: any) => ({
+        profileId: item.profileId,
+        userId: item.userId,
+        name: item.displayName || "Unknown",
+        email: item.userEmail,
+        submittedAt: item.submittedAt,
+        documents: [], // Will be loaded when viewing details
+        skills: [], // Will be loaded from profile details
+        experience: undefined,
+        status: item.status || "UNDER_REVIEW",
+        profileType: item.profileType || "FREELANCER",
+      }));
+      setRequests(transformed);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load verification requests");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredRequests = requests.filter((request) => {
     const matchesSearch =
@@ -121,39 +88,70 @@ const VerificationQueue = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = requests.filter((r) => r.status === "Pending").length;
-  const approvedCount = requests.filter((r) => r.status === "Approved").length;
-  const rejectedCount = requests.filter((r) => r.status === "Rejected").length;
+  const pendingCount = requests.filter((r) => r.status === "UNDER_REVIEW" || r.status === "PENDING").length;
+  const approvedCount = requests.filter((r) => r.status === "APPROVED").length;
+  const rejectedCount = requests.filter((r) => r.status === "REJECTED").length;
 
-  const handleApprove = (id: string) => {
-    setRequests(requests.map((r) => (r.id === id ? { ...r, status: "Approved" as const } : r)));
-    setIsViewOpen(false);
-    toast({
-      title: "Freelancer Approved",
-      description: "Verification badge has been granted.",
-    });
+  const loadProfileDetails = async (request: VerificationRequest) => {
+    try {
+      setIsLoadingDetails(true);
+      if (request.profileType === "FREELANCER") {
+        const [profile, documents] = await Promise.all([
+          adminApi.getFreelancerProfile(request.profileId),
+          adminApi.getFreelancerDocuments(request.profileId),
+        ]);
+        setSelectedProfileDetails(profile);
+        setSelectedDocuments(documents);
+      } else {
+        // Client profile loading can be added later
+        setSelectedProfileDetails(null);
+        setSelectedDocuments([]);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load profile details");
+    } finally {
+      setIsLoadingDetails(false);
+    }
   };
 
-  const handleReject = () => {
+  const handleApprove = async () => {
     if (!selectedRequest) return;
-    setRequests(
-      requests.map((r) =>
-        r.id === selectedRequest.id ? { ...r, status: "Rejected" as const, notes: rejectNotes } : r
-      )
-    );
-    setIsRejectOpen(false);
-    setIsViewOpen(false);
-    setRejectNotes("");
-    toast({
-      title: "Verification Rejected",
-      description: "The freelancer has been notified.",
-      variant: "destructive",
-    });
+    try {
+      await adminApi.reviewProfile(selectedRequest.profileId, {
+        profileType: selectedRequest.profileType,
+        decision: "APPROVED",
+        verificationNotes: "Profile approved by admin",
+      });
+      toast.success("Profile approved successfully");
+      setIsViewOpen(false);
+      loadPendingProfiles();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to approve profile");
+    }
   };
 
-  const openView = (request: VerificationRequest) => {
+  const handleReject = async () => {
+    if (!selectedRequest) return;
+    try {
+      await adminApi.reviewProfile(selectedRequest.profileId, {
+        profileType: selectedRequest.profileType,
+        decision: "REJECTED",
+        rejectionReason: rejectNotes,
+      });
+      toast.success("Profile rejected");
+      setIsRejectOpen(false);
+      setIsViewOpen(false);
+      setRejectNotes("");
+      loadPendingProfiles();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to reject profile");
+    }
+  };
+
+  const openView = async (request: VerificationRequest) => {
     setSelectedRequest(request);
     setIsViewOpen(true);
+    await loadProfileDetails(request);
   };
 
   return (
@@ -220,9 +218,9 @@ const VerificationQueue = () => {
               className="px-3 py-2 rounded-lg border border-input bg-background text-sm"
             >
               <option value="All">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
+              <option value="UNDER_REVIEW">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="REJECTED">Rejected</option>
             </select>
           </div>
         </CardContent>
@@ -230,8 +228,21 @@ const VerificationQueue = () => {
 
       {/* Queue List */}
       <div className="grid gap-4">
-        {filteredRequests.map((request) => (
-          <Card key={request.id} className="hover:shadow-lg transition-shadow">
+        {isLoading ? (
+          <Card>
+            <CardContent className="p-12 text-center text-muted-foreground">
+              Loading verification requests...
+            </CardContent>
+          </Card>
+        ) : filteredRequests.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center text-muted-foreground">
+              No verification requests found.
+            </CardContent>
+          </Card>
+        ) : (
+          filteredRequests.map((request) => (
+          <Card key={request.profileId} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-start gap-4">
@@ -241,37 +252,35 @@ const VerificationQueue = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">{request.name}</h3>
-                      {request.status === "Approved" && (
+                      {request.status === "APPROVED" && (
                         <ShieldCheck className="h-5 w-5 text-secondary" />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{request.email}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {request.skills.map((skill) => (
-                        <Badge key={skill} variant="secondary" className="text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Experience: {request.experience} • Submitted: {request.submittedAt}
-                    </p>
+                    <Badge variant="outline" className="mt-2">
+                      {request.profileType}
+                    </Badge>
+                    {request.submittedAt && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Submitted: {new Date(request.submittedAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span
                     className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
-                      request.status === "Pending"
+                      request.status === "UNDER_REVIEW" || request.status === "PENDING"
                         ? "bg-accent/10 text-accent"
-                        : request.status === "Approved"
+                        : request.status === "APPROVED"
                         ? "bg-secondary/10 text-secondary"
                         : "bg-destructive/10 text-destructive"
                     }`}
                   >
-                    {request.status === "Pending" && <Clock className="h-4 w-4" />}
-                    {request.status === "Approved" && <CheckCircle className="h-4 w-4" />}
-                    {request.status === "Rejected" && <XCircle className="h-4 w-4" />}
-                    {request.status}
+                    {(request.status === "UNDER_REVIEW" || request.status === "PENDING") && <Clock className="h-4 w-4" />}
+                    {request.status === "APPROVED" && <CheckCircle className="h-4 w-4" />}
+                    {request.status === "REJECTED" && <XCircle className="h-4 w-4" />}
+                    {request.status === "UNDER_REVIEW" ? "Pending" : request.status}
                   </span>
                   <Button variant="outline" onClick={() => openView(request)}>
                     <Eye className="h-4 w-4 mr-2" />
@@ -281,14 +290,7 @@ const VerificationQueue = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
-
-        {filteredRequests.length === 0 && (
-          <Card>
-            <CardContent className="p-12 text-center text-muted-foreground">
-              No verification requests found.
-            </CardContent>
-          </Card>
+          ))
         )}
       </div>
 
@@ -303,55 +305,60 @@ const VerificationQueue = () => {
           </DialogHeader>
           {selectedRequest && (
             <div className="space-y-6 py-4">
-              {/* Profile Info */}
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-xl">
-                    {selectedRequest.name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-xl">{selectedRequest.name}</h3>
-                  <p className="text-muted-foreground">{selectedRequest.email}</p>
-                  <p className="text-sm text-muted-foreground">Experience: {selectedRequest.experience}</p>
-                </div>
-              </div>
-
-              {/* Skills */}
-              <div>
-                <h4 className="font-medium mb-2">Skills</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedRequest.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Documents */}
-              <div>
-                <h4 className="font-medium mb-2">Submitted Documents</h4>
-                <div className="space-y-2">
-                  {selectedRequest.documents.map((doc, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">{doc.type}</p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
+              {isLoadingDetails ? (
+                <div className="text-center py-8 text-muted-foreground">Loading profile details...</div>
+              ) : (
+                <>
+                  {/* Profile Info */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                      <span className="text-primary-foreground font-bold text-xl">
+                        {selectedRequest.name.charAt(0)}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div>
+                      <h3 className="font-semibold text-xl">{selectedRequest.name}</h3>
+                      <p className="text-muted-foreground">{selectedRequest.email}</p>
+                      {selectedProfileDetails?.bio && (
+                        <p className="text-sm text-muted-foreground mt-2">{selectedProfileDetails.bio}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Documents */}
+                  <div>
+                    <h4 className="font-medium mb-2">Submitted Documents</h4>
+                    {selectedDocuments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No documents submitted</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedDocuments.map((doc, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-primary" />
+                              <div>
+                                <p className="font-medium">{doc.fileName}</p>
+                                <p className="text-xs text-muted-foreground">{doc.documentType}</p>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm" asChild>
+                              <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Rejection Notes */}
+              {selectedRequest.notes && (
 
               {/* Rejection Notes */}
               {selectedRequest.notes && (
@@ -366,7 +373,7 @@ const VerificationQueue = () => {
             </div>
           )}
           <DialogFooter>
-            {selectedRequest?.status === "Pending" && (
+            {(selectedRequest?.status === "UNDER_REVIEW" || selectedRequest?.status === "PENDING") && (
               <>
                 <Button
                   variant="outline"
@@ -379,7 +386,7 @@ const VerificationQueue = () => {
                   Reject
                 </Button>
                 <Button
-                  onClick={() => handleApprove(selectedRequest.id)}
+                  onClick={handleApprove}
                   className="bg-secondary hover:bg-secondary/90"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -387,7 +394,7 @@ const VerificationQueue = () => {
                 </Button>
               </>
             )}
-            {selectedRequest?.status !== "Pending" && (
+            {selectedRequest?.status !== "UNDER_REVIEW" && selectedRequest?.status !== "PENDING" && (
               <Button variant="outline" onClick={() => setIsViewOpen(false)}>
                 Close
               </Button>
