@@ -539,6 +539,85 @@ export const adminApi = {
   },
 };
 
+// Profile API
+export const profileApi = {
+  // Freelancer Profile
+  getFreelancerProfile: async () => {
+    const response = await api.get<{
+      id: number;
+      userId: number;
+      bio?: string;
+      hourlyRate?: number;
+      location?: string;
+      phone?: string;
+      website?: string;
+      linkedin?: string;
+      github?: string;
+      verificationStatus: string;
+    }>("/profile/freelancer/me");
+    return response.data;
+  },
+
+  updateFreelancerProfile: async (data: {
+    bio?: string;
+    hourlyRate?: number;
+    location?: string;
+    phone?: string;
+    website?: string;
+    linkedin?: string;
+    github?: string;
+  }) => {
+    const response = await api.put<{
+      id: number;
+      userId: number;
+      bio?: string;
+      hourlyRate?: number;
+      location?: string;
+      phone?: string;
+      website?: string;
+      linkedin?: string;
+      github?: string;
+      verificationStatus: string;
+    }>("/profile/freelancer", data);
+    return response.data;
+  },
+
+  // Client Profile
+  getClientProfile: async () => {
+    const response = await api.get<{
+      id: number;
+      userId: number;
+      companyName?: string;
+      companyDescription?: string;
+      location?: string;
+      phone?: string;
+      website?: string;
+      verificationStatus: string;
+    }>("/profile/client/me");
+    return response.data;
+  },
+
+  updateClientProfile: async (data: {
+    companyName?: string;
+    companyDescription?: string;
+    location?: string;
+    phone?: string;
+    website?: string;
+  }) => {
+    const response = await api.put<{
+      id: number;
+      userId: number;
+      companyName?: string;
+      companyDescription?: string;
+      location?: string;
+      phone?: string;
+      website?: string;
+      verificationStatus: string;
+    }>("/profile/client", data);
+    return response.data;
+  },
+};
+
 // Export the axios instance for custom requests
 export default api;
 
