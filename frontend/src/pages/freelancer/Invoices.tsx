@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { 
   Search, 
   Download,
@@ -7,7 +8,6 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,105 +28,75 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { invoicesApi } from "@/lib/api";
+import { toast } from "sonner";
 
-const invoices = [
-  {
-    id: "INV-001",
-    project: "TechStartup Website",
-    client: "ABC Corp",
-    amount: "NPR 25,000",
-    status: "paid",
-    issuedDate: "Dec 1, 2024",
-    dueDate: "Dec 15, 2024",
-    paidDate: "Dec 10, 2024",
-    items: [
-      { description: "Design Phase - Milestone 1", amount: 25000 }
-    ]
-  },
-  {
-    id: "INV-002",
-    project: "Mobile Banking App",
-    client: "XYZ Bank",
-    amount: "NPR 50,000",
-    status: "pending",
-    issuedDate: "Dec 10, 2024",
-    dueDate: "Dec 25, 2024",
-    paidDate: null,
-    items: [
-      { description: "UI/UX Design", amount: 30000 },
-      { description: "Prototype Development", amount: 20000 }
-    ]
-  },
-  {
-    id: "INV-003",
-    project: "CRM Dashboard",
-    client: "Sales Pro",
-    amount: "NPR 60,000",
-    status: "overdue",
-    issuedDate: "Nov 25, 2024",
-    dueDate: "Dec 10, 2024",
-    paidDate: null,
-    items: [
-      { description: "Full Project Development", amount: 60000 }
-    ]
-  },
-  {
-    id: "INV-004",
-    project: "E-commerce Platform",
-    client: "ShopNepal",
-    amount: "NPR 120,000",
-    status: "paid",
-    issuedDate: "Nov 15, 2024",
-    dueDate: "Nov 30, 2024",
-    paidDate: "Nov 28, 2024",
-    items: [
-      { description: "Frontend Development", amount: 50000 },
-      { description: "Backend Integration", amount: 40000 },
-      { description: "Payment Gateway Setup", amount: 30000 }
-    ]
-  },
-];
-
-const statusConfig = {
-  paid: { label: "Paid", icon: CheckCircle, color: "bg-secondary/10 text-secondary border-secondary/20" },
-  pending: { label: "Pending", icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  overdue: { label: "Overdue", icon: AlertCircle, color: "bg-destructive/10 text-destructive border-destructive/20" },
+const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
+  PAID: { label: "Paid", icon: CheckCircle, color: "bg-secondary/10 text-secondary border-secondary/20" },
+  PENDING: { label: "Pending", icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+  UNPAID: { label: "Unpaid", icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+  OVERDUE: { label: "Overdue", icon: AlertCircle, color: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 export default function Invoices() {
+  const { user } = useAuth();
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedInvoice, setSelectedInvoice] = useState<typeof invoices[0] | null>(null);
-  const { toast } = useToast();
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      loadInvoices();
+    }
+  }, [user]);
+
+  const loadInvoices = async () => {
+    if (!user) return;
+    try {
+      setIsLoading(true);
+      const data = await invoicesApi.list({ freelancerId: user.id });
+      setInvoices(data);
+    } catch (error) {
+      toast.error("Failed to load invoices");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return "NPR 0";
+    return `NPR ${amount.toLocaleString()}`;
+  };
 
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.project.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
+    const matchesSearch = invoice.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      invoice.projectId?.toString().includes(searchQuery.toLowerCase());
+    const invStatus = invoice.status?.toUpperCase() || "";
+    const matchesStatus = statusFilter === "all" || invStatus === statusFilter.toUpperCase();
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
-    total: invoices.reduce((sum, inv) => sum + parseInt(inv.amount.replace(/[^0-9]/g, '')), 0),
-    paid: invoices.filter(i => i.status === "paid").reduce((sum, inv) => sum + parseInt(inv.amount.replace(/[^0-9]/g, '')), 0),
-    pending: invoices.filter(i => i.status === "pending").reduce((sum, inv) => sum + parseInt(inv.amount.replace(/[^0-9]/g, '')), 0),
-    overdue: invoices.filter(i => i.status === "overdue").reduce((sum, inv) => sum + parseInt(inv.amount.replace(/[^0-9]/g, '')), 0),
+    total: invoices.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0),
+    paid: invoices.filter(i => i.status?.toUpperCase() === "PAID").reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0),
+    pending: invoices.filter(i => i.status?.toUpperCase() === "PENDING" || i.status?.toUpperCase() === "UNPAID").reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0),
+    overdue: invoices.filter(i => i.status?.toUpperCase() === "OVERDUE").reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0),
   };
 
-  const handleDownloadPDF = (invoice: typeof invoices[0]) => {
-    toast({
-      title: "Downloading Invoice",
-      description: `${invoice.id} is being downloaded as PDF.`,
-    });
+  const handleDownloadPDF = (invoice: any) => {
+    toast.success(`Downloading invoice ${invoice.invoiceNumber || invoice.id}...`);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">Loading invoices...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -135,10 +105,6 @@ export default function Invoices() {
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Invoices</h1>
           <p className="text-muted-foreground mt-1">Manage and track your invoice payments</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Invoice
-        </Button>
       </div>
 
       {/* Stats */}
@@ -146,25 +112,25 @@ export default function Invoices() {
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Total Invoiced</p>
-            <p className="text-2xl font-bold mt-1">NPR {stats.total.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1">{formatCurrency(stats.total)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Paid</p>
-            <p className="text-2xl font-bold text-secondary mt-1">NPR {stats.paid.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-secondary mt-1">{formatCurrency(stats.paid)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600 mt-1">NPR {stats.pending.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-yellow-600 mt-1">{formatCurrency(stats.pending)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Overdue</p>
-            <p className="text-2xl font-bold text-destructive mt-1">NPR {stats.overdue.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-destructive mt-1">{formatCurrency(stats.overdue)}</p>
           </CardContent>
         </Card>
       </div>
@@ -188,9 +154,10 @@ export default function Invoices() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="PAID">Paid</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="UNPAID">Unpaid</SelectItem>
+                <SelectItem value="OVERDUE">Overdue</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -215,44 +182,53 @@ export default function Invoices() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.map((invoice) => {
-                  const status = statusConfig[invoice.status as keyof typeof statusConfig];
-                  const StatusIcon = status.icon;
-                  return (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.id}</TableCell>
-                      <TableCell>{invoice.project}</TableCell>
-                      <TableCell>{invoice.client}</TableCell>
-                      <TableCell className="font-semibold text-secondary">{invoice.amount}</TableCell>
-                      <TableCell>{invoice.issuedDate}</TableCell>
-                      <TableCell>{invoice.dueDate}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={status.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => setSelectedInvoice(invoice)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDownloadPDF(invoice)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filteredInvoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-12">
+                      <p className="text-muted-foreground">No invoices found</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredInvoices.map((invoice) => {
+                    const invStatus = invoice.status?.toUpperCase() || "PENDING";
+                    const status = statusConfig[invStatus] || statusConfig.PENDING;
+                    const StatusIcon = status.icon;
+                    return (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">{invoice.invoiceNumber || `INV-${invoice.id}`}</TableCell>
+                        <TableCell>Project ID: {invoice.projectId}</TableCell>
+                        <TableCell>Client ID: {invoice.clientId}</TableCell>
+                        <TableCell className="font-semibold text-secondary">{formatCurrency(invoice.totalAmount)}</TableCell>
+                        <TableCell>{new Date(invoice.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : "Not set"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={status.color}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {status.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => setSelectedInvoice(invoice)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleDownloadPDF(invoice)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { 
   Search, 
   Filter,
@@ -43,90 +44,87 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { bidsApi, jobsApi } from "@/lib/api";
+import { toast } from "sonner";
 
-const bids = [
-  {
-    id: 1,
-    job: "E-commerce Website Development",
-    client: "TechMart Nepal",
-    bidAmount: "NPR 95,000",
-    clientBudget: "NPR 80,000 - 120,000",
-    duration: "2 months",
-    status: "pending",
-    submittedAt: "Dec 15, 2024",
-    proposal: "I have 5+ years of experience in e-commerce development...",
-  },
-  {
-    id: 2,
-    job: "Mobile App UI Design",
-    client: "FinPay Solutions",
-    bidAmount: "NPR 45,000",
-    clientBudget: "NPR 40,000 - 60,000",
-    duration: "3 weeks",
-    status: "accepted",
-    submittedAt: "Dec 12, 2024",
-    proposal: "As a senior UI/UX designer with fintech experience...",
-  },
-  {
-    id: 3,
-    job: "WordPress Theme Development",
-    client: "Nepal News Network",
-    bidAmount: "NPR 30,000",
-    clientBudget: "NPR 25,000 - 35,000",
-    duration: "2 weeks",
-    status: "rejected",
-    submittedAt: "Dec 10, 2024",
-    proposal: "I specialize in custom WordPress themes...",
-  },
-  {
-    id: 4,
-    job: "Data Analytics Dashboard",
-    client: "Growth Analytics",
-    bidAmount: "NPR 60,000",
-    clientBudget: "NPR 50,000 - 70,000",
-    duration: "1 month",
-    status: "pending",
-    submittedAt: "Dec 8, 2024",
-    proposal: "I can build interactive dashboards using React and D3.js...",
-  },
-  {
-    id: 5,
-    job: "API Integration Project",
-    client: "ShopNepal",
-    bidAmount: "NPR 35,000",
-    clientBudget: "NPR 30,000 - 45,000",
-    duration: "2 weeks",
-    status: "shortlisted",
-    submittedAt: "Dec 5, 2024",
-    proposal: "Expert in REST API integrations with payment gateways...",
-  },
-];
-
-const statusConfig = {
-  pending: { label: "Pending", icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  accepted: { label: "Accepted", icon: CheckCircle, color: "bg-secondary/10 text-secondary border-secondary/20" },
-  rejected: { label: "Rejected", icon: XCircle, color: "bg-destructive/10 text-destructive border-destructive/20" },
-  shortlisted: { label: "Shortlisted", icon: AlertCircle, color: "bg-primary/10 text-primary border-primary/20" },
+const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
+  PENDING: { label: "Pending", icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
+  ACCEPTED: { label: "Accepted", icon: CheckCircle, color: "bg-secondary/10 text-secondary border-secondary/20" },
+  REJECTED: { label: "Rejected", icon: XCircle, color: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 export default function MyBids() {
+  const { user } = useAuth();
+  const [bids, setBids] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<Record<number, any>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedBid, setSelectedBid] = useState<typeof bids[0] | null>(null);
+  const [selectedBid, setSelectedBid] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      loadBids();
+    }
+  }, [user]);
+
+  const loadBids = async () => {
+    if (!user) return;
+    try {
+      setIsLoading(true);
+      const bidsData = await bidsApi.list({ freelancerId: user.id });
+      setBids(bidsData);
+
+      // Fetch job details for each bid
+      const jobPromises = bidsData.map(async (bid: any) => {
+        try {
+          const job = await jobsApi.get(bid.jobId);
+          return { jobId: bid.jobId, job };
+        } catch {
+          return { jobId: bid.jobId, job: null };
+        }
+      });
+      const jobResults = await Promise.all(jobPromises);
+      const jobsMap: Record<number, any> = {};
+      jobResults.forEach(({ jobId, job }) => {
+        if (job) jobsMap[jobId] = job;
+      });
+      setJobs(jobsMap);
+    } catch (error) {
+      toast.error("Failed to load bids");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return "Not set";
+    return `NPR ${amount.toLocaleString()}`;
+  };
 
   const filteredBids = bids.filter(bid => {
-    const matchesSearch = bid.job.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bid.client.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || bid.status === statusFilter;
+    const job = jobs[bid.jobId];
+    const matchesSearch = job?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job?.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || bid.status === statusFilter.toUpperCase();
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
     total: bids.length,
-    pending: bids.filter(b => b.status === "pending").length,
-    accepted: bids.filter(b => b.status === "accepted").length,
-    shortlisted: bids.filter(b => b.status === "shortlisted").length,
+    pending: bids.filter(b => b.status === "PENDING").length,
+    accepted: bids.filter(b => b.status === "ACCEPTED").length,
+    rejected: bids.filter(b => b.status === "REJECTED").length,
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">Loading bids...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -151,8 +149,8 @@ export default function MyBids() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{stats.shortlisted}</p>
-            <p className="text-sm text-muted-foreground">Shortlisted</p>
+            <p className="text-2xl font-bold text-destructive">{stats.rejected}</p>
+            <p className="text-sm text-muted-foreground">Rejected</p>
           </CardContent>
         </Card>
         <Card>
@@ -182,10 +180,9 @@ export default function MyBids() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="ACCEPTED">Accepted</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -209,56 +206,75 @@ export default function MyBids() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBids.map((bid) => {
-                  const status = statusConfig[bid.status as keyof typeof statusConfig];
-                  const StatusIcon = status.icon;
-                  return (
-                    <TableRow key={bid.id}>
-                      <TableCell>
-                        <div className="font-medium max-w-[200px] truncate">{bid.job}</div>
-                        <div className="text-xs text-muted-foreground">Budget: {bid.clientBudget}</div>
-                      </TableCell>
-                      <TableCell>{bid.client}</TableCell>
-                      <TableCell className="font-medium text-secondary">{bid.bidAmount}</TableCell>
-                      <TableCell>{bid.duration}</TableCell>
-                      <TableCell>{bid.submittedAt}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={status.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              Actions
-                              <ChevronDown className="h-4 w-4 ml-1" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedBid(bid)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            {bid.status === "accepted" && (
-                              <DropdownMenuItem>
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Message Client
+                {filteredBids.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12">
+                      <p className="text-muted-foreground">No bids found</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredBids.map((bid) => {
+                    const job = jobs[bid.jobId];
+                    const status = statusConfig[bid.status] || statusConfig.PENDING;
+                    const StatusIcon = status.icon;
+                    return (
+                      <TableRow key={bid.id}>
+                        <TableCell>
+                          <Link to={`/jobs/${bid.jobId}`} className="font-medium max-w-[200px] truncate hover:text-primary">
+                            {job?.title || `Job #${bid.jobId}`}
+                          </Link>
+                          {job && (job.budgetMin || job.budgetMax) && (
+                            <div className="text-xs text-muted-foreground">
+                              Budget: {job.budgetMin && job.budgetMax
+                                ? `NPR ${job.budgetMin.toLocaleString()} - ${job.budgetMax.toLocaleString()}`
+                                : formatCurrency(job.budgetMin || job.budgetMax)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>Client ID: {job?.clientId || "N/A"}</TableCell>
+                        <TableCell className="font-medium text-secondary">{formatCurrency(Number(bid.amount))}</TableCell>
+                        <TableCell>{bid.estimatedCompletionDate ? new Date(bid.estimatedCompletionDate).toLocaleDateString() : "Not set"}</TableCell>
+                        <TableCell>{new Date(bid.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={status.color}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {status.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                Actions
+                                <ChevronDown className="h-4 w-4 ml-1" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedBid(bid)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
                               </DropdownMenuItem>
-                            )}
-                            {bid.status === "pending" && (
-                              <DropdownMenuItem className="text-destructive">
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Withdraw Bid
+                              <DropdownMenuItem asChild>
+                                <Link to={`/jobs/${bid.jobId}`}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Job
+                                </Link>
                               </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                              {bid.status === "ACCEPTED" && (
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/freelancer/projects?jobId=${bid.jobId}`}>
+                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                    View Project
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
@@ -276,22 +292,22 @@ export default function MyBids() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Client</p>
-                  <p className="font-medium">{selectedBid.client}</p>
+                  <p className="text-xs text-muted-foreground">Job</p>
+                  <p className="font-medium">{jobs[selectedBid.jobId]?.title || `Job #${selectedBid.jobId}`}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge variant="outline" className={statusConfig[selectedBid.status as keyof typeof statusConfig].color}>
-                    {statusConfig[selectedBid.status as keyof typeof statusConfig].label}
+                  <Badge variant="outline" className={statusConfig[selectedBid.status]?.color || statusConfig.PENDING.color}>
+                    {statusConfig[selectedBid.status]?.label || selectedBid.status}
                   </Badge>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground">Your Bid</p>
-                  <p className="font-medium text-secondary">{selectedBid.bidAmount}</p>
+                  <p className="font-medium text-secondary">{formatCurrency(Number(selectedBid.amount))}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Client Budget</p>
-                  <p className="font-medium">{selectedBid.clientBudget}</p>
+                  <p className="text-xs text-muted-foreground">Submitted</p>
+                  <p className="font-medium">{new Date(selectedBid.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground">Duration</p>
@@ -302,10 +318,12 @@ export default function MyBids() {
                   <p className="font-medium">{selectedBid.submittedAt}</p>
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground mb-2">Your Proposal</p>
-                <p className="text-sm">{selectedBid.proposal}</p>
-              </div>
+              {selectedBid.message && (
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xs text-muted-foreground mb-2">Your Proposal</p>
+                  <p className="text-sm">{selectedBid.message}</p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
