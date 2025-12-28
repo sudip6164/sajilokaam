@@ -22,12 +22,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const fetchUserProfile = async (authToken?: string) => {
+  const fetchUserProfile = async (authToken?: string): Promise<boolean> => {
     try {
       const tokenToUse = authToken || token;
       if (!tokenToUse) {
         setIsLoading(false);
-        return;
+        return false;
       }
 
       const userData = await authApi.getMe();
@@ -37,11 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fullName: userData.fullName,
         roles: userData.roles,
       });
+      return true;
     } catch (error) {
       // Token might be invalid, clear it
       localStorage.removeItem("jwt_token");
       setToken(null);
       setUser(null);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -56,11 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(newToken);
       
       // Fetch user profile - only show success if this succeeds
-      await fetchUserProfile(newToken);
+      const profileLoaded = await fetchUserProfile(newToken);
       
-      // Only show success if user profile was loaded successfully
-      if (user || localStorage.getItem("jwt_token")) {
+      if (profileLoaded) {
         toast.success("Login successful!");
+      } else {
+        throw new Error("Failed to load user profile");
       }
     } catch (error: any) {
       // Clear token if login or profile fetch failed
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(null);
       setUser(null);
       
-      const message = error.response?.data?.message || "Login failed. Please check your credentials.";
+      const message = error.response?.data?.message || error.message || "Login failed. Please check your credentials.";
       toast.error(message);
       throw error;
     }
