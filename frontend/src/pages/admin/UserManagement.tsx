@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  MoreVertical,
-  Filter,
   Download,
   CheckCircle,
   XCircle,
@@ -22,85 +20,139 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { adminApi } from "@/lib/api";
+import { toast } from "sonner";
 
 interface User {
-  id: string;
-  name: string;
+  id: number;
+  fullName: string;
   email: string;
-  type: "Freelancer" | "Client";
-  status: "Active" | "Pending" | "Suspended";
-  joinDate: string;
-  verified: boolean;
+  roles: Array<{ id: number; name: string }>;
+  createdAt?: string;
 }
 
-const initialUsers: User[] = [
-  { id: "1", name: "Rajesh Sharma", email: "rajesh@email.com", type: "Freelancer", status: "Active", joinDate: "2024-01-15", verified: true },
-  { id: "2", name: "Sita Thapa", email: "sita@email.com", type: "Client", status: "Active", joinDate: "2024-02-20", verified: true },
-  { id: "3", name: "Bikash Gurung", email: "bikash@email.com", type: "Freelancer", status: "Pending", joinDate: "2024-03-10", verified: false },
-  { id: "4", name: "Anita Rai", email: "anita@email.com", type: "Client", status: "Active", joinDate: "2024-03-15", verified: true },
-  { id: "5", name: "Prakash KC", email: "prakash@email.com", type: "Freelancer", status: "Suspended", joinDate: "2024-01-05", verified: false },
-  { id: "6", name: "Maya Tamang", email: "maya@email.com", type: "Freelancer", status: "Active", joinDate: "2024-04-01", verified: true },
-  { id: "7", name: "Sunil Shrestha", email: "sunil@email.com", type: "Client", status: "Pending", joinDate: "2024-04-10", verified: false },
-  { id: "8", name: "Gita Magar", email: "gita@email.com", type: "Freelancer", status: "Active", joinDate: "2024-02-28", verified: true },
-];
-
 const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"All" | "Freelancer" | "Client">("All");
-  const [filterStatus, setFilterStatus] = useState<"All" | "Active" | "Pending" | "Suspended">("All");
+  const [filterType, setFilterType] = useState<"All" | "FREELANCER" | "CLIENT">("All");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState({ name: "", email: "", type: "Freelancer" as "Freelancer" | "Client" });
-  const { toast } = useToast();
+  const [formData, setFormData] = useState({ 
+    fullName: "", 
+    email: "", 
+    password: "",
+    role: "FREELANCER" as "FREELANCER" | "CLIENT" 
+  });
+  const [roles, setRoles] = useState<Array<{ id: number; name: string }>>([]);
+
+  useEffect(() => {
+    loadUsers();
+    loadRoles();
+  }, [page]);
+
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await adminApi.getUsers(page, 20);
+      setUsers(response.content);
+      setTotalPages(response.totalPages);
+      setTotalElements(response.totalElements);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load users");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadRoles = async () => {
+    try {
+      const data = await adminApi.getRoles();
+      setRoles(data);
+    } catch (error: any) {
+      // Silently fail - roles might not be critical
+    }
+  };
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "All" || user.type === filterType;
-    const matchesStatus = filterStatus === "All" || user.status === filterStatus;
-    return matchesSearch && matchesType && matchesStatus;
+    const userRole = user.roles[0]?.name || "";
+    const matchesType = filterType === "All" || userRole === filterType;
+    return matchesSearch && matchesType;
   });
 
-  const handleCreate = () => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      name: formData.name,
-      email: formData.email,
-      type: formData.type,
-      status: "Pending",
-      joinDate: new Date().toISOString().split("T")[0],
-      verified: false,
-    };
-    setUsers([...users, newUser]);
-    setIsCreateOpen(false);
-    setFormData({ name: "", email: "", type: "Freelancer" });
-    toast({ title: "User Created", description: `${newUser.name} has been added successfully.` });
+  const getUserType = (user: User): "FREELANCER" | "CLIENT" => {
+    const role = user.roles[0]?.name || "";
+    return role === "CLIENT" ? "CLIENT" : "FREELANCER";
   };
 
-  const handleEdit = () => {
-    if (!selectedUser) return;
-    setUsers(users.map((u) => (u.id === selectedUser.id ? { ...u, ...formData } : u)));
-    setIsEditOpen(false);
-    setSelectedUser(null);
-    toast({ title: "User Updated", description: "User details have been updated successfully." });
+  const handleCreate = async () => {
+    if (!formData.fullName || !formData.email || !formData.password) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    try {
+      await adminApi.createUser({
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+      toast.success("User created successfully");
+      setIsCreateOpen(false);
+      setFormData({ fullName: "", email: "", password: "", role: "FREELANCER" });
+      loadUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to create user");
+    }
   };
 
-  const handleDelete = () => {
+  const handleEdit = async () => {
     if (!selectedUser) return;
-    setUsers(users.filter((u) => u.id !== selectedUser.id));
-    setIsDeleteOpen(false);
-    setSelectedUser(null);
-    toast({ title: "User Deleted", description: "User has been removed successfully.", variant: "destructive" });
+    try {
+      await adminApi.updateUser(selectedUser.id, {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password || undefined,
+        role: formData.role,
+      });
+      toast.success("User updated successfully");
+      setIsEditOpen(false);
+      setSelectedUser(null);
+      loadUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update user");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedUser) return;
+    try {
+      await adminApi.deleteUser(selectedUser.id);
+      toast.success("User deleted successfully");
+      setIsDeleteOpen(false);
+      setSelectedUser(null);
+      loadUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete user");
+    }
   };
 
   const openEdit = (user: User) => {
     setSelectedUser(user);
-    setFormData({ name: user.name, email: user.email, type: user.type });
+    setFormData({ 
+      fullName: user.fullName, 
+      email: user.email, 
+      password: "",
+      role: getUserType(user)
+    });
     setIsEditOpen(true);
   };
 
@@ -143,18 +195,8 @@ const UserManagement = () => {
                 className="px-3 py-2 rounded-lg border border-input bg-background text-sm"
               >
                 <option value="All">All Types</option>
-                <option value="Freelancer">Freelancers</option>
-                <option value="Client">Clients</option>
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-                className="px-3 py-2 rounded-lg border border-input bg-background text-sm"
-              >
-                <option value="All">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Pending">Pending</option>
-                <option value="Suspended">Suspended</option>
+                <option value="FREELANCER">Freelancers</option>
+                <option value="CLIENT">Clients</option>
               </select>
               <Button variant="outline" size="icon">
                 <Download className="h-4 w-4" />
@@ -174,70 +216,75 @@ const UserManagement = () => {
                   <th className="text-left p-4 font-medium">User</th>
                   <th className="text-left p-4 font-medium hidden md:table-cell">Type</th>
                   <th className="text-left p-4 font-medium hidden lg:table-cell">Join Date</th>
-                  <th className="text-left p-4 font-medium">Status</th>
-                  <th className="text-left p-4 font-medium hidden sm:table-cell">Verified</th>
                   <th className="text-right p-4 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                          <span className="text-primary-foreground font-medium">{user.name.charAt(0)}</span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4 hidden md:table-cell">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.type === "Freelancer" ? "bg-primary/10 text-primary" : "bg-secondary/10 text-secondary"
-                      }`}>
-                        {user.type}
-                      </span>
-                    </td>
-                    <td className="p-4 hidden lg:table-cell text-muted-foreground">{user.joinDate}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.status === "Active" ? "bg-secondary/10 text-secondary" :
-                        user.status === "Pending" ? "bg-accent/10 text-accent" :
-                        "bg-destructive/10 text-destructive"
-                      }`}>
-                        {user.status === "Active" && <CheckCircle className="h-3 w-3" />}
-                        {user.status === "Pending" && <Clock className="h-3 w-3" />}
-                        {user.status === "Suspended" && <XCircle className="h-3 w-3" />}
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="p-4 hidden sm:table-cell">
-                      {user.verified ? (
-                        <CheckCircle className="h-5 w-5 text-secondary" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => openDelete(user)} className="text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                      Loading users...
                     </td>
                   </tr>
-                ))}
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                            <span className="text-primary-foreground font-medium">{user.fullName.charAt(0)}</span>
+                          </div>
+                          <div>
+                            <p className="font-medium">{user.fullName}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 hidden md:table-cell">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          getUserType(user) === "FREELANCER" ? "bg-primary/10 text-primary" : "bg-secondary/10 text-secondary"
+                        }`}>
+                          {getUserType(user)}
+                        </span>
+                      </td>
+                      <td className="p-4 hidden lg:table-cell text-muted-foreground">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => openDelete(user)} className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              No users found matching your criteria.
+          {!isLoading && filteredUsers.length > 0 && (
+            <div className="p-4 border-t flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredUsers.length} of {totalElements} users
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>
+                  Previous
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -251,18 +298,22 @@ const UserManagement = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter full name" />
+              <Label>Full Name *</Label>
+              <Input value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder="Enter full name" />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>Email *</Label>
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Enter email address" />
             </div>
             <div className="space-y-2">
-              <Label>User Type</Label>
-              <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value as "Freelancer" | "Client" })} className="w-full px-3 py-2 rounded-lg border border-input bg-background">
-                <option value="Freelancer">Freelancer</option>
-                <option value="Client">Client</option>
+              <Label>Password *</Label>
+              <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Enter password" />
+            </div>
+            <div className="space-y-2">
+              <Label>User Type *</Label>
+              <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value as "FREELANCER" | "CLIENT" })} className="w-full px-3 py-2 rounded-lg border border-input bg-background">
+                <option value="FREELANCER">Freelancer</option>
+                <option value="CLIENT">Client</option>
               </select>
             </div>
           </div>
@@ -281,18 +332,22 @@ const UserManagement = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              <Label>Full Name *</Label>
+              <Input value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>Email *</Label>
               <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>User Type</Label>
-              <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value as "Freelancer" | "Client" })} className="w-full px-3 py-2 rounded-lg border border-input bg-background">
-                <option value="Freelancer">Freelancer</option>
-                <option value="Client">Client</option>
+              <Label>Password (leave blank to keep current)</Label>
+              <Input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Enter new password" />
+            </div>
+            <div className="space-y-2">
+              <Label>User Type *</Label>
+              <select value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value as "FREELANCER" | "CLIENT" })} className="w-full px-3 py-2 rounded-lg border border-input bg-background">
+                <option value="FREELANCER">Freelancer</option>
+                <option value="CLIENT">Client</option>
               </select>
             </div>
           </div>
@@ -310,7 +365,7 @@ const UserManagement = () => {
             <DialogTitle>Delete User</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground">
-            Are you sure you want to delete <span className="font-medium text-foreground">{selectedUser?.name}</span>? This action cannot be undone.
+            Are you sure you want to delete <span className="font-medium text-foreground">{selectedUser?.fullName}</span>? This action cannot be undone.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>

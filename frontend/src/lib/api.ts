@@ -416,23 +416,125 @@ export const paymentsApi = {
 
 // Admin API
 export const adminApi = {
-  getDashboardStats: async () => {
+  // Analytics
+  getOverview: async () => {
     const response = await api.get<{
       totalUsers: number;
       totalJobs: number;
+      totalBids: number;
       totalProjects: number;
-      totalRevenue: number;
-    }>("/admin/dashboard/stats");
+      totalTasks: number;
+    }>("/admin/analytics/overview");
     return response.data;
   },
 
-  getUsers: async () => {
-    const response = await api.get<Array<{
+  // Users
+  getUsers: async (page: number = 0, size: number = 20) => {
+    const response = await api.get<{
+      content: Array<{
+        id: number;
+        email: string;
+        fullName: string;
+        roles: Array<{ id: number; name: string }>;
+        createdAt?: string;
+      }>;
+      totalElements: number;
+      totalPages: number;
+      number: number;
+      size: number;
+    }>("/admin/users", { params: { page, size } });
+    return response.data;
+  },
+
+  getUser: async (id: number) => {
+    const response = await api.get<{
       id: number;
       email: string;
       fullName: string;
       roles: Array<{ id: number; name: string }>;
-    }>>("/admin/users");
+      createdAt?: string;
+    }>(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  createUser: async (data: {
+    email: string;
+    password: string;
+    fullName: string;
+    role: string;
+  }) => {
+    const response = await api.post<{
+      id: number;
+      email: string;
+      fullName: string;
+      roles: Array<{ id: number; name: string }>;
+    }>("/admin/users", data);
+    return response.data;
+  },
+
+  updateUser: async (id: number, data: {
+    email?: string;
+    password?: string;
+    fullName?: string;
+    role?: string;
+  }) => {
+    const response = await api.put<{
+      id: number;
+      email: string;
+      fullName: string;
+      roles: Array<{ id: number; name: string }>;
+    }>(`/admin/users/${id}`, data);
+    return response.data;
+  },
+
+  deleteUser: async (id: number) => {
+    await api.delete(`/admin/users/${id}`);
+  },
+
+  getRoles: async () => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+    }>>("/admin/users/roles");
+    return response.data;
+  },
+
+  // Payments Dashboard
+  getPaymentDashboard: async () => {
+    const response = await api.get<{
+      summary: {
+        totalCollected: number;
+        pendingAmount: number;
+        refundedAmount: number;
+        averageTicketSize: number;
+        totalTransactions: number;
+      };
+      gateways: Array<{
+        gateway: string;
+        count: number;
+        totalAmount: number;
+      }>;
+      statuses: Array<{
+        status: string;
+        count: number;
+      }>;
+      recentPayments: Array<{
+        id: number;
+        amount: number;
+        status: string;
+        gateway: string;
+        invoiceNumber?: string;
+        clientName?: string;
+        freelancerName?: string;
+        createdAt: string;
+      }>;
+      disputes: {
+        total: number;
+        open: number;
+        resolved: number;
+      };
+      recentDisputes: Array<any>;
+    }>("/admin/payments/dashboard");
     return response.data;
   },
 };
