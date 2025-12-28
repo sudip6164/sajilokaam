@@ -35,13 +35,24 @@ api.interceptors.response.use(
       if (status === 401) {
         localStorage.removeItem("jwt_token");
         // Only redirect if not already on login/register page and not on public pages
+        const isPublicPage = window.location.pathname.startsWith("/jobs") || 
+                            window.location.pathname === "/" ||
+                            window.location.pathname.startsWith("/about") ||
+                            window.location.pathname.startsWith("/contact") ||
+                            window.location.pathname.startsWith("/pricing");
+        
         if (!window.location.pathname.includes("/login") && 
             !window.location.pathname.includes("/register") &&
-            !window.location.pathname.startsWith("/jobs")) {
+            !isPublicPage) {
+          // For protected pages, redirect to login
           window.location.href = "/login";
+        } else if (isPublicPage) {
+          // For public pages, just remove token silently - user can continue browsing
+          // Don't redirect or show error
         }
-        // Don't show error toast for public pages
-        if (!window.location.pathname.startsWith("/jobs")) {
+        // Only show error toast for protected pages
+        if (!isPublicPage && !window.location.pathname.includes("/login") && 
+            !window.location.pathname.includes("/register")) {
           toast.error("Session expired. Please login again.");
         }
       } else if (status === 403) {
