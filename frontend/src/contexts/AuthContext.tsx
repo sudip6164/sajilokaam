@@ -12,7 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load token from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
+    const storedToken = localStorage.getItem("jwt_token");
     if (storedToken) {
       setToken(storedToken);
       // Fetch user profile
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       // Token might be invalid, clear it
-      localStorage.removeItem("token");
+      localStorage.removeItem("jwt_token");
       setToken(null);
       setUser(null);
     } finally {
@@ -52,14 +52,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authApi.login(email, password);
       const newToken = response.token;
       
-      localStorage.setItem("token", newToken);
+      localStorage.setItem("jwt_token", newToken);
       setToken(newToken);
       
-      // Fetch user profile
+      // Fetch user profile - only show success if this succeeds
       await fetchUserProfile(newToken);
       
-      toast.success("Login successful!");
+      // Only show success if user profile was loaded successfully
+      if (user || localStorage.getItem("jwt_token")) {
+        toast.success("Login successful!");
+      }
     } catch (error: any) {
+      // Clear token if login or profile fetch failed
+      localStorage.removeItem("jwt_token");
+      setToken(null);
+      setUser(null);
+      
       const message = error.response?.data?.message || "Login failed. Please check your credentials.";
       toast.error(message);
       throw error;
@@ -71,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authApi.register(email, password, fullName, role);
       const newToken = response.token;
       
-      localStorage.setItem("token", newToken);
+      localStorage.setItem("jwt_token", newToken);
       setToken(newToken);
       
       // Fetch user profile
@@ -86,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("jwt_token");
     setToken(null);
     setUser(null);
     toast.success("Logged out successfully");
