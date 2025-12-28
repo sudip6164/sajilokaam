@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ password: "", confirmPassword: "" });
@@ -15,13 +17,31 @@ export default function ResetPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      toast({ title: "Error", description: "Passwords don't match", variant: "destructive" });
+      toast.error("Passwords don't match");
+      return;
+    }
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
       return;
     }
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    toast({ title: "Password Reset", description: "Your password has been updated" });
-    navigate("/login");
+    try {
+      // TODO: Replace with actual endpoint when backend implements it
+      await api.post("/auth/reset-password", { 
+        token: token || "",
+        password: formData.password 
+      });
+      toast.success("Password reset successfully! You can now login.");
+      navigate("/login");
+    } catch (error: any) {
+      if (error.response?.status === 404 || error.response?.status === 501) {
+        toast.info("Password reset feature coming soon. Please contact support.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to reset password");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

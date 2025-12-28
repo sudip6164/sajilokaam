@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import { Mail, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 export default function ForgotPassword() {
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -14,10 +14,21 @@ export default function ForgotPassword() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    toast({ title: "Email Sent", description: "Check your inbox for reset instructions" });
-    setSent(true);
-    setIsLoading(false);
+    try {
+      // TODO: Replace with actual endpoint when backend implements it
+      await api.post("/auth/forgot-password", { email });
+      toast.success("Password reset link sent! Check your email.");
+      setSent(true);
+    } catch (error: any) {
+      // If endpoint doesn't exist, show helpful message
+      if (error.response?.status === 404 || error.response?.status === 501) {
+        toast.info("Password reset feature coming soon. Please contact support for now.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to send reset email");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (sent) {
