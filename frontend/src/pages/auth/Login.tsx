@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,39 @@ import { toast } from "sonner";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loginSuccess, setLoginSuccess] = useState(false);
+
+  // Handle redirect after successful login
+  useEffect(() => {
+    if (loginSuccess && user && isAuthenticated) {
+      const from = (location.state as any)?.from?.pathname;
+      
+      // If there's an intended destination, use it
+      if (from && !from.startsWith("/login") && !from.startsWith("/register")) {
+        navigate(from, { replace: true });
+        return;
+      }
+      
+      // Redirect based on role
+      const roles = user.roles.map((r) => r.name);
+      
+      if (roles.includes("ADMIN")) {
+        navigate("/admin", { replace: true });
+      } else if (roles.includes("CLIENT")) {
+        navigate("/client", { replace: true });
+      } else if (roles.includes("FREELANCER")) {
+        navigate("/freelancer", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+      
+      setLoginSuccess(false);
+    }
+  }, [loginSuccess, user, isAuthenticated, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,12 +49,11 @@ export default function Login() {
     
     try {
       await login(formData.email, formData.password);
-      
-      // Redirect to intended page or dashboard based on role
-      const from = (location.state as any)?.from?.pathname || "/";
-      navigate(from, { replace: true });
+      setLoginSuccess(true);
+      // The useEffect will handle the redirect once user is loaded
     } catch (error) {
       // Error is already handled by auth context
+      setLoginSuccess(false);
     } finally {
       setIsLoading(false);
     }
