@@ -65,7 +65,6 @@ const plans = [
       { text: "Team collaboration", included: true },
       { text: "Advanced analytics", included: true },
       { text: "Bulk hiring tools", included: true },
-      { text: "API access", included: true },
       { text: "Custom contracts", included: true },
       { text: "Dedicated account manager", included: true },
     ],
@@ -82,7 +81,6 @@ const comparisonFeatures = [
   { feature: "Featured Listing", free: "❌", freelancer: "✓", client: "✓" },
   { feature: "AI Tools", free: "❌", freelancer: "✓", client: "✓" },
   { feature: "Priority Support", free: "❌", freelancer: "✓", client: "✓" },
-  { feature: "API Access", free: "❌", freelancer: "❌", client: "✓" },
   { feature: "Service Fee", free: "10%", freelancer: "5%", client: "N/A" },
 ];
 
