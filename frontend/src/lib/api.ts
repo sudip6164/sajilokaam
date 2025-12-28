@@ -347,6 +347,25 @@ export const invoicesApi = {
 
 // Payments API
 export const paymentsApi = {
+  create: async (data: {
+    invoiceId: number;
+    amount: number;
+    paymentMethod: string;
+    paymentReference?: string;
+    status?: string;
+    notes?: string;
+  }) => {
+    const response = await api.post<{
+      id: number;
+      invoiceId: number;
+      amount: number;
+      paymentMethod: string;
+      status: string;
+      createdAt: string;
+    }>("/payments", data);
+    return response.data;
+  },
+
   initiate: async (paymentId: number, gateway: "KHALTI" | "ESEWA", returnUrl?: string, cancelUrl?: string) => {
     const response = await api.post<{
       success: boolean;
@@ -355,8 +374,8 @@ export const paymentsApi = {
       message?: string;
     }>(`/payments/${paymentId}/initiate`, {
       gateway,
-      returnUrl,
-      cancelUrl,
+      returnUrl: returnUrl || `${window.location.origin}/success?type=payment`,
+      cancelUrl: cancelUrl || `${window.location.origin}/failure?type=payment`,
     });
     return response.data;
   },

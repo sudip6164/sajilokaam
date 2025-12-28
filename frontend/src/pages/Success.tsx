@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, ArrowRight, Mail, CreditCard, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { paymentsApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const successTypes = {
   generic: {
@@ -37,12 +39,38 @@ const successTypes = {
 
 const Success = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const type = (searchParams.get("type") as keyof typeof successTypes) || "generic";
+  const transactionId = searchParams.get("transactionId");
+  const invoiceId = searchParams.get("invoiceId");
   const [mounted, setMounted] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Verify payment if transaction ID is present
+    if (type === "payment" && transactionId) {
+      verifyPayment(transactionId);
+    }
+  }, [type, transactionId]);
+
+  const verifyPayment = async (txnId: string) => {
+    try {
+      setVerifying(true);
+      const response = await paymentsApi.verify(txnId);
+      if (response.verified) {
+        toast.success("Payment verified successfully!");
+      } else {
+        toast.error(response.message || "Payment verification failed");
+      }
+    } catch (error) {
+      console.error("Payment verification error:", error);
+      // Don't show error toast as user is already on success page
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const config = successTypes[type] || successTypes.generic;
   const Icon = config.icon;
@@ -74,6 +102,22 @@ const Success = () => {
           >
             {config.message}
           </p>
+
+          {verifying && (
+            <p className="text-sm text-muted-foreground mb-4">
+              Verifying payment...
+            </p>
+          )}
+
+          {type === "payment" && invoiceId && (
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/client/invoices`)}
+              className="mb-4"
+            >
+              View Invoice Details
+            </Button>
+          )}
 
           <div
             className={`space-y-3 transition-all duration-500 delay-400 ${

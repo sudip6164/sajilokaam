@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { invoicesApi } from "@/lib/api";
+import { invoicesApi, paymentsApi } from "@/lib/api";
 import { toast } from "sonner";
 
 const ClientInvoices = () => {
@@ -96,16 +96,51 @@ const ClientInvoices = () => {
     setPaymentDialogOpen(true);
   };
 
-  const processPayment = () => {
-    if (!paymentMethod) {
+  const processPayment = async () => {
+    if (!paymentMethod || !selectedInvoice) {
       toast.error("Please select a payment method to continue.");
       return;
     }
-    // TODO: Implement payment processing
-    toast.success(`Payment initiated for ${selectedInvoice?.invoiceNumber} via ${paymentMethod}.`);
-    setPaymentDialogOpen(false);
-    setPaymentMethod("");
-    loadInvoices();
+
+    try {
+      // Create payment record first
+      const payment = await paymentsApi.create({
+        invoiceId: selectedInvoice.id,
+        amount: selectedInvoice.totalAmount,
+        paymentMethod: paymentMethod.toUpperCase(),
+        status: "PENDING",
+      });
+
+      // Map payment method to gateway
+      const gateway = paymentMethod === "esewa" ? "ESEWA" : paymentMethod === "khalti" ? "KHALTI" : null;
+      
+      if (!gateway) {
+        // For non-gateway methods (bank, card), just mark as pending
+        toast.success("Payment request created. Please complete the payment manually.");
+        setPaymentDialogOpen(false);
+        setPaymentMethod("");
+        loadInvoices();
+        return;
+      }
+
+      // Initiate gateway payment
+      const initiationResponse = await paymentsApi.initiate(
+        payment.id,
+        gateway,
+        `${window.location.origin}/success?type=payment&invoiceId=${selectedInvoice.id}`,
+        `${window.location.origin}/failure?type=payment&invoiceId=${selectedInvoice.id}`
+      );
+
+      if (initiationResponse.success && initiationResponse.paymentUrl) {
+        // Redirect to payment gateway
+        window.location.href = initiationResponse.paymentUrl;
+      } else {
+        toast.error(initiationResponse.message || "Failed to initiate payment");
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to process payment";
+      toast.error(message);
+    }
   };
 
   const filterInvoices = (status: string) => {
@@ -349,8 +384,8 @@ const ClientInvoices = () => {
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="esewa">eSewa</SelectItem>
                   <SelectItem value="khalti">Khalti</SelectItem>
+                  <SelectItem value="esewa">eSewa</SelectItem>
                   <SelectItem value="bank">Bank Transfer</SelectItem>
                   <SelectItem value="card">Credit/Debit Card</SelectItem>
                 </SelectContent>
