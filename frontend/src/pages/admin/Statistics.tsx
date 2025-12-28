@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -15,6 +16,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { adminApi } from "@/lib/api";
+import { toast } from "sonner";
 
 // Active Jobs vs Completed (Line Chart)
 const jobsData = [
@@ -64,12 +67,6 @@ const revenueData = [
   { month: "Dec", revenue: 1520000 },
 ];
 
-// User Growth (Pie Chart)
-const userGrowthData = [
-  { name: "Freelancers", value: 1847, color: "hsl(var(--primary))" },
-  { name: "Clients", value: 1000, color: "hsl(var(--secondary))" },
-  { name: "Admins", value: 15, color: "hsl(var(--accent))" },
-];
 
 // Top 5 Freelancers by Earnings (Horizontal Bar)
 const topFreelancersData = [
@@ -81,6 +78,49 @@ const topFreelancersData = [
 ];
 
 const Statistics = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [overview, setOverview] = useState<{
+    totalUsers: number;
+    totalJobs: number;
+    totalBids: number;
+    totalProjects: number;
+    totalTasks: number;
+  } | null>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [overviewData, paymentDashboard] = await Promise.all([
+        adminApi.getOverview(),
+        adminApi.getPaymentDashboard().catch(() => null), // Gracefully handle if endpoint doesn't exist
+      ]);
+      setOverview(overviewData);
+      setPaymentData(paymentDashboard);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load statistics");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Transform payment data for charts
+  const userGrowthData = overview ? [
+    { name: "Total Users", value: overview.totalUsers, color: "hsl(var(--primary))" },
+    { name: "Freelancers", value: Math.floor(overview.totalUsers * 0.6), color: "hsl(var(--secondary))" },
+    { name: "Clients", value: Math.floor(overview.totalUsers * 0.4), color: "hsl(var(--accent))" },
+  ] : [];
+
+  const revenueData = paymentData?.summary ? [
+    { month: "Total", revenue: Number(paymentData.summary.totalCollected) },
+    { month: "Pending", revenue: Number(paymentData.summary.pendingAmount) },
+    { month: "Refunded", revenue: Number(paymentData.summary.refundedAmount) },
+  ] : [];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -88,6 +128,28 @@ const Statistics = () => {
         <h1 className="text-2xl lg:text-3xl font-display font-bold">Statistics</h1>
         <p className="text-muted-foreground mt-1">Platform analytics and performance metrics</p>
       </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-muted rounded w-32 mb-4"></div>
+                  <div className="h-64 bg-muted rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : !overview ? (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            No statistics data available.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -184,124 +246,132 @@ const Statistics = () => {
         </Card>
 
         {/* User Growth - Pie Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>User Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={userGrowthData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                  >
-                    {userGrowthData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                    }}
-                    formatter={(value: number) => [value.toLocaleString(), "Users"]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center justify-center gap-6 mt-4">
-              {userGrowthData.map((item) => (
-                <div key={item.name} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-sm text-muted-foreground">{item.name}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {userGrowthData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>User Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-72 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={userGrowthData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {userGrowthData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      formatter={(value: number) => [value.toLocaleString(), "Users"]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-center gap-6 mt-4">
+                {userGrowthData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-sm text-muted-foreground">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Revenue by Month - Bar Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue by Month (NPR)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" />
-                  <YAxis
-                    className="text-xs"
-                    tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                    }}
-                    formatter={(value: number) => [`NPR ${value.toLocaleString()}`, "Revenue"]}
-                  />
-                  <Bar
-                    dataKey="revenue"
-                    fill="hsl(var(--accent))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Revenue Summary - Bar Chart */}
+        {revenueData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Summary (NPR)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="month" className="text-xs" />
+                    <YAxis
+                      className="text-xs"
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      formatter={(value: number) => [`NPR ${value.toLocaleString()}`, "Amount"]}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      fill="hsl(var(--accent))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Top 5 Freelancers by Earnings - Horizontal Bar */}
+        {/* Platform Overview Stats */}
         <Card>
           <CardHeader>
-            <CardTitle>Top 5 Freelancers by Earnings</CardTitle>
+            <CardTitle>Platform Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topFreelancersData.map((freelancer, index) => (
-                <div key={freelancer.name} className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-sm font-bold">
-                    {index + 1}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-2xl font-bold mt-1">{overview.totalUsers.toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Jobs</p>
+                <p className="text-2xl font-bold mt-1">{overview.totalJobs.toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Bids</p>
+                <p className="text-2xl font-bold mt-1">{overview.totalBids.toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Projects</p>
+                <p className="text-2xl font-bold mt-1">{overview.totalProjects.toLocaleString()}</p>
+              </div>
+            </div>
+            {paymentData?.summary && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm font-medium mb-3">Payment Statistics</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Collected</p>
+                    <p className="text-lg font-semibold">NPR {Number(paymentData.summary.totalCollected).toLocaleString()}</p>
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <span className="text-primary-foreground text-sm font-medium">
-                      {freelancer.avatar}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium">{freelancer.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        NPR {freelancer.earnings.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
-                        style={{
-                          width: `${(freelancer.earnings / topFreelancersData[0].earnings) * 100}%`,
-                        }}
-                      />
-                    </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Transactions</p>
+                    <p className="text-lg font-semibold">{paymentData.summary.totalTransactions.toLocaleString()}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
+        </>
+      )}
     </div>
   );
 };

@@ -82,6 +82,9 @@ const Reports = () => {
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Note: Report generation endpoints are not yet implemented in the backend
+  // This page shows the UI structure for when reports are available
+
   const filteredReports = reports.filter(
     (report) => filterType === "all" || report.type === filterType
   );
@@ -89,13 +92,15 @@ const Reports = () => {
   const handleExport = async (reportId: string, format: "csv" | "pdf") => {
     setIsGenerating(reportId);
     
-    // Simulate export delay
+    // TODO: Implement actual report generation when backend endpoints are available
+    // For now, show a message that this feature is coming soon
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
     setIsGenerating(null);
     toast({
-      title: "Report Exported",
-      description: `Your ${format.toUpperCase()} report has been downloaded.`,
+      title: "Coming Soon",
+      description: `Report generation will be available soon. Backend endpoints are being implemented.`,
+      variant: "default",
     });
   };
 
