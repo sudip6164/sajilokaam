@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   User,
   Mail,
@@ -11,6 +11,8 @@ import {
   Bell,
   Lock,
   Shield,
+  Loader2,
+  CheckCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,24 +20,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { profileApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const ClientProfile = () => {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-
-  const [profile, setProfile] = useState({
-    companyName: "Ram Corporation Pvt. Ltd.",
-    email: "contact@ramcorp.com.np",
-    phone: "+977 1-4567890",
-    address: "Durbar Marg, Kathmandu",
-    country: "Nepal",
-    website: "https://ramcorp.com.np",
-    description: "Leading IT solutions provider in Nepal with over 10 years of experience in software development and digital transformation.",
-    industry: "Information Technology",
-    companySize: "50-200 employees",
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [editData, setEditData] = useState({
+    companyName: "",
+    companyDescription: "",
+    location: "",
+    phone: "",
+    website: "",
   });
 
   const [notifications, setNotifications] = useState({
@@ -47,14 +51,40 @@ const ClientProfile = () => {
     weeklyDigest: false,
   });
 
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      setIsLoading(true);
+      const data = await profileApi.getClientProfile();
+      setProfile(data);
+      setEditData({
+        companyName: data.companyName || "",
+        companyDescription: data.companyDescription || "",
+        location: data.location || "",
+        phone: data.phone || "",
+        website: data.website || "",
+      });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load profile");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been saved successfully.",
-    });
-    setLoading(false);
+    try {
+      setIsSaving(true);
+      await profileApi.updateClientProfile(editData);
+      await loadProfile();
+      toast.success("Profile updated successfully");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveNotifications = async () => {
@@ -66,6 +96,27 @@ const ClientProfile = () => {
     });
     setLoading(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Failed to load profile</p>
+        <Button onClick={loadProfile} className="mt-4">Retry</Button>
+      </div>
+    );
+  }
+
+  const isVerified = profile.verificationStatus === "APPROVED";
+  const displayName = profile.companyName || user?.fullName || "Client";
+  const displayEmail = user?.email || "";
 
   return (
     <div className="space-y-6">
@@ -104,8 +155,13 @@ const ClientProfile = () => {
                 <div className="relative">
                   <Avatar className="h-24 w-24 ring-4 ring-primary/20">
                     <AvatarImage src="https://i.pravatar.cc/150?img=32" />
-                    <AvatarFallback className="text-2xl">RC</AvatarFallback>
+                    <AvatarFallback className="text-2xl">{displayName.split(' ').map(n => n[0]).join('').toUpperCase()}</AvatarFallback>
                   </Avatar>
+                  {isVerified && (
+                    <div className="absolute -bottom-1 -right-1 bg-secondary text-secondary-foreground rounded-full p-1">
+                      <CheckCircle className="h-6 w-6" />
+                    </div>
+                  )}
                   <Button
                     size="icon"
                     className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
@@ -114,11 +170,26 @@ const ClientProfile = () => {
                   </Button>
                 </div>
                 <div className="text-center sm:text-left">
-                  <h3 className="text-xl font-semibold">{profile.companyName}</h3>
-                  <p className="text-muted-foreground">{profile.email}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Member since December 2023
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-semibold">{displayName}</h3>
+                    {isVerified && (
+                      <Badge className="bg-secondary text-secondary-foreground">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Verified
+                      </Badge>
+                    )}
+                    {profile.verificationStatus === "UNDER_REVIEW" && (
+                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500">
+                        Under Review
+                      </Badge>
+                    )}
+                    {profile.verificationStatus === "REJECTED" && (
+                      <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
+                        Rejected
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground">{displayEmail}</p>
                 </div>
               </div>
             </CardContent>
@@ -138,20 +209,11 @@ const ClientProfile = () => {
                   <Label htmlFor="companyName">Company Name</Label>
                   <Input
                     id="companyName"
-                    value={profile.companyName}
+                    value={editData.companyName}
                     onChange={(e) =>
-                      setProfile({ ...profile, companyName: e.target.value })
+                      setEditData({ ...editData, companyName: e.target.value })
                     }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="industry">Industry</Label>
-                  <Input
-                    id="industry"
-                    value={profile.industry}
-                    onChange={(e) =>
-                      setProfile({ ...profile, industry: e.target.value })
-                    }
+                    placeholder="Your Company Name"
                   />
                 </div>
               </div>
@@ -160,23 +222,25 @@ const ClientProfile = () => {
                 <Label htmlFor="description">Company Description</Label>
                 <Textarea
                   id="description"
-                  value={profile.description}
+                  value={editData.companyDescription}
                   onChange={(e) =>
-                    setProfile({ ...profile, description: e.target.value })
+                    setEditData({ ...editData, companyDescription: e.target.value })
                   }
                   rows={4}
+                  placeholder="Describe your company..."
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companySize">Company Size</Label>
+                  <Label htmlFor="location">Location</Label>
                   <Input
-                    id="companySize"
-                    value={profile.companySize}
+                    id="location"
+                    value={editData.location}
                     onChange={(e) =>
-                      setProfile({ ...profile, companySize: e.target.value })
+                      setEditData({ ...editData, location: e.target.value })
                     }
+                    placeholder="Kathmandu, Nepal"
                   />
                 </div>
                 <div className="space-y-2">
@@ -185,11 +249,12 @@ const ClientProfile = () => {
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="website"
-                      value={profile.website}
+                      value={editData.website}
                       onChange={(e) =>
-                        setProfile({ ...profile, website: e.target.value })
+                        setEditData({ ...editData, website: e.target.value })
                       }
                       className="pl-10"
+                      placeholder="https://example.com"
                     />
                   </div>
                 </div>
@@ -208,70 +273,34 @@ const ClientProfile = () => {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) =>
-                        setProfile({ ...profile, email: e.target.value })
-                      }
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="phone"
-                      value={profile.phone}
+                      value={editData.phone}
                       onChange={(e) =>
-                        setProfile({ ...profile, phone: e.target.value })
+                        setEditData({ ...editData, phone: e.target.value })
                       }
                       className="pl-10"
+                      placeholder="+977 1-4567890"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="address"
-                      value={profile.address}
-                      onChange={(e) =>
-                        setProfile({ ...profile, address: e.target.value })
-                      }
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={profile.country}
-                    onChange={(e) =>
-                      setProfile({ ...profile, country: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <Button onClick={handleSaveProfile} disabled={loading} className="gap-2">
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <Button onClick={handleSaveProfile} disabled={isSaving} className="gap-2">
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Changes
+                  </>
                 )}
-                Save Changes
               </Button>
             </CardContent>
           </Card>

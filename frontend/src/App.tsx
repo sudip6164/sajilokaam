@@ -51,6 +51,8 @@ import AvailableJobs from "@/pages/freelancer/AvailableJobs";
 import MyBids from "@/pages/freelancer/MyBids";
 import MyProjects from "@/pages/freelancer/MyProjects";
 import ProjectDetail from "@/pages/freelancer/ProjectDetail";
+import SprintPlanner from "@/pages/freelancer/SprintPlanner";
+import Teams from "@/pages/freelancer/Teams";
 import Invoices from "@/pages/freelancer/Invoices";
 import Notifications from "@/pages/freelancer/Notifications";
 import Profile from "@/pages/freelancer/Profile";
@@ -130,6 +132,8 @@ const App = () => (
               <Route path="bids" element={<MyBids />} />
               <Route path="projects" element={<MyProjects />} />
               <Route path="projects/:id" element={<ProjectDetail />} />
+              <Route path="projects/:id/sprints" element={<SprintPlanner />} />
+              <Route path="teams" element={<Teams />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<Profile />} />

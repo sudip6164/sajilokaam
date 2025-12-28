@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Bell,
   Briefcase,
@@ -9,7 +9,8 @@ import {
   Clock,
   Trash2,
   Check,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,97 +22,87 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { notificationsApi } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Notification {
   id: number;
-  type: "bid" | "message" | "payment" | "project" | "review";
+  type: string;
   title: string;
-  description: string;
-  time: string;
+  message: string;
   read: boolean;
+  createdAt: string;
+  relatedEntityType?: string;
+  relatedEntityId?: number;
 }
 
-const initialNotifications: Notification[] = [
-  {
-    id: 1,
-    type: "bid",
-    title: "Bid Accepted!",
-    description: "Your bid for 'Mobile App UI Design' has been accepted by FinPay Solutions.",
-    time: "5 minutes ago",
-    read: false,
-  },
-  {
-    id: 2,
-    type: "message",
-    title: "New Message",
-    description: "ABC Corp sent you a message regarding TechStartup Website project.",
-    time: "30 minutes ago",
-    read: false,
-  },
-  {
-    id: 3,
-    type: "payment",
-    title: "Payment Received",
-    description: "You received NPR 25,000 for Design Phase milestone.",
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 4,
-    type: "project",
-    title: "Milestone Due Tomorrow",
-    description: "Development Phase milestone for TechStartup Website is due tomorrow.",
-    time: "4 hours ago",
-    read: true,
-  },
-  {
-    id: 5,
-    type: "review",
-    title: "New Review",
-    description: "ShopNepal left you a 5-star review for E-commerce Platform project.",
-    time: "1 day ago",
-    read: true,
-  },
-  {
-    id: 6,
-    type: "bid",
-    title: "Bid Shortlisted",
-    description: "Your bid for 'API Integration Project' has been shortlisted.",
-    time: "2 days ago",
-    read: true,
-  },
-  {
-    id: 7,
-    type: "message",
-    title: "New Message",
-    description: "Sales Pro is requesting a project update for CRM Dashboard.",
-    time: "3 days ago",
-    read: true,
-  },
-];
-
-const typeConfig = {
-  bid: { icon: Briefcase, color: "text-primary", bgColor: "bg-primary/10" },
-  message: { icon: MessageSquare, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-  payment: { icon: DollarSign, color: "text-secondary", bgColor: "bg-secondary/10" },
-  project: { icon: Clock, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
-  review: { icon: Star, color: "text-accent-foreground", bgColor: "bg-accent/10" },
-};
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const response = await notificationsApi.list();
+      setNotifications(response.content.map((n: any) => ({
+        id: n.id,
+        type: n.type.toLowerCase(),
+        title: n.title,
+        message: n.message,
+        read: n.read,
+        createdAt: n.createdAt,
+        relatedEntityType: n.relatedEntityType,
+        relatedEntityId: n.relatedEntityId,
+      })));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load notifications");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id: number) => {
-    setNotifications(prev => prev.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAsRead = async (id: number) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(prev => prev.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error: any) {
+      toast.error("Failed to mark notification as read");
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      toast.success("All notifications marked as read");
+    } catch (error: any) {
+      toast.error("Failed to mark all as read");
+    }
   };
 
   const deleteNotification = (id: number) => {
@@ -123,6 +114,25 @@ export default function Notifications() {
     if (activeTab === "unread") return !n.read;
     return n.type === activeTab;
   });
+
+  const getTypeConfig = (type: string) => {
+    const typeMap: { [key: string]: { icon: any; color: string; bgColor: string } } = {
+      bid: { icon: Briefcase, color: "text-primary", bgColor: "bg-primary/10" },
+      message: { icon: MessageSquare, color: "text-blue-500", bgColor: "bg-blue-500/10" },
+      payment: { icon: DollarSign, color: "text-secondary", bgColor: "bg-secondary/10" },
+      project: { icon: Clock, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
+      review: { icon: Star, color: "text-accent-foreground", bgColor: "bg-accent/10" },
+    };
+    return typeMap[type] || { icon: Bell, color: "text-muted-foreground", bgColor: "bg-muted" };
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -166,7 +176,7 @@ export default function Notifications() {
                 </div>
               ) : (
                 filteredNotifications.map((notification) => {
-                  const config = typeConfig[notification.type];
+                  const config = getTypeConfig(notification.type);
                   const Icon = config.icon;
                   return (
                     <div 
@@ -185,14 +195,14 @@ export default function Notifications() {
                               {notification.title}
                             </p>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {notification.description}
+                              {notification.message}
                             </p>
                           </div>
                           {!notification.read && (
                             <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">{notification.time}</p>
+                        <p className="text-xs text-muted-foreground mt-2">{formatTime(notification.createdAt)}</p>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

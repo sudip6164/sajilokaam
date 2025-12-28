@@ -17,7 +17,8 @@ import {
   MessageSquare,
   Files,
   Timer,
-  Loader2
+  Loader2,
+  ExternalLink
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,12 +26,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { projectsApi } from "@/lib/api";
+import { projectsApi, conversationsApi, timeTrackingApi, filesApi, tasksApiEnhanced } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 
 interface Task {
   id: number;
@@ -57,15 +60,61 @@ export default function ProjectDetail() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState<any[]>([]);
+  const [conversationId, setConversationId] = useState<number | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [activeTimer, setActiveTimer] = useState<any>(null);
+  const [timeLogs, setTimeLogs] = useState<any[]>([]);
+  const [projectFiles, setProjectFiles] = useState<any[]>([]);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any | null>(null);
+  const [taskComments, setTaskComments] = useState<any[]>([]);
+  const [taskAttachments, setTaskAttachments] = useState<any[]>([]);
+  const [isCommentsDialogOpen, setIsCommentsDialogOpen] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    description: "",
+    milestoneId: "",
+    status: "TODO",
+  });
 
   useEffect(() => {
     if (id) {
       loadProjectData();
+      loadTimeLogs();
+      loadFiles();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (conversationId) {
+      loadMessages();
+      const interval = setInterval(loadMessages, 3000); // Poll every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [conversationId]);
+
+  useEffect(() => {
+    loadActiveTimer();
+    const interval = setInterval(loadActiveTimer, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isTimerRunning && activeTimer) {
+      interval = setInterval(() => {
+        setTimerSeconds(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning, activeTimer]);
 
   const loadProjectData = async () => {
     if (!id) return;
@@ -113,10 +162,116 @@ export default function ProjectDetail() {
       }));
 
       setMilestones(milestonesWithTasks);
+
+      // Load conversation for this project
+      try {
+        const conversations = await conversationsApi.list({ projectId: projectId });
+        if (conversations.length > 0) {
+          setConversationId(conversations[0].id);
+        }
+      } catch (error) {
+        // Conversation might not exist yet
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to load project details");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMessages = async () => {
+    if (!conversationId) return;
+    try {
+      const response = await conversationsApi.getMessages(conversationId);
+      setMessages(response.content);
+    } catch (error: any) {
+      // Silently fail - conversation might not exist
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!conversationId || !chatInput.trim()) return;
+    try {
+      setIsSendingMessage(true);
+      await conversationsApi.sendMessage(conversationId, { content: chatInput });
+      setChatInput("");
+      await loadMessages();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to send message");
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
+  const loadActiveTimer = async () => {
+    try {
+      const timer = await timeTrackingApi.getActiveTimer();
+      if (timer && timer.projectId === projectId) {
+        setActiveTimer(timer);
+        const startTime = new Date(timer.startTime).getTime();
+        const now = Date.now();
+        setTimerSeconds(Math.floor((now - startTime) / 1000));
+        setIsTimerRunning(true);
+      } else {
+        setActiveTimer(null);
+        setIsTimerRunning(false);
+      }
+    } catch (error) {
+      // Timer might not exist
+    }
+  };
+
+  const startTimer = async () => {
+    if (!id) return;
+    try {
+      await timeTrackingApi.startTimer({ projectId: parseInt(id) });
+      await loadActiveTimer();
+      toast.success("Timer started");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to start timer");
+    }
+  };
+
+  const stopTimer = async () => {
+    try {
+      await timeTrackingApi.stopTimer();
+      setIsTimerRunning(false);
+      setTimerSeconds(0);
+      await loadTimeLogs();
+      toast.success("Timer stopped");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to stop timer");
+    }
+  };
+
+  const loadTimeLogs = async () => {
+    if (!id) return;
+    try {
+      const response = await timeTrackingApi.getTimeLogs(parseInt(id));
+      setTimeLogs(response.content);
+    } catch (error: any) {
+      // Silently fail
+    }
+  };
+
+  const loadFiles = async () => {
+    if (!id) return;
+    try {
+      const files = await filesApi.list(parseInt(id));
+      setProjectFiles(files);
+    } catch (error: any) {
+      // Silently fail
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!id) return;
+    try {
+      await filesApi.upload(parseInt(id), file);
+      await loadFiles();
+      toast.success("File uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to upload file");
     }
   };
 
@@ -228,15 +383,7 @@ export default function ProjectDetail() {
               <Button 
                 size="icon" 
                 variant={isTimerRunning ? "destructive" : "default"}
-                onClick={() => {
-                  setIsTimerRunning(!isTimerRunning);
-                  if (!isTimerRunning) {
-                    const interval = setInterval(() => {
-                      setTimerSeconds(s => s + 1);
-                    }, 1000);
-                    // Store interval ID for cleanup
-                  }
-                }}
+                onClick={isTimerRunning ? stopTimer : startTimer}
               >
                 {isTimerRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
@@ -317,10 +464,45 @@ export default function ProjectDetail() {
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Project Milestones & Tasks</h3>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Document
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTaskForm({ title: "", description: "", milestoneId: "", status: "TODO" });
+                  setIsTaskDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Task
               </Button>
+              <label>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file && id) {
+                      try {
+                        setIsGeneratingTasks(true);
+                        const result = await filesApi.processDocument(parseInt(id), file);
+                        toast.success(`Extracted ${result.tasks.length} tasks from document`);
+                        await loadProjectData();
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.message || "Failed to process document");
+                      } finally {
+                        setIsGeneratingTasks(false);
+                      }
+                    }
+                  }}
+                />
+                <Button variant="outline" size="sm" asChild>
+                  <span>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </span>
+                </Button>
+              </label>
               <Button 
                 size="sm" 
                 onClick={handleGenerateTasks}
@@ -367,19 +549,42 @@ export default function ProjectDetail() {
                         <div className="space-y-3">
                           {milestone.tasks.map((task) => (
                             <div key={task.id} className="space-y-2">
-                              <div className="flex items-center gap-3">
-                                <Checkbox 
-                                  checked={task.status === "DONE"}
-                                  onCheckedChange={() => toggleTask(task.id, task.status)}
-                                />
-                                <span className={task.status === "DONE" ? "line-through text-muted-foreground" : ""}>
-                                  {task.title}
-                                </span>
-                                {task.status && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {task.status}
-                                  </Badge>
-                                )}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <Checkbox 
+                                    checked={task.status === "DONE"}
+                                    onCheckedChange={() => toggleTask(task.id, task.status)}
+                                  />
+                                  <span className={task.status === "DONE" ? "line-through text-muted-foreground" : ""}>
+                                    {task.title}
+                                  </span>
+                                  {task.status && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {task.status}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    setSelectedTask(task);
+                                    try {
+                                      const [comments, attachments] = await Promise.all([
+                                        tasksApiEnhanced.getComments(task.id),
+                                        tasksApiEnhanced.getAttachments(task.id),
+                                      ]);
+                                      setTaskComments(comments);
+                                      setTaskAttachments(attachments);
+                                      setIsCommentsDialogOpen(true);
+                                    } catch (error: any) {
+                                      toast.error("Failed to load task details");
+                                    }
+                                  }}
+                                >
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  Comments
+                                </Button>
                               </div>
                               {task.subtasks && task.subtasks.length > 0 && (
                                 <div className="ml-8 space-y-2">
@@ -441,30 +646,71 @@ export default function ProjectDetail() {
                   <AvatarFallback>CL</AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-base">Client</CardTitle>
-                  <p className="text-xs text-muted-foreground">Chat feature coming soon</p>
+                  <CardTitle className="text-base">Project Chat</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    {conversationId ? "Connected" : "No conversation yet"}
+                  </p>
                 </div>
               </div>
             </CardHeader>
             <ScrollArea className="flex-1 p-4">
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <p>Chat functionality will be available soon</p>
-              </div>
+              {messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex gap-3 ${
+                        message.sender.id === user?.id ? "flex-row-reverse" : ""
+                      }`}
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>
+                          {message.sender.fullName.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className={`flex-1 max-w-[70%] ${message.sender.id === user?.id ? "text-right" : ""}`}>
+                        <div
+                          className={`inline-block p-3 rounded-lg ${
+                            message.sender.id === user?.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          }`}
+                        >
+                          <p className="text-sm">{message.content}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(message.createdAt), "MMM dd, h:mm a")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </ScrollArea>
             <div className="p-4 border-t">
               <div className="flex gap-2">
-                <Button variant="ghost" size="icon" disabled>
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Input 
-                  placeholder="Chat feature coming soon..." 
+                <Input
+                  placeholder="Type a message..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
                   className="flex-1"
-                  disabled
+                  disabled={!conversationId || isSendingMessage}
                 />
-                <Button size="icon" disabled>
-                  <Send className="h-4 w-4" />
+                <Button
+                  size="icon"
+                  onClick={sendMessage}
+                  disabled={!conversationId || !chatInput.trim() || isSendingMessage}
+                >
+                  {isSendingMessage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -477,16 +723,61 @@ export default function ProjectDetail() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Shared Files</CardTitle>
-                <Button size="sm" disabled>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload File
-                </Button>
+                <label>
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                  />
+                  <Button size="sm" asChild>
+                    <span>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload File
+                    </span>
+                  </Button>
+                </label>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>File sharing feature coming soon</p>
-              </div>
+              {projectFiles.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Files className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No files uploaded yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {projectFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{file.fileName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Uploaded by {file.uploadedBy.fullName} • {format(new Date(file.createdAt), "MMM dd, yyyy")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(file.fileUrl, "_blank")}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -495,17 +786,328 @@ export default function ProjectDetail() {
         <TabsContent value="time">
           <Card>
             <CardHeader>
-              <CardTitle>Time Tracking Log</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Time Tracking Log</CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted">
+                    <Timer className="h-4 w-4 text-primary" />
+                    <span className="font-mono text-sm font-semibold">{formatTime(timerSeconds)}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={isTimerRunning ? "destructive" : "default"}
+                    onClick={isTimerRunning ? stopTimer : startTimer}
+                  >
+                    {isTimerRunning ? (
+                      <>
+                        <Pause className="h-4 w-4 mr-2" />
+                        Stop
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Start Timer
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Time tracking feature coming soon</p>
-                <p className="text-sm mt-2">Current session: {formatTime(timerSeconds)}</p>
-              </div>
+              {timeLogs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No time logs yet</p>
+                  <p className="text-sm mt-2">Start the timer to track your work hours</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {timeLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="flex items-center justify-between p-4 rounded-lg border"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Clock className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {format(new Date(log.startTime), "MMM dd, yyyy")}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(log.startTime), "h:mm a")} - {format(new Date(log.endTime), "h:mm a")}
+                          </p>
+                          {log.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{log.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{formatTime(log.duration)}</p>
+                        {log.category && (
+                          <Badge variant="outline" className="mt-1">
+                            {log.category.name}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Task Dialog */}
+      <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="taskTitle">Task Title</Label>
+              <Input
+                id="taskTitle"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                placeholder="Enter task title"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="taskDescription">Description</Label>
+              <Textarea
+                id="taskDescription"
+                value={taskForm.description}
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                placeholder="Enter task description"
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="taskMilestone">Milestone (Optional)</Label>
+              <select
+                id="taskMilestone"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={taskForm.milestoneId}
+                onChange={(e) => setTaskForm({ ...taskForm, milestoneId: e.target.value })}
+              >
+                <option value="">No milestone</option>
+                {milestones.map((m) => (
+                  <option key={m.id} value={m.id.toString()}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!id || !taskForm.title) return;
+                try {
+                  await tasksApiEnhanced.create(parseInt(id), {
+                    title: taskForm.title,
+                    description: taskForm.description || undefined,
+                    status: taskForm.status,
+                    milestoneId: taskForm.milestoneId ? parseInt(taskForm.milestoneId) : undefined,
+                  });
+                  await loadProjectData();
+                  setIsTaskDialogOpen(false);
+                  setTaskForm({ title: "", description: "", milestoneId: "", status: "TODO" });
+                  toast.success("Task created successfully");
+                } catch (error: any) {
+                  toast.error(error.response?.data?.message || "Failed to create task");
+                }
+              }}
+              disabled={!taskForm.title}
+            >
+              Create Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Task Comments & Attachments Dialog */}
+      <Dialog open={isCommentsDialogOpen} onOpenChange={setIsCommentsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{selectedTask?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Tabs defaultValue="comments">
+              <TabsList>
+                <TabsTrigger value="comments">Comments ({taskComments.length})</TabsTrigger>
+                <TabsTrigger value="attachments">Attachments ({taskAttachments.length})</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="comments" className="space-y-4 mt-4">
+                <ScrollArea className="h-[300px] pr-4">
+                  {taskComments.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No comments yet</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {taskComments.map((comment) => (
+                        <div key={comment.id} className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback>
+                                {comment.author.fullName.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{comment.author.fullName}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(comment.createdAt), "MMM dd, h:mm a")}
+                            </span>
+                          </div>
+                          <p className="text-sm ml-8">{comment.content}</p>
+                          {comment.attachments && comment.attachments.length > 0 && (
+                            <div className="ml-8 space-y-1">
+                              {comment.attachments.map((att: any) => (
+                                <a
+                                  key={att.id}
+                                  href={att.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-xs text-primary hover:underline"
+                                >
+                                  <Paperclip className="h-3 w-3" />
+                                  {att.fileName}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                <div className="space-y-2 border-t pt-4">
+                  <Textarea
+                    placeholder="Add a comment..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={3}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <label>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file && selectedTask) {
+                            try {
+                              await tasksApiEnhanced.addAttachment(selectedTask.id, file);
+                              const attachments = await tasksApiEnhanced.getAttachments(selectedTask.id);
+                              setTaskAttachments(attachments);
+                              toast.success("Attachment added");
+                            } catch (error: any) {
+                              toast.error("Failed to add attachment");
+                            }
+                          }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild>
+                        <span>
+                          <Paperclip className="h-4 w-4 mr-2" />
+                          Attach File
+                        </span>
+                      </Button>
+                    </label>
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        if (!selectedTask || !newComment.trim()) return;
+                        try {
+                          await tasksApiEnhanced.addComment(selectedTask.id, { content: newComment });
+                          setNewComment("");
+                          const comments = await tasksApiEnhanced.getComments(selectedTask.id);
+                          setTaskComments(comments);
+                          toast.success("Comment added");
+                        } catch (error: any) {
+                          toast.error("Failed to add comment");
+                        }
+                      }}
+                      disabled={!newComment.trim()}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Post Comment
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="attachments" className="mt-4">
+                <ScrollArea className="h-[300px]">
+                  {taskAttachments.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No attachments yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {taskAttachments.map((att) => (
+                        <div
+                          key={att.id}
+                          className="flex items-center justify-between p-3 rounded-lg border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Paperclip className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{att.fileName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Uploaded by {att.uploadedBy.fullName} • {format(new Date(att.createdAt), "MMM dd, yyyy")}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(att.fileUrl, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                <div className="border-t pt-4 mt-4">
+                  <label>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file && selectedTask) {
+                          try {
+                            await tasksApiEnhanced.addAttachment(selectedTask.id, file);
+                            const attachments = await tasksApiEnhanced.getAttachments(selectedTask.id);
+                            setTaskAttachments(attachments);
+                            toast.success("Attachment added");
+                          } catch (error: any) {
+                            toast.error("Failed to add attachment");
+                          }
+                        }
+                      }}
+                    />
+                    <Button variant="outline" className="w-full" asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Attachment
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

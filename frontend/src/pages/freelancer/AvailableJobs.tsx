@@ -337,9 +337,8 @@ export default function AvailableJobs() {
                 placeholder="Describe why you're the best fit for this project..."
                 rows={5}
                 value={bidProposal}
-                onChange={(e) => setBidProposal(e.target.value)}
-                required
-                onChange={(e) => setBidProposal(e.target.value)}
+                  onChange={(e) => setBidProposal(e.target.value)}
+                  required
               />
             </div>
           </div>

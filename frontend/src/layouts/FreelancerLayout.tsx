@@ -12,7 +12,8 @@ import {
   Home,
   LogOut,
   ChevronDown,
-  Search
+  Search,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ const sidebarLinks = [
   { name: "Available Jobs", href: "/freelancer/jobs", icon: Briefcase },
   { name: "My Bids", href: "/freelancer/bids", icon: FileText },
   { name: "My Projects", href: "/freelancer/projects", icon: FolderKanban },
+  { name: "Teams", href: "/freelancer/teams", icon: Users },
   { name: "Invoices", href: "/freelancer/invoices", icon: Receipt },
   { name: "Notifications", href: "/freelancer/notifications", icon: Bell },
   { name: "Profile", href: "/freelancer/profile", icon: User },

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
   CheckCircle,
@@ -10,135 +10,110 @@ import {
   Trash2,
   Check,
   Filter,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { notificationsApi } from "@/lib/api";
+import { toast } from "sonner";
 
-const initialNotifications = [
-  {
-    id: 1,
-    type: "bid",
-    title: "New bid received",
-    message: "Sita Sharma placed a bid of NPR 75,000 on 'E-commerce Website Development'",
-    time: "5 minutes ago",
-    read: false,
-    icon: Briefcase,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
-  {
-    id: 2,
-    type: "message",
-    title: "New message",
-    message: "Ram Karki sent you a message about the project requirements",
-    time: "15 minutes ago",
-    read: false,
-    icon: MessageSquare,
-    color: "text-secondary",
-    bgColor: "bg-secondary/10",
-  },
-  {
-    id: 3,
-    type: "milestone",
-    title: "Milestone completed",
-    message: "Hari Thapa completed 'Final Delivery' milestone for Logo Design Package",
-    time: "1 hour ago",
-    read: false,
-    icon: CheckCircle,
-    color: "text-accent",
-    bgColor: "bg-accent/10",
-  },
-  {
-    id: 4,
-    type: "payment",
-    title: "Payment required",
-    message: "Invoice INV-2024-001 for NPR 12,000 is due in 3 days",
-    time: "2 hours ago",
-    read: true,
-    icon: DollarSign,
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
-  },
-  {
-    id: 5,
-    type: "bid",
-    title: "New bid received",
-    message: "Maya KC placed a bid of NPR 65,000 on 'E-commerce Website Development'",
-    time: "3 hours ago",
-    read: true,
-    icon: Briefcase,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
-  {
-    id: 6,
-    type: "freelancer",
-    title: "Freelancer accepted",
-    message: "Raj Gurung accepted your project invitation for Mobile App Design",
-    time: "5 hours ago",
-    read: true,
-    icon: User,
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
-  },
-  {
-    id: 7,
-    type: "document",
-    title: "Document uploaded",
-    message: "Sita Sharma uploaded project deliverables for Company Portfolio Website",
-    time: "1 day ago",
-    read: true,
-    icon: FileText,
-    color: "text-cyan-500",
-    bgColor: "bg-cyan-500/10",
-  },
-  {
-    id: 8,
-    type: "payment",
-    title: "Payment successful",
-    message: "Your payment of NPR 8,000 to Sita Sharma was successful",
-    time: "2 days ago",
-    read: true,
-    icon: DollarSign,
-    color: "text-secondary",
-    bgColor: "bg-secondary/10",
-  },
-];
+interface Notification {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  icon?: any;
+  color?: string;
+  bgColor?: string;
+}
 
 const ClientNotifications = () => {
-  const { toast } = useToast();
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const response = await notificationsApi.list();
+      setNotifications(response.content.map((n: any) => ({
+        id: n.id,
+        type: n.type.toLowerCase(),
+        title: n.title,
+        message: n.message,
+        read: n.read,
+        createdAt: n.createdAt,
+      })));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load notifications");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsRead = (id: number) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
-    toast({
-      title: "All notifications marked as read",
-    });
+  const getIconConfig = (type: string) => {
+    const iconMap: { [key: string]: { icon: any; color: string; bgColor: string } } = {
+      bid: { icon: Briefcase, color: "text-primary", bgColor: "bg-primary/10" },
+      message: { icon: MessageSquare, color: "text-secondary", bgColor: "bg-secondary/10" },
+      payment: { icon: DollarSign, color: "text-orange-500", bgColor: "bg-orange-500/10" },
+      milestone: { icon: CheckCircle, color: "text-accent", bgColor: "bg-accent/10" },
+      freelancer: { icon: User, color: "text-purple-500", bgColor: "bg-purple-500/10" },
+      document: { icon: FileText, color: "text-cyan-500", bgColor: "bg-cyan-500/10" },
+    };
+    return iconMap[type] || { icon: Bell, color: "text-muted-foreground", bgColor: "bg-muted" };
+  };
+
+  const markAsRead = async (id: number) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (error: any) {
+      toast.error("Failed to mark notification as read");
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      toast.success("All notifications marked as read");
+    } catch (error: any) {
+      toast.error("Failed to mark all as read");
+    }
   };
 
   const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
-    toast({
-      title: "Notification deleted",
-    });
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const clearAll = () => {
     setNotifications([]);
-    toast({
-      title: "All notifications cleared",
-    });
+    toast.success("All notifications cleared");
   };
 
   const filterNotifications = (type: string) => {
@@ -147,8 +122,17 @@ const ClientNotifications = () => {
     return notifications.filter((n) => n.type === type);
   };
 
-  const NotificationItem = ({ notification }: { notification: typeof notifications[0] }) => {
-    const Icon = notification.icon;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const NotificationItem = ({ notification }: { notification: Notification }) => {
+    const config = getIconConfig(notification.type);
+    const Icon = config.icon;
 
     return (
       <div
@@ -157,8 +141,8 @@ const ClientNotifications = () => {
         }`}
         onClick={() => markAsRead(notification.id)}
       >
-        <div className={`p-2 rounded-lg ${notification.bgColor}`}>
-          <Icon className={`h-5 w-5 ${notification.color}`} />
+        <div className={`p-2 rounded-lg ${config.bgColor}`}>
+          <Icon className={`h-5 w-5 ${config.color}`} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -171,7 +155,7 @@ const ClientNotifications = () => {
                 {notification.message}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {notification.time}
+                {formatTime(notification.createdAt)}
               </p>
             </div>
 
