@@ -318,6 +318,86 @@ export const projectsApi = {
     }>(`/projects/accept-bid/${bidId}`, data);
     return response.data;
   },
+
+  // Tasks
+  getTasks: async (projectId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      title: string;
+      description?: string;
+      status: string;
+      priority?: string;
+      dueDate?: string;
+      milestoneId?: number;
+      assigneeId?: number;
+      estimatedHours?: number;
+    }>>(`/projects/${projectId}/tasks`);
+    return response.data;
+  },
+
+  createTask: async (projectId: number, data: {
+    title: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+    dueDate?: string;
+    milestoneId?: number;
+    assigneeId?: number;
+    estimatedHours?: number;
+  }) => {
+    const response = await api.post(`/projects/${projectId}/tasks`, data);
+    return response.data;
+  },
+
+  updateTaskStatus: async (projectId: number, taskId: number, status: string) => {
+    const response = await api.patch(`/projects/${projectId}/tasks/${taskId}/status`, { status });
+    return response.data;
+  },
+
+  // Milestones
+  getMilestones: async (projectId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      title: string;
+      dueDate?: string;
+      status?: string;
+    }>>(`/projects/${projectId}/milestones`);
+    return response.data;
+  },
+
+  // Subtasks
+  getSubtasks: async (taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      taskId: number;
+      title: string;
+      completed: boolean;
+    }>>(`/tasks/${taskId}/subtasks`);
+    return response.data;
+  },
+
+  // Messages (for project chat)
+  getMessages: async (conversationId: number, page: number = 0, size: number = 50) => {
+    const response = await api.get<Array<{
+      id: number;
+      conversationId: number;
+      senderId: number;
+      content: string;
+      createdAt: string;
+    }>>(`/conversations/${conversationId}/messages`, { params: { page, size } });
+    return response.data;
+  },
+
+  sendMessage: async (conversationId: number, data: {
+    content?: string;
+    richContent?: string;
+    attachmentIds?: number[];
+  }) => {
+    const response = await api.post(`/conversations/${conversationId}/messages`, data);
+    return response.data;
+  },
 };
 
 // Invoices API

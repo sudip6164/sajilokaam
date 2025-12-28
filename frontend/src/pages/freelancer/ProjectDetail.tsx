@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { 
   ArrowLeft,
@@ -14,151 +14,134 @@ import {
   Send,
   Paperclip,
   CheckCircle,
-  Circle,
-  MoreHorizontal,
-  Plus,
   MessageSquare,
   Files,
-  Timer
+  Timer,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
+import { projectsApi } from "@/lib/api";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Task {
-  id: string;
+  id: number;
   title: string;
-  completed: boolean;
-  subtasks?: { id: string; title: string; completed: boolean }[];
+  description?: string;
+  status: string;
+  milestoneId?: number;
+  subtasks?: { id: number; title: string; completed: boolean }[];
 }
 
 interface Milestone {
   id: number;
   title: string;
-  amount: string;
-  status: "pending" | "in-progress" | "completed" | "paid";
-  dueDate: string;
+  dueDate?: string;
+  status?: string;
   tasks: Task[];
 }
 
-const projectData = {
-  id: 1,
-  name: "TechStartup Website",
-  client: "ABC Corp",
-  clientAvatar: "https://api.dicebear.com/7.x/initials/svg?seed=ABC",
-  deadline: "Dec 25, 2024",
-  startDate: "Nov 15, 2024",
-  progress: 75,
-  budget: "NPR 95,000",
-  description: "Build a modern, responsive website for a tech startup including landing page, about, services, team, and contact pages with blog functionality.",
-  status: "in-progress",
-};
-
-const initialMilestones: Milestone[] = [
-  {
-    id: 1,
-    title: "Design Phase",
-    amount: "NPR 25,000",
-    status: "completed",
-    dueDate: "Nov 25, 2024",
-    tasks: [
-      { id: "t1", title: "Wireframes", completed: true },
-      { id: "t2", title: "UI Mockups", completed: true },
-      { id: "t3", title: "Design Review", completed: true },
-    ],
-  },
-  {
-    id: 2,
-    title: "Development Phase",
-    amount: "NPR 50,000",
-    status: "in-progress",
-    dueDate: "Dec 15, 2024",
-    tasks: [
-      { 
-        id: "t4", 
-        title: "Homepage Development", 
-        completed: true,
-        subtasks: [
-          { id: "st1", title: "Hero section", completed: true },
-          { id: "st2", title: "Features section", completed: true },
-          { id: "st3", title: "Testimonials", completed: true },
-        ]
-      },
-      { 
-        id: "t5", 
-        title: "Inner Pages", 
-        completed: false,
-        subtasks: [
-          { id: "st4", title: "About page", completed: true },
-          { id: "st5", title: "Services page", completed: false },
-          { id: "st6", title: "Contact page", completed: false },
-        ]
-      },
-      { id: "t6", title: "Blog Integration", completed: false },
-    ],
-  },
-  {
-    id: 3,
-    title: "Testing & Launch",
-    amount: "NPR 20,000",
-    status: "pending",
-    dueDate: "Dec 25, 2024",
-    tasks: [
-      { id: "t7", title: "Cross-browser testing", completed: false },
-      { id: "t8", title: "Performance optimization", completed: false },
-      { id: "t9", title: "Deployment", completed: false },
-    ],
-  },
-];
-
-const chatMessages = [
-  { id: 1, sender: "client", name: "ABC Corp", message: "Hi! How's the progress on the homepage?", time: "10:30 AM" },
-  { id: 2, sender: "freelancer", name: "You", message: "Hello! The homepage is almost done. Just finishing up the testimonials section.", time: "10:35 AM" },
-  { id: 3, sender: "client", name: "ABC Corp", message: "Great! Can you share a preview?", time: "10:36 AM" },
-  { id: 4, sender: "freelancer", name: "You", message: "Sure, I'll send the staging link shortly.", time: "10:38 AM" },
-];
-
-const sharedFiles = [
-  { id: 1, name: "homepage-mockup.fig", size: "2.4 MB", uploadedAt: "Nov 20, 2024", type: "design" },
-  { id: 2, name: "brand-guidelines.pdf", size: "1.2 MB", uploadedAt: "Nov 18, 2024", type: "document" },
-  { id: 3, name: "project-requirements.docx", size: "456 KB", uploadedAt: "Nov 15, 2024", type: "document" },
-];
-
 export default function ProjectDetail() {
   const { id } = useParams();
-  const { toast } = useToast();
-  const [milestones, setMilestones] = useState(initialMilestones);
+  const { user } = useAuth();
+  const [project, setProject] = useState<any>(null);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [chatInput, setChatInput] = useState("");
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
 
-  const toggleTask = (milestoneId: number, taskId: string) => {
-    setMilestones(prev => prev.map(m => {
-      if (m.id === milestoneId) {
-        return {
-          ...m,
-          tasks: m.tasks.map(t => 
-            t.id === taskId ? { ...t, completed: !t.completed } : t
-          )
-        };
-      }
-      return m;
-    }));
+  useEffect(() => {
+    if (id) {
+      loadProjectData();
+    }
+  }, [id]);
+
+  const loadProjectData = async () => {
+    if (!id) return;
+    try {
+      setIsLoading(true);
+      const projectId = parseInt(id);
+      
+      // Load project, milestones, and tasks in parallel
+      const [projectData, milestonesData, tasksData] = await Promise.all([
+        projectsApi.get(projectId),
+        projectsApi.getMilestones(projectId),
+        projectsApi.getTasks(projectId),
+      ]);
+
+      setProject(projectData);
+
+      // Load subtasks for each task
+      const tasksWithSubtasks = await Promise.all(
+        tasksData.map(async (task) => {
+          try {
+            const subtasks = await projectsApi.getSubtasks(task.id);
+            return {
+              ...task,
+              subtasks: subtasks.map((st: any) => ({
+                id: st.id,
+                title: st.title,
+                completed: st.completed || false,
+              })),
+            };
+          } catch {
+            return { ...task, subtasks: [] };
+          }
+        })
+      );
+
+      setTasks(tasksWithSubtasks);
+
+      // Group tasks by milestone
+      const milestonesWithTasks = milestonesData.map((milestone: any) => ({
+        id: milestone.id,
+        title: milestone.title,
+        dueDate: milestone.dueDate,
+        status: milestone.status || "pending",
+        tasks: tasksWithSubtasks.filter((t) => t.milestoneId === milestone.id),
+      }));
+
+      setMilestones(milestonesWithTasks);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to load project details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleTask = async (taskId: number, currentStatus: string) => {
+    if (!id) return;
+    try {
+      const newStatus = currentStatus === "DONE" ? "TODO" : "DONE";
+      await projectsApi.updateTaskStatus(parseInt(id), taskId, newStatus);
+      
+      // Update local state
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? { ...t, status: newStatus } : t
+      ));
+      
+      setMilestones(prev => prev.map(m => ({
+        ...m,
+        tasks: m.tasks.map(t => 
+          t.id === taskId ? { ...t, status: newStatus } : t
+        )
+      })));
+      
+      toast.success("Task updated");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update task");
+    }
   };
 
   const handleGenerateTasks = () => {
@@ -179,12 +162,45 @@ export default function ProjectDetail() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     pending: "bg-muted text-muted-foreground",
     "in-progress": "bg-primary/10 text-primary",
     completed: "bg-secondary/10 text-secondary",
     paid: "bg-accent/10 text-accent-foreground",
+    TODO: "bg-muted text-muted-foreground",
+    IN_PROGRESS: "bg-primary/10 text-primary",
+    DONE: "bg-secondary/10 text-secondary",
   };
+
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return "N/A";
+    return `NPR ${amount.toLocaleString()}`;
+  };
+
+  const calculateProgress = () => {
+    if (tasks.length === 0) return 0;
+    const completedTasks = tasks.filter(t => t.status === "DONE").length;
+    return Math.round((completedTasks / tasks.length) * 100);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Project not found</p>
+        <Link to="/freelancer/projects" className="text-primary hover:underline mt-4 inline-block">
+          Back to Projects
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -200,8 +216,8 @@ export default function ProjectDetail() {
         
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{projectData.name}</h1>
-            <p className="text-muted-foreground mt-1">{projectData.description}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{project.title}</h1>
+            <p className="text-muted-foreground mt-1">{project.description || "No description provided"}</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -239,7 +255,7 @@ export default function ProjectDetail() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Client</p>
-                <p className="font-medium">{projectData.client}</p>
+                <p className="font-medium">Client ID: {project.clientId}</p>
               </div>
             </div>
           </CardContent>
@@ -252,7 +268,7 @@ export default function ProjectDetail() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Budget</p>
-                <p className="font-medium">{projectData.budget}</p>
+                <p className="font-medium">{formatCurrency(project.budget)}</p>
               </div>
             </div>
           </CardContent>
@@ -265,7 +281,9 @@ export default function ProjectDetail() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Deadline</p>
-                <p className="font-medium">{projectData.deadline}</p>
+                <p className="font-medium">
+                  {project.deadline ? new Date(project.deadline).toLocaleDateString() : "Not set"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -278,7 +296,7 @@ export default function ProjectDetail() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Progress</p>
-                <p className="font-medium">{projectData.progress}%</p>
+                <p className="font-medium">{calculateProgress()}%</p>
               </div>
             </div>
           </CardContent>
@@ -314,55 +332,104 @@ export default function ProjectDetail() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            {milestones.map((milestone) => (
-              <Card key={milestone.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{milestone.title}</CardTitle>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                        <span className="font-medium text-secondary">{milestone.amount}</span>
-                        <span>Due: {milestone.dueDate}</span>
-                      </div>
-                    </div>
-                    <Badge className={statusColors[milestone.status]}>
-                      {milestone.status.replace("-", " ")}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {milestone.tasks.map((task) => (
-                      <div key={task.id} className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={task.completed}
-                            onCheckedChange={() => toggleTask(milestone.id, task.id)}
-                          />
-                          <span className={task.completed ? "line-through text-muted-foreground" : ""}>
-                            {task.title}
-                          </span>
+          {milestones.length === 0 && tasks.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center text-muted-foreground">
+                No milestones or tasks yet. Start by creating a milestone.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {milestones.length > 0 ? (
+                milestones.map((milestone) => (
+                  <Card key={milestone.id}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{milestone.title}</CardTitle>
+                          {milestone.dueDate && (
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                              <span>Due: {new Date(milestone.dueDate).toLocaleDateString()}</span>
+                            </div>
+                          )}
                         </div>
-                        {task.subtasks && (
-                          <div className="ml-8 space-y-2">
-                            {task.subtasks.map((subtask) => (
-                              <div key={subtask.id} className="flex items-center gap-3">
-                                <Checkbox checked={subtask.completed} />
-                                <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
-                                  {subtask.title}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                        {milestone.status && (
+                          <Badge className={statusColors[milestone.status] || statusColors.pending}>
+                            {milestone.status.replace("_", " ")}
+                          </Badge>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </CardHeader>
+                    <CardContent>
+                      {milestone.tasks.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No tasks in this milestone</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {milestone.tasks.map((task) => (
+                            <div key={task.id} className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <Checkbox 
+                                  checked={task.status === "DONE"}
+                                  onCheckedChange={() => toggleTask(task.id, task.status)}
+                                />
+                                <span className={task.status === "DONE" ? "line-through text-muted-foreground" : ""}>
+                                  {task.title}
+                                </span>
+                                {task.status && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {task.status}
+                                  </Badge>
+                                )}
+                              </div>
+                              {task.subtasks && task.subtasks.length > 0 && (
+                                <div className="ml-8 space-y-2">
+                                  {task.subtasks.map((subtask) => (
+                                    <div key={subtask.id} className="flex items-center gap-3">
+                                      <Checkbox checked={subtask.completed} disabled />
+                                      <span className={`text-sm ${subtask.completed ? "line-through text-muted-foreground" : ""}`}>
+                                        {subtask.title}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                // Show tasks without milestones
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Tasks</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {tasks.map((task) => (
+                        <div key={task.id} className="flex items-center gap-3">
+                          <Checkbox 
+                            checked={task.status === "DONE"}
+                            onCheckedChange={() => toggleTask(task.id, task.status)}
+                          />
+                          <span className={task.status === "DONE" ? "line-through text-muted-foreground" : ""}>
+                            {task.title}
+                          </span>
+                          {task.status && (
+                            <Badge variant="outline" className="text-xs">
+                              {task.status}
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         {/* Chat Tab */}
@@ -371,50 +438,32 @@ export default function ProjectDetail() {
             <CardHeader className="border-b">
               <div className="flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={projectData.clientAvatar} />
-                  <AvatarFallback>AC</AvatarFallback>
+                  <AvatarFallback>CL</AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-base">{projectData.client}</CardTitle>
-                  <p className="text-xs text-muted-foreground">Online</p>
+                  <CardTitle className="text-base">Client</CardTitle>
+                  <p className="text-xs text-muted-foreground">Chat feature coming soon</p>
                 </div>
               </div>
             </CardHeader>
             <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {chatMessages.map((msg) => (
-                  <div 
-                    key={msg.id} 
-                    className={`flex ${msg.sender === "freelancer" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                      msg.sender === "freelancer" 
-                        ? "bg-primary text-primary-foreground" 
-                        : "bg-muted"
-                    }`}>
-                      <p className="text-sm">{msg.message}</p>
-                      <p className={`text-xs mt-1 ${
-                        msg.sender === "freelancer" ? "text-primary-foreground/70" : "text-muted-foreground"
-                      }`}>
-                        {msg.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <p>Chat functionality will be available soon</p>
               </div>
             </ScrollArea>
             <div className="p-4 border-t">
               <div className="flex gap-2">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled>
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <Input 
-                  placeholder="Type a message..." 
+                  placeholder="Chat feature coming soon..." 
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   className="flex-1"
+                  disabled
                 />
-                <Button size="icon">
+                <Button size="icon" disabled>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
@@ -428,33 +477,15 @@ export default function ProjectDetail() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Shared Files</CardTitle>
-                <Button size="sm">
+                <Button size="sm" disabled>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload File
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {sharedFiles.map((file) => (
-                  <div 
-                    key={file.id} 
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <FileText className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{file.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {file.size} • Uploaded {file.uploadedAt}
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">Download</Button>
-                  </div>
-                ))}
+              <div className="text-center py-8 text-muted-foreground">
+                <p>File sharing feature coming soon</p>
               </div>
             </CardContent>
           </Card>
@@ -467,28 +498,9 @@ export default function ProjectDetail() {
               <CardTitle>Time Tracking Log</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { date: "Dec 18, 2024", task: "Services page development", duration: "3h 45m" },
-                  { date: "Dec 17, 2024", task: "About page styling", duration: "2h 30m" },
-                  { date: "Dec 16, 2024", task: "Homepage testimonials", duration: "4h 15m" },
-                  { date: "Dec 15, 2024", task: "Hero section animations", duration: "2h 00m" },
-                ].map((log, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                  >
-                    <div>
-                      <p className="font-medium">{log.task}</p>
-                      <p className="text-sm text-muted-foreground">{log.date}</p>
-                    </div>
-                    <Badge variant="outline">{log.duration}</Badge>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                <span className="font-medium">Total Time</span>
-                <span className="text-lg font-bold text-primary">12h 30m</span>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Time tracking feature coming soon</p>
+                <p className="text-sm mt-2">Current session: {formatTime(timerSeconds)}</p>
               </div>
             </CardContent>
           </Card>
