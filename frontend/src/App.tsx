@@ -116,8 +116,15 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
-            {/* Freelancer Routes */}
-            <Route path="/freelancer" element={<FreelancerLayout />}>
+            {/* Freelancer Routes - Protected */}
+            <Route 
+              path="/freelancer" 
+              element={
+                <ProtectedRoute allowedRoles={["FREELANCER"]}>
+                  <FreelancerLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<FreelancerDashboard />} />
               <Route path="jobs" element={<AvailableJobs />} />
               <Route path="bids" element={<MyBids />} />
@@ -128,8 +135,15 @@ const App = () => (
               <Route path="profile" element={<Profile />} />
             </Route>
 
-            {/* Client Routes */}
-            <Route path="/client" element={<ClientLayout />}>
+            {/* Client Routes - Protected */}
+            <Route 
+              path="/client" 
+              element={
+                <ProtectedRoute allowedRoles={["CLIENT"]}>
+                  <ClientLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<ClientDashboard />} />
               <Route path="post-job" element={<PostJob />} />
               <Route path="jobs" element={<MyJobs />} />

@@ -44,6 +44,8 @@ export default function AvailableJobs() {
   const [category, setCategory] = useState("All Categories");
   const [budgetRange, setBudgetRange] = useState("Any Budget");
   const [duration, setDuration] = useState("Any Duration");
+  
+  const categories = ["All Categories", "Web Development", "Mobile Development", "Design", "Writing", "Marketing", "Other"];
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [bidAmount, setBidAmount] = useState("");

@@ -28,16 +28,23 @@ export default function Login() {
         return;
       }
       
-      // Redirect based on role
+      // Redirect based on selected login type and user roles
       const roles = user.roles.map((r) => r.name);
       
-      if (roles.includes("ADMIN")) {
-        navigate("/admin", { replace: true });
-      } else if (roles.includes("CLIENT")) {
-        navigate("/client", { replace: true });
-      } else if (roles.includes("FREELANCER")) {
+      // Check if user has the selected role
+      if (loginType === "freelancer" && roles.includes("FREELANCER")) {
         navigate("/freelancer", { replace: true });
+      } else if (loginType === "client" && roles.includes("CLIENT")) {
+        navigate("/client", { replace: true });
+      } else if (roles.includes("ADMIN")) {
+        navigate("/admin", { replace: true });
+      } else if (roles.includes("FREELANCER") && loginType === "freelancer") {
+        navigate("/freelancer", { replace: true });
+      } else if (roles.includes("CLIENT") && loginType === "client") {
+        navigate("/client", { replace: true });
       } else {
+        // User doesn't have the selected role
+        toast.error(`You don't have ${loginType === "freelancer" ? "freelancer" : "client"} access. Please select the correct role or contact support.`);
         navigate("/", { replace: true });
       }
       
