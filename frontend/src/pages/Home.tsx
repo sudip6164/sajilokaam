@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   ArrowRight, 
@@ -11,10 +12,19 @@ import {
   TrendingUp,
   Award,
   MessageSquare,
-  DollarSign
+  DollarSign,
+  Search,
+  Building2,
+  UserCheck,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { jobsApi } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const features = [
   {
@@ -114,6 +124,36 @@ const stats = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [featuredJobs, setFeaturedJobs] = useState<any[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+
+  useEffect(() => {
+    loadFeaturedJobs();
+  }, []);
+
+  const loadFeaturedJobs = async () => {
+    try {
+      setIsLoadingJobs(true);
+      const jobs = await jobsApi.list({ status: "OPEN" });
+      // Get first 6 jobs
+      setFeaturedJobs(jobs.slice(0, 6));
+    } catch (error) {
+      // Silently fail - homepage should work even if jobs fail to load
+    } finally {
+      setIsLoadingJobs(false);
+    }
+  };
+
+  const formatCurrency = (min?: number, max?: number) => {
+    if (min && max) {
+      return `NPR ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    }
+    if (min) return `NPR ${min.toLocaleString()}+`;
+    if (max) return `Up to NPR ${max.toLocaleString()}`;
+    return "Negotiable";
+  };
+
   return (
     <div className="overflow-hidden">
       {/* Hero Section */}
@@ -133,48 +173,170 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              Nepal's #1 Freelance Platform for ICT
+              Nepal's #1 Freelancing Marketplace
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-slide-up">
-              Empowering Nepal's 
+              Hire Freelancers or 
               <span className="block mt-2">
-                <span className="text-primary">Digital</span>{" "}
-                <span className="text-secondary">Workforce</span>
+                <span className="text-primary">Find Work</span>{" "}
+                <span className="text-secondary">in Nepal</span>
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              Connect with top freelance talent or find your next opportunity. 
-              Sajilo Kaam makes freelancing simple, secure, and successful for everyone.
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-slide-up" style={{ animationDelay: "0.1s" }}>
+              Connect with skilled Nepali freelancers or discover your next opportunity. 
+              Post projects, browse jobs, and get work done securely.
             </p>
 
+            {/* Search Bar */}
+            <div className="max-w-2xl mx-auto mb-8 animate-slide-up" style={{ animationDelay: "0.15s" }}>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs by title, skills, or keywords..."
+                  className="pl-12 pr-4 h-14 text-base"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      const query = (e.target as HTMLInputElement).value;
+                      if (query.trim()) {
+                        window.location.href = `/jobs?search=${encodeURIComponent(query)}`;
+                      } else {
+                        window.location.href = "/jobs";
+                      }
+                    }
+                  }}
+                />
+                <Button 
+                  size="lg" 
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    const query = input?.value || "";
+                    if (query.trim()) {
+                      window.location.href = `/jobs?search=${encodeURIComponent(query)}`;
+                    } else {
+                      window.location.href = "/jobs";
+                    }
+                  }}
+                >
+                  Search
+                </Button>
+              </div>
+            </div>
+
+            {/* Dual CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <Button size="xl" variant="hero" asChild>
-                <Link to="/register">
-                  Get Started Free
-                  <ArrowRight className="w-5 h-5" />
+              <Button size="xl" variant="hero" asChild className="gap-2">
+                <Link to="/register?role=client">
+                  <Building2 className="w-5 h-5" />
+                  Post a Job
                 </Link>
               </Button>
-              <Button size="xl" variant="outline" asChild>
-                <Link to="/about">
-                  Learn More
+              <Button size="xl" variant="outline" asChild className="gap-2">
+                <Link to="/register?role=freelancer">
+                  <Briefcase className="w-5 h-5" />
+                  Find Work
+                </Link>
+              </Button>
+              <Button size="xl" variant="ghost" asChild>
+                <Link to="/jobs">
+                  Browse Jobs
+                  <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
             </div>
 
             {/* Trust badges */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 pt-8 border-t border-border/50 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center px-4">
-                  <p className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+            <div className="mt-12 pt-8 border-t border-border/50 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+              <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
+                {stats.map((stat, index) => (
+                  <div key={index} className="text-center px-4">
+                    <p className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/10 text-secondary">
+                  <UserCheck className="h-4 w-4" />
+                  <span>KYC Verified Users</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+                  <Lock className="h-4 w-4" />
+                  <span>Secure Payments</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent-foreground">
+                  <Shield className="h-4 w-4" />
+                  <span>Escrow Protection</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Featured Jobs Preview */}
+      {featuredJobs.length > 0 && (
+        <section className="py-20">
+          <div className="container">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+                  Latest Job Opportunities
+                </h2>
+                <p className="text-muted-foreground">
+                  Browse recent projects posted by clients
+                </p>
+              </div>
+              <Button variant="outline" asChild>
+                <Link to="/jobs">
+                  View All Jobs
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredJobs.map((job) => (
+                <Link key={job.id} to={`/jobs/${job.id}`}>
+                  <Card hover className="h-full transition-all hover:shadow-lg">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <h3 className="font-semibold text-lg line-clamp-2 flex-1">{job.title}</h3>
+                        <Badge variant="secondary" className="ml-2 shrink-0">{job.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                        {job.description || "No description provided"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        {(job.budgetMin || job.budgetMax) && (
+                          <div className="flex items-center gap-1 text-secondary font-medium">
+                            <DollarSign className="h-4 w-4" />
+                            <span>{formatCurrency(job.budgetMin, job.budgetMax)}</span>
+                          </div>
+                        )}
+                        {job.expiresAt && (
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <span>Due: {new Date(job.expiresAt).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-4 pt-4 border-t">
+                        <Button variant="ghost" size="sm" className="w-full">
+                          View Details
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features Section */}
       <section className="py-20 bg-muted/30">
