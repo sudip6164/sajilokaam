@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { jobsApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const categories = [
   "Web Development",
@@ -53,11 +54,18 @@ const skillSuggestions = [
 
 const PostJob = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    budgetType: "",
+    budget: "",
+    deadline: "",
+  });
 
   const handleAddSkill = (skill: string) => {
     if (skill && !skills.includes(skill) && skills.length < 10) {
@@ -85,16 +93,26 @@ const PostJob = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const jobData = {
+        title: formData.title,
+        description: formData.description,
+        budget: formData.budget ? Number(formData.budget) : undefined,
+        budgetType: formData.budgetType === "hourly" ? "HOURLY" : "FIXED" as "FIXED" | "HOURLY",
+        deadline: formData.deadline || undefined,
+        categoryId: formData.category ? Number(formData.category) : undefined,
+        skillIds: [], // TODO: Map skills to skill IDs
+      };
 
-    toast({
-      title: "Job Posted Successfully!",
-      description: "Your job is now live and freelancers can start bidding.",
-    });
-
-    setLoading(false);
-    navigate("/client/jobs");
+      await jobsApi.create(jobData);
+      toast.success("Job posted successfully!");
+      navigate("/client/jobs");
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Failed to post job";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -121,13 +139,19 @@ const PostJob = () => {
               <Input
                 id="title"
                 placeholder="e.g., Build a responsive e-commerce website"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Category *</Label>
-              <Select required>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                required
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -147,6 +171,8 @@ const PostJob = () => {
                 id="description"
                 placeholder="Describe your project in detail. Include requirements, expectations, and any specific technologies needed..."
                 rows={6}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 required
               />
             </div>
@@ -237,7 +263,11 @@ const PostJob = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="budgetType">Budget Type *</Label>
-                <Select required>
+                <Select
+                  value={formData.budgetType}
+                  onValueChange={(value) => setFormData({ ...formData, budgetType: value })}
+                  required
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select budget type" />
                   </SelectTrigger>
@@ -254,6 +284,8 @@ const PostJob = () => {
                   id="budget"
                   type="number"
                   placeholder="e.g., 50000"
+                  value={formData.budget}
+                  onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                   required
                 />
               </div>
@@ -262,7 +294,13 @@ const PostJob = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="deadline">Deadline *</Label>
-                <Input id="deadline" type="date" required />
+                <Input
+                  id="deadline"
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
