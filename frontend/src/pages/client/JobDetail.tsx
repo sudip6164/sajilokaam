@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { jobsApi, projectsApi, api } from "@/lib/api";
+import api, { jobsApi, projectsApi } from "@/lib/api";
 import { toast } from "sonner";
 
 const JobDetail = () => {
