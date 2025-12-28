@@ -74,7 +74,18 @@ const VerificationQueue = () => {
       }));
       setRequests(transformed);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to load verification requests");
+      // Handle 401/403 errors gracefully
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        // User is not authenticated or doesn't have admin access
+        // The error interceptor will handle redirect, just show a message
+        if (error.response?.status === 401) {
+          toast.error("Please login to access this page");
+        } else {
+          toast.error("Access denied. Admin privileges required.");
+        }
+      } else {
+        toast.error(error.response?.data?.message || "Failed to load verification requests");
+      }
     } finally {
       setIsLoading(false);
     }

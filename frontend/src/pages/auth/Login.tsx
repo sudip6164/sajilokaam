@@ -13,7 +13,7 @@ export default function Login() {
   const { login, user, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loginType, setLoginType] = useState<"freelancer" | "client" | "both">("both");
+  const [loginType, setLoginType] = useState<"freelancer" | "client" | "both">("freelancer");
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loginSuccess, setLoginSuccess] = useState(false);
 
