@@ -508,6 +508,49 @@ export const adminApi = {
     return response.data;
   },
 
+  getPaymentDashboard: async () => {
+    const response = await api.get<{
+      summary: {
+        totalCollected: number;
+        pendingAmount: number;
+        refundedAmount: number;
+        averageTicketSize: number;
+        totalTransactions: number;
+      };
+      gateways: Array<{
+        gateway: string;
+        count: number;
+        totalAmount: number;
+      }>;
+      statuses: Array<{
+        status: string;
+        count: number;
+      }>;
+      recentPayments: Array<{
+        id: number;
+        amount: number;
+        status: string;
+        gateway: string;
+        invoiceNumber?: string;
+        clientName?: string;
+        freelancerName?: string;
+        createdAt: string;
+      }>;
+      disputes: {
+        total: number;
+        open: number;
+        resolved: number;
+      };
+      recentDisputes: Array<{
+        id: number;
+        amount: number;
+        status: string;
+        createdAt: string;
+      }>;
+    }>("/admin/payments/dashboard");
+    return response.data;
+  },
+
   // Users
   getUsers: async (page: number = 0, size: number = 20) => {
     const response = await api.get<{
