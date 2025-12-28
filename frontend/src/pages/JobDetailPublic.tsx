@@ -40,16 +40,23 @@ export default function JobDetailPublic() {
   const loadBids = async () => {
     if (!id) return;
     try {
-      const data = await bidsApi.list({ jobId: Number(id) });
+      // Try to get bid count from the job endpoint or bids endpoint
+      // For public viewing, we might only show count, not details
+      const data = await bidsApi.listByJob(Number(id));
       setBids(data);
     } catch (error) {
-      // Silently fail - bids might not be accessible
+      // Silently fail - bids might not be accessible for public users
+      // This is expected behavior
     }
   };
 
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return "Negotiable";
-    return `NPR ${amount.toLocaleString()}`;
+  const formatCurrency = (min?: number, max?: number) => {
+    if (min && max) {
+      return `NPR ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    }
+    if (min) return `NPR ${min.toLocaleString()}+`;
+    if (max) return `Up to NPR ${max.toLocaleString()}`;
+    return "Negotiable";
   };
 
   if (isLoading) {
@@ -96,16 +103,16 @@ export default function JobDetailPublic() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-4">
-            {job.budget && (
+            {(job.budgetMin || job.budgetMax) && (
               <div className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">{formatCurrency(job.budget)}</span>
+                <span className="font-medium">{formatCurrency(job.budgetMin, job.budgetMax)}</span>
               </div>
             )}
-            {job.deadline && (
+            {job.expiresAt && (
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span>Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
+                <span>Deadline: {new Date(job.expiresAt).toLocaleDateString()}</span>
               </div>
             )}
             <Badge variant="secondary">{job.status}</Badge>

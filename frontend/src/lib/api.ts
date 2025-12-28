@@ -12,7 +12,7 @@ const api: AxiosInstance = axios.create({
 // Request interceptor - Add JWT token to requests
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("jwt_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,13 +33,17 @@ api.interceptors.response.use(
 
       // Handle 401 - Unauthorized
       if (status === 401) {
-        localStorage.removeItem("token");
-        // Only redirect if not already on login/register page
+        localStorage.removeItem("jwt_token");
+        // Only redirect if not already on login/register page and not on public pages
         if (!window.location.pathname.includes("/login") && 
-            !window.location.pathname.includes("/register")) {
+            !window.location.pathname.includes("/register") &&
+            !window.location.pathname.startsWith("/jobs")) {
           window.location.href = "/login";
         }
-        toast.error("Session expired. Please login again.");
+        // Don't show error toast for public pages
+        if (!window.location.pathname.startsWith("/jobs")) {
+          toast.error("Session expired. Please login again.");
+        }
       } else if (status === 403) {
         toast.error("Access denied. You don't have permission.");
       } else if (status === 404) {

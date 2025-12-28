@@ -36,9 +36,13 @@ export default function Jobs() {
     job.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return "Negotiable";
-    return `NPR ${amount.toLocaleString()}`;
+  const formatCurrency = (min?: number, max?: number) => {
+    if (min && max) {
+      return `NPR ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    }
+    if (min) return `NPR ${min.toLocaleString()}+`;
+    if (max) return `Up to NPR ${max.toLocaleString()}`;
+    return "Negotiable";
   };
 
   if (isLoading) {
@@ -97,16 +101,16 @@ export default function Jobs() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  {job.budget && (
+                  {(job.budgetMin || job.budgetMax) && (
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4" />
-                      <span>{formatCurrency(job.budget)}</span>
+                      <span>{formatCurrency(job.budgetMin, job.budgetMax)}</span>
                     </div>
                   )}
-                  {job.deadline && (
+                  {job.expiresAt && (
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      <span>Due: {new Date(job.deadline).toLocaleDateString()}</span>
+                      <span>Due: {new Date(job.expiresAt).toLocaleDateString()}</span>
                     </div>
                   )}
                   <Badge variant="secondary">{job.status}</Badge>
