@@ -198,6 +198,20 @@ export const bidsApi = {
     return response.data;
   },
 
+  listByJob: async (jobId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      jobId: number;
+      freelancerId: number;
+      amount: number;
+      message?: string;
+      proposal?: string;
+      status: string;
+      createdAt: string;
+    }>>(`/jobs/${jobId}/bids`);
+    return response.data;
+  },
+
   get: async (id: number) => {
     const response = await api.get<{
       id: number;
@@ -271,6 +285,22 @@ export const projectsApi = {
       deadline?: string;
       createdAt: string;
     }>(`/projects/${id}`);
+    return response.data;
+  },
+
+  acceptBid: async (bidId: number, data: { title: string; description?: string }) => {
+    const response = await api.post<{
+      id: number;
+      jobId: number;
+      clientId: number;
+      freelancerId: number;
+      title: string;
+      description: string;
+      status: string;
+      budget: number;
+      deadline?: string;
+      createdAt: string;
+    }>(`/projects/accept-bid/${bidId}`, data);
     return response.data;
   },
 };

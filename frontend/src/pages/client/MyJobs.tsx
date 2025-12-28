@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Briefcase,
@@ -35,8 +35,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-const jobs = [
+import { useAuth } from "@/contexts/AuthContext";
+import { jobsApi, bidsApi } from "@/lib/api";
+import { toast } from "sonner";
   {
     id: 1,
     title: "E-commerce Website Development",
@@ -108,19 +109,72 @@ const jobs = [
 ];
 
 const MyJobs = () => {
+  const { user } = useAuth();
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (user) {
+      loadJobs();
+    }
+  }, [user]);
+
+  const loadJobs = async () => {
+    if (!user) return;
+    try {
+      setIsLoading(true);
+      const jobsData = await jobsApi.list({ clientId: user.id });
+      
+      // Fetch bid counts for each job
+      const jobsWithBids = await Promise.all(
+        jobsData.map(async (job: any) => {
+          try {
+            const bids = await bidsApi.list({ jobId: job.id });
+            return { ...job, bidCount: bids.length };
+          } catch {
+            return { ...job, bidCount: 0 };
+          }
+        })
+      );
+      
+      setJobs(jobsWithBids);
+    } catch (error) {
+      toast.error("Failed to load jobs");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedJob) return;
+    
+    try {
+      await jobsApi.delete(selectedJob);
+      toast.success("Job deleted successfully");
+      setDeleteDialogOpen(false);
+      setSelectedJob(null);
+      loadJobs();
+    } catch (error) {
+      toast.error("Failed to delete job");
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const statusLower = status?.toLowerCase() || "";
+    switch (statusLower) {
+      case "open":
       case "active":
         return "bg-secondary/10 text-secondary border-secondary/20";
+      case "in_progress":
       case "in-progress":
         return "bg-primary/10 text-primary border-primary/20";
       case "completed":
         return "bg-accent/10 text-accent-foreground border-accent/20";
       case "cancelled":
+      case "closed":
         return "bg-destructive/10 text-destructive border-destructive/20";
       default:
         return "bg-muted text-muted-foreground";
@@ -128,14 +182,18 @@ const MyJobs = () => {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    const statusLower = status?.toLowerCase() || "";
+    switch (statusLower) {
+      case "open":
       case "active":
         return <Clock className="h-3 w-3" />;
+      case "in_progress":
       case "in-progress":
         return <Users className="h-3 w-3" />;
       case "completed":
         return <CheckCircle className="h-3 w-3" />;
       case "cancelled":
+      case "closed":
         return <XCircle className="h-3 w-3" />;
       default:
         return null;
@@ -144,94 +202,127 @@ const MyJobs = () => {
 
   const filterJobs = (status: string) => {
     return jobs.filter((job) => {
-      const matchesStatus = status === "all" || job.status === status;
-      const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const jobStatus = job.status?.toLowerCase() || "";
+      let matchesStatus = true;
+      
+      if (status === "all") {
+        matchesStatus = true;
+      } else if (status === "active") {
+        matchesStatus = jobStatus === "open" || jobStatus === "active";
+      } else if (status === "in-progress") {
+        matchesStatus = jobStatus === "in_progress" || jobStatus === "in-progress";
+      } else if (status === "completed") {
+        matchesStatus = jobStatus === "completed";
+      } else if (status === "cancelled") {
+        matchesStatus = jobStatus === "cancelled" || jobStatus === "closed";
+      }
+      
+      const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           job.description?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   };
 
-  const handleDelete = (id: number) => {
-    setSelectedJob(id);
-    setDeleteDialogOpen(true);
-  };
+  const JobCard = ({ job }: { job: any }) => {
+    const canEdit = job.status === "OPEN" || job.status === "ACTIVE";
+    const formatCurrency = (amount?: number) => {
+      if (!amount) return "Negotiable";
+      return `NPR ${amount.toLocaleString()}`;
+    };
 
-  const JobCard = ({ job }: { job: typeof jobs[0] }) => (
-    <Card hover className="group">
-      <CardContent className="p-5">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <Link
-                  to={`/client/jobs/${job.id}`}
-                  className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1"
-                >
-                  {job.title}
-                </Link>
-                <p className="text-sm text-muted-foreground">{job.category}</p>
+    return (
+      <Card hover className="group">
+        <CardContent className="p-5">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <Link
+                    to={`/client/jobs/${job.id}`}
+                    className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1"
+                  >
+                    {job.title}
+                  </Link>
+                  {job.category?.name && (
+                    <p className="text-sm text-muted-foreground">{job.category.name}</p>
+                  )}
+                </div>
+                <Badge className={`${getStatusColor(job.status)} gap-1 capitalize`}>
+                  {getStatusIcon(job.status)}
+                  {job.status?.replace("_", " ").toLowerCase()}
+                </Badge>
               </div>
-              <Badge className={`${getStatusColor(job.status)} gap-1 capitalize`}>
-                {getStatusIcon(job.status)}
-                {job.status.replace("-", " ")}
-              </Badge>
+
+              {job.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {job.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                {(job.budgetMin || job.budgetMax) && (
+                  <span className="flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-accent" />
+                    <span className="font-medium">
+                      {job.budgetMin && job.budgetMax
+                        ? `NPR ${job.budgetMin.toLocaleString()} - ${job.budgetMax.toLocaleString()}`
+                        : formatCurrency(job.budgetMin || job.budgetMax)}
+                    </span>
+                  </span>
+                )}
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-primary" />
+                  <span>{job.bidCount || 0} bids</span>
+                </span>
+                {job.expiresAt && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span>Due: {new Date(job.expiresAt).toLocaleDateString()}</span>
+                  </span>
+                )}
+              </div>
             </div>
 
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {job.description}
-            </p>
-
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <span className="flex items-center gap-1.5">
-                <DollarSign className="h-4 w-4 text-accent" />
-                <span className="font-medium">{job.budget}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Users className="h-4 w-4 text-primary" />
-                <span>{job.bids} bids</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Due: {job.deadline}</span>
-              </span>
+            <div className="flex md:flex-col gap-2">
+              <Button variant="outline" size="sm" asChild className="gap-1.5">
+                <Link to={`/client/jobs/${job.id}`}>
+                  <Eye className="h-4 w-4" />
+                  View
+                </Link>
+              </Button>
+              {canEdit && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    asChild
+                  >
+                    <Link to={`/client/jobs/${job.id}?edit=true`}>
+                      <Edit className="h-4 w-4" />
+                      Edit
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      setSelectedJob(job.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </>
+              )}
             </div>
-
-            {job.freelancer && (
-              <p className="text-sm">
-                <span className="text-muted-foreground">Assigned to: </span>
-                <span className="font-medium text-primary">{job.freelancer}</span>
-              </p>
-            )}
           </div>
-
-          <div className="flex md:flex-col gap-2">
-            <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <Link to={`/client/jobs/${job.id}`}>
-                <Eye className="h-4 w-4" />
-                View
-              </Link>
-            </Button>
-            {job.status === "active" && (
-              <>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(job.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -280,49 +371,57 @@ const MyJobs = () => {
         </DropdownMenu>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="all">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all">All ({jobs.length})</TabsTrigger>
-          <TabsTrigger value="active">
-            Active ({jobs.filter((j) => j.status === "active").length})
-          </TabsTrigger>
-          <TabsTrigger value="in-progress">
-            In Progress ({jobs.filter((j) => j.status === "in-progress").length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed ({jobs.filter((j) => j.status === "completed").length})
-          </TabsTrigger>
-          <TabsTrigger value="cancelled">
-            Cancelled ({jobs.filter((j) => j.status === "cancelled").length})
-          </TabsTrigger>
-        </TabsList>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading jobs...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Tabs defaultValue="all">
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="all">All ({jobs.length})</TabsTrigger>
+            <TabsTrigger value="active">
+              Active ({filterJobs("active").length})
+            </TabsTrigger>
+            <TabsTrigger value="in-progress">
+              In Progress ({filterJobs("in-progress").length})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed ({filterJobs("completed").length})
+            </TabsTrigger>
+            <TabsTrigger value="cancelled">
+              Cancelled ({filterJobs("cancelled").length})
+            </TabsTrigger>
+          </TabsList>
 
-        {["all", "active", "in-progress", "completed", "cancelled"].map((tab) => (
-          <TabsContent key={tab} value={tab} className="space-y-4 mt-4">
-            {filterJobs(tab).length > 0 ? (
-              filterJobs(tab).map((job) => <JobCard key={job.id} job={job} />)
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">No jobs found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {tab === "all"
-                      ? "You haven't posted any jobs yet."
-                      : `No ${tab.replace("-", " ")} jobs at the moment.`}
-                  </p>
-                  {tab === "all" && (
-                    <Button asChild>
-                      <Link to="/client/post-job">Post Your First Job</Link>
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+          {["all", "active", "in-progress", "completed", "cancelled"].map((tab) => (
+            <TabsContent key={tab} value={tab} className="space-y-4 mt-4">
+              {filterJobs(tab).length > 0 ? (
+                filterJobs(tab).map((job) => <JobCard key={job.id} job={job} />)
+              ) : (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold text-lg mb-2">No jobs found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      {tab === "all"
+                        ? "You haven't posted any jobs yet."
+                        : `No ${tab.replace("-", " ")} jobs at the moment.`}
+                    </p>
+                    {tab === "all" && (
+                      <Button asChild>
+                        <Link to="/client/post-job">Post Your First Job</Link>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -335,7 +434,10 @@ const MyJobs = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
