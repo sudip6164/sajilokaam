@@ -24,7 +24,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   // Check if user is authenticated
   if (!isAuthenticated) {
-    // Redirect to login with return URL
+    // For admin routes, redirect to admin login
+    if (allowedRoles?.includes("ADMIN")) {
+      return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    }
+    // For other routes, redirect to regular login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
