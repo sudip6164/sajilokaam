@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Layouts
 import { PublicLayout } from "@/layouts/PublicLayout";
@@ -23,6 +24,8 @@ import NotFound from "@/pages/NotFound";
 import Success from "@/pages/Success";
 import Failure from "@/pages/Failure";
 import AccessDenied from "@/pages/AccessDenied";
+import Jobs from "@/pages/Jobs";
+import JobDetailPublic from "@/pages/JobDetailPublic";
 
 // Auth Pages
 import Login from "@/pages/auth/Login";
@@ -65,11 +68,12 @@ const queryClient = new QueryClient();
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             {/* Public Routes */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
@@ -78,6 +82,8 @@ const App = () => (
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/jobs/:id" element={<JobDetailPublic />} />
             </Route>
 
             {/* Auth Routes */}
@@ -134,7 +140,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

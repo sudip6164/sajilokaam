@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, Building2, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { register, user } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [accountType, setAccountType] = useState<"freelancer" | "client">("freelancer");
@@ -16,15 +17,34 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
-      toast({ title: "Error", description: "Passwords don't match", variant: "destructive" });
+      toast.error("Passwords don't match");
       return;
     }
+
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    toast({ title: "Account created!", description: "Please verify your email" });
-    navigate("/verify-email");
-    setIsLoading(false);
+    
+    try {
+      const role = accountType === "client" ? "CLIENT" : "FREELANCER";
+      await register(formData.email, formData.password, formData.name, role);
+      
+      // Redirect based on role
+      if (role === "CLIENT") {
+        navigate("/client");
+      } else {
+        navigate("/freelancer");
+      }
+    } catch (error) {
+      // Error is already handled by auth context
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

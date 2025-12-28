@@ -1,25 +1,26 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { ReactNode } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
-type UserRole = "admin" | "freelancer" | "client" | null;
+type UserRole = "ADMIN" | "FREELANCER" | "CLIENT";
 
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: UserRole[];
 }
 
-// Simulated auth state - in production, this would come from a context/state management
-const useAuth = () => {
-  // This is a placeholder. In a real app, this would check actual authentication state
-  const isAuthenticated = true; // Change to test different states
-  const userRole: UserRole = "freelancer"; // Change to test different roles
-
-  return { isAuthenticated, userRole };
-};
-
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const location = useLocation();
-  const { isAuthenticated, userRole } = useAuth();
+  const { isAuthenticated, isLoading, user, hasRole } = useAuth();
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Check if user is authenticated
   if (!isAuthenticated) {
@@ -28,9 +29,12 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   // Check if user has required role
-  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
-    // Redirect to access denied page
-    return <Navigate to="/access-denied" replace />;
+  if (allowedRoles && allowedRoles.length > 0 && user) {
+    const hasRequiredRole = allowedRoles.some((role) => hasRole(role));
+    if (!hasRequiredRole) {
+      // Redirect to access denied page
+      return <Navigate to="/access-denied" replace />;
+    }
   }
 
   return <>{children}</>;

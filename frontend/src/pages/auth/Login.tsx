@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const location = useLocation();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -15,10 +17,18 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    toast({ title: "Welcome back!", description: "Login successful" });
-    navigate("/freelancer");
-    setIsLoading(false);
+    
+    try {
+      await login(formData.email, formData.password);
+      
+      // Redirect to intended page or dashboard based on role
+      const from = (location.state as any)?.from?.pathname || "/";
+      navigate(from, { replace: true });
+    } catch (error) {
+      // Error is already handled by auth context
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
