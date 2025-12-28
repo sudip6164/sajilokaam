@@ -286,7 +286,6 @@ const ClientDashboard = () => {
             )}
           </CardContent>
         </Card>
-      </div>
 
       {/* Active Projects */}
       <Card>
