@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   FileText,
   Search,
@@ -30,80 +31,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-
-const invoices = [
-  {
-    id: "INV-2024-001",
-    project: "Company Portfolio Website",
-    freelancer: "Sita Sharma",
-    amount: "NPR 12,000",
-    milestone: "Frontend Development",
-    date: "Dec 15, 2024",
-    dueDate: "Dec 22, 2024",
-    status: "pending",
-  },
-  {
-    id: "INV-2024-002",
-    project: "Logo Design Package",
-    freelancer: "Hari Thapa",
-    amount: "NPR 5,000",
-    milestone: "Final Delivery",
-    date: "Dec 14, 2024",
-    dueDate: "Dec 21, 2024",
-    status: "pending",
-  },
-  {
-    id: "INV-2024-003",
-    project: "Content Writing",
-    freelancer: "Maya KC",
-    amount: "NPR 5,000",
-    milestone: "Research & Outline",
-    date: "Dec 10, 2024",
-    dueDate: "Dec 17, 2024",
-    status: "paid",
-    paidDate: "Dec 12, 2024",
-  },
-  {
-    id: "INV-2024-004",
-    project: "Company Portfolio Website",
-    freelancer: "Sita Sharma",
-    amount: "NPR 8,000",
-    milestone: "Design Mockups",
-    date: "Dec 5, 2024",
-    dueDate: "Dec 12, 2024",
-    status: "paid",
-    paidDate: "Dec 8, 2024",
-  },
-  {
-    id: "INV-2024-005",
-    project: "Mobile App Design",
-    freelancer: "Raj Gurung",
-    amount: "NPR 20,000",
-    milestone: "UI/UX Design",
-    date: "Nov 25, 2024",
-    dueDate: "Dec 2, 2024",
-    status: "paid",
-    paidDate: "Nov 28, 2024",
-  },
-  {
-    id: "INV-2024-006",
-    project: "SEO Services",
-    freelancer: "Binod Adhikari",
-    amount: "NPR 15,000",
-    milestone: "Monthly Retainer",
-    date: "Nov 20, 2024",
-    dueDate: "Nov 27, 2024",
-    status: "overdue",
-  },
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { invoicesApi } from "@/lib/api";
+import { toast } from "sonner";
 
 const ClientInvoices = () => {
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<typeof invoices[0] | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      loadInvoices();
+    }
+  }, [user]);
+
+  const loadInvoices = async () => {
+    if (!user) return;
+    try {
+      setIsLoading(true);
+      const data = await invoicesApi.list({ clientId: user.id });
+      setInvoices(data);
+    } catch (error) {
+      toast.error("Failed to load invoices");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -140,40 +98,61 @@ const ClientInvoices = () => {
 
   const processPayment = () => {
     if (!paymentMethod) {
-      toast({
-        title: "Select Payment Method",
-        description: "Please select a payment method to continue.",
-        variant: "destructive",
-      });
+      toast.error("Please select a payment method to continue.");
       return;
     }
-
-    toast({
-      title: "Payment Successful!",
-      description: `${selectedInvoice?.amount} has been paid via ${paymentMethod}.`,
-    });
+    // TODO: Implement payment processing
+    toast.success(`Payment initiated for ${selectedInvoice?.invoiceNumber} via ${paymentMethod}.`);
     setPaymentDialogOpen(false);
     setPaymentMethod("");
+    loadInvoices();
   };
 
   const filterInvoices = (status: string) => {
     return invoices.filter((inv) => {
-      const matchesStatus = status === "all" || inv.status === status;
+      const invStatus = inv.status?.toLowerCase() || "";
+      let matchesStatus = true;
+      
+      if (status === "all") {
+        matchesStatus = true;
+      } else if (status === "pending") {
+        matchesStatus = invStatus === "pending" || invStatus === "unpaid";
+      } else if (status === "paid") {
+        matchesStatus = invStatus === "paid";
+      } else if (status === "overdue") {
+        matchesStatus = invStatus === "overdue";
+      }
+      
       const matchesSearch =
-        inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.project.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.freelancer.toLowerCase().includes(searchQuery.toLowerCase());
+        inv.invoiceNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        inv.projectId?.toString().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   };
 
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return "NPR 0";
+    return `NPR ${amount.toLocaleString()}`;
+  };
+
   const totalPending = invoices
-    .filter((inv) => inv.status === "pending" || inv.status === "overdue")
-    .reduce((sum, inv) => sum + parseInt(inv.amount.replace(/[^\d]/g, "")), 0);
+    .filter((inv) => {
+      const status = inv.status?.toLowerCase() || "";
+      return status === "pending" || status === "unpaid" || status === "overdue";
+    })
+    .reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
 
   const totalPaid = invoices
-    .filter((inv) => inv.status === "paid")
-    .reduce((sum, inv) => sum + parseInt(inv.amount.replace(/[^\d]/g, "")), 0);
+    .filter((inv) => inv.status?.toLowerCase() === "paid")
+    .reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">Loading invoices...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -195,7 +174,7 @@ const ClientInvoices = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Pending Payments</p>
                 <p className="text-2xl font-bold text-accent">
-                  NPR {totalPending.toLocaleString()}
+                  {formatCurrency(totalPending)}
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-accent/10">
@@ -210,7 +189,7 @@ const ClientInvoices = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Total Paid</p>
                 <p className="text-2xl font-bold text-secondary">
-                  NPR {totalPaid.toLocaleString()}
+                  {formatCurrency(totalPaid)}
                 </p>
               </div>
               <div className="p-3 rounded-xl bg-secondary/10">
@@ -256,68 +235,21 @@ const ClientInvoices = () => {
         <TabsList>
           <TabsTrigger value="all">All ({invoices.length})</TabsTrigger>
           <TabsTrigger value="pending">
-            Pending ({invoices.filter((i) => i.status === "pending").length})
+            Pending ({filterInvoices("pending").length})
           </TabsTrigger>
           <TabsTrigger value="paid">
-            Paid ({invoices.filter((i) => i.status === "paid").length})
+            Paid ({filterInvoices("paid").length})
           </TabsTrigger>
           <TabsTrigger value="overdue">
-            Overdue ({invoices.filter((i) => i.status === "overdue").length})
+            Overdue ({filterInvoices("overdue").length})
           </TabsTrigger>
         </TabsList>
 
         {["all", "pending", "paid", "overdue"].map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-4 mt-4">
-            {filterInvoices(tab).map((invoice) => (
-              <Card key={invoice.id} hover>
-                <CardContent className="p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <p className="font-mono font-medium">{invoice.id}</p>
-                        {getStatusBadge(invoice.status)}
-                      </div>
-                      <p className="font-medium">{invoice.project}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {invoice.milestone} • {invoice.freelancer}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-xl font-bold">{invoice.amount}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {invoice.status === "paid"
-                            ? `Paid: ${invoice.paidDate}`
-                            : `Due: ${invoice.dueDate}`}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-1" />
-                          PDF
-                        </Button>
-                        {(invoice.status === "pending" || invoice.status === "overdue") && (
-                          <Button size="sm" onClick={() => handlePayNow(invoice)}>
-                            <CreditCard className="h-4 w-4 mr-1" />
-                            Pay Now
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {filterInvoices(tab).length === 0 && (
+            {filterInvoices(tab).length === 0 ? (
               <Card>
-                <CardContent className="p-12 text-center">
+                <CardContent className="py-12 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-semibold text-lg mb-2">No invoices found</h3>
                   <p className="text-muted-foreground">
@@ -327,7 +259,59 @@ const ClientInvoices = () => {
                   </p>
                 </CardContent>
               </Card>
+            ) : (
+              filterInvoices(tab).map((invoice) => (
+                <Card key={invoice.id} hover>
+                  <CardContent className="p-5">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <p className="font-mono font-medium">{invoice.invoiceNumber || `INV-${invoice.id}`}</p>
+                          {getStatusBadge(invoice.status)}
+                        </div>
+                        <p className="font-medium">Project ID: {invoice.projectId}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Created: {new Date(invoice.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-xl font-bold">{formatCurrency(invoice.totalAmount)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {invoice.status?.toLowerCase() === "paid" && invoice.paidAt
+                              ? `Paid: ${new Date(invoice.paidAt).toLocaleDateString()}`
+                              : invoice.dueDate
+                              ? `Due: ${new Date(invoice.dueDate).toLocaleDateString()}`
+                              : "No due date"}
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/client/invoices/${invoice.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Link>
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Download className="h-4 w-4 mr-1" />
+                            PDF
+                          </Button>
+                          {(invoice.status?.toLowerCase() === "pending" || invoice.status?.toLowerCase() === "overdue" || invoice.status?.toLowerCase() === "unpaid") && (
+                            <Button size="sm" onClick={() => handlePayNow(invoice)}>
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Pay Now
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             )}
+
           </TabsContent>
         ))}
       </Tabs>
@@ -338,7 +322,7 @@ const ClientInvoices = () => {
           <DialogHeader>
             <DialogTitle>Pay Invoice</DialogTitle>
             <DialogDescription>
-              Complete payment for {selectedInvoice?.id}
+              Complete payment for {selectedInvoice?.invoiceNumber || `INV-${selectedInvoice?.id}`}
             </DialogDescription>
           </DialogHeader>
 
@@ -346,19 +330,15 @@ const ClientInvoices = () => {
             <div className="p-4 rounded-lg bg-muted/50">
               <div className="flex justify-between mb-2">
                 <span className="text-muted-foreground">Invoice</span>
-                <span className="font-mono">{selectedInvoice?.id}</span>
+                <span className="font-mono">{selectedInvoice?.invoiceNumber || `INV-${selectedInvoice?.id}`}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-muted-foreground">Project</span>
-                <span>{selectedInvoice?.project}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-muted-foreground">Freelancer</span>
-                <span>{selectedInvoice?.freelancer}</span>
+                <span className="text-muted-foreground">Project ID</span>
+                <span>{selectedInvoice?.projectId}</span>
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="font-medium">Total Amount</span>
-                <span className="font-bold text-lg">{selectedInvoice?.amount}</span>
+                <span className="font-bold text-lg">{formatCurrency(selectedInvoice?.totalAmount)}</span>
               </div>
             </div>
 
@@ -384,7 +364,7 @@ const ClientInvoices = () => {
             </Button>
             <Button onClick={processPayment}>
               <CreditCard className="h-4 w-4 mr-2" />
-              Pay {selectedInvoice?.amount}
+              Pay {formatCurrency(selectedInvoice?.totalAmount)}
             </Button>
           </DialogFooter>
         </DialogContent>
