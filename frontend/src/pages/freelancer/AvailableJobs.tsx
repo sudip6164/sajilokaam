@@ -46,6 +46,8 @@ export default function AvailableJobs() {
   const [duration, setDuration] = useState("Any Duration");
   
   const categories = ["All Categories", "Web Development", "Mobile Development", "Design", "Writing", "Marketing", "Other"];
+  const budgetRanges = ["Any Budget", "Under NPR 10,000", "NPR 10,000 - 50,000", "NPR 50,000 - 100,000", "NPR 100,000 - 500,000", "Over NPR 500,000"];
+  const durations = ["Any Duration", "Less than 1 week", "1-2 weeks", "2-4 weeks", "1-3 months", "3-6 months", "More than 6 months"];
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
   const [selectedJob, setSelectedJob] = useState<any | null>(null);
   const [bidAmount, setBidAmount] = useState("");
