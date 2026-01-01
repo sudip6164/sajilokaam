@@ -32,7 +32,7 @@ import java.util.UUID;
 public class FileController {
 
     private static final String UPLOAD_DIR = "uploads";
-    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
     private final FileRepository fileRepository;
     private final TaskRepository taskRepository;
