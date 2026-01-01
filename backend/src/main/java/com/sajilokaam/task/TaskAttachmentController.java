@@ -88,13 +88,15 @@ public class TaskAttachmentController {
         List<FileEntity> files = fileRepository.findByTaskId(taskId);
         List<FileResponse> responses = files.stream()
                 .map(file -> {
-                    String fileUrl = "/api/projects/" + projectId + "/tasks/" + taskId + "/files/" + file.getId() + "/download";
+                    String fileUrl = "http://localhost:8080/api/projects/" + projectId + "/tasks/" + taskId + "/files/" + file.getId() + "/download";
+                    // Initialize lazy-loaded uploader
+                    User uploader = file.getUploader();
                     return new FileResponse(
                         file.getId(),
                         file.getFilename(),
                         fileUrl,
                         file.getSizeBytes(),
-                        new FileResponse.UploadedBy(file.getUploader().getId(), file.getUploader().getFullName()),
+                        new FileResponse.UploadedBy(uploader.getId(), uploader.getFullName()),
                         file.getCreatedAt()
                     );
                 })
@@ -167,7 +169,7 @@ public class TaskAttachmentController {
 
             FileEntity saved = fileRepository.save(fileEntity);
             
-            String fileUrl = "/api/projects/" + projectId + "/tasks/" + taskId + "/files/" + saved.getId() + "/download";
+            String fileUrl = "http://localhost:8080/api/projects/" + projectId + "/tasks/" + taskId + "/files/" + saved.getId() + "/download";
             
             FileResponse response = new FileResponse(
                 saved.getId(),

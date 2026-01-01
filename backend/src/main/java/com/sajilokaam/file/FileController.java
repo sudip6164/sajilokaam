@@ -196,10 +196,10 @@ public class FileController {
 
             FileEntity saved = fileRepository.save(fileEntity);
             
-            // Build file URL
-            String fileUrl = "/api/projects/" + projectId + "/files/" + saved.getId() + "/download";
+            // Build file URL (absolute URL)
+            String fileUrl = "http://localhost:8080/api/projects/" + projectId + "/files/" + saved.getId() + "/download";
             if (task != null) {
-                fileUrl = "/api/projects/" + projectId + "/tasks/" + task.getId() + "/files/" + saved.getId() + "/download";
+                fileUrl = "http://localhost:8080/api/projects/" + projectId + "/tasks/" + task.getId() + "/files/" + saved.getId() + "/download";
             }
             
             FileResponse response = new FileResponse(
@@ -251,16 +251,18 @@ public class FileController {
                            file.getTask().getProject().getId().equals(projectId);
                 })
                 .map(file -> {
-                    String fileUrl = "/api/projects/" + projectId + "/files/" + file.getId() + "/download";
+                    String fileUrl = "http://localhost:8080/api/projects/" + projectId + "/files/" + file.getId() + "/download";
                     if (file.getTask() != null) {
-                        fileUrl = "/api/projects/" + projectId + "/tasks/" + file.getTask().getId() + "/files/" + file.getId() + "/download";
+                        fileUrl = "http://localhost:8080/api/projects/" + projectId + "/tasks/" + file.getTask().getId() + "/files/" + file.getId() + "/download";
                     }
+                    // Initialize lazy-loaded uploader
+                    User uploader = file.getUploader();
                     return new FileResponse(
                         file.getId(),
                         file.getFilename(),
                         fileUrl,
                         file.getSizeBytes(),
-                        new FileResponse.UploadedBy(file.getUploader().getId(), file.getUploader().getFullName()),
+                        new FileResponse.UploadedBy(uploader.getId(), uploader.getFullName()),
                         file.getCreatedAt()
                     );
                 })
@@ -269,7 +271,8 @@ public class FileController {
     }
 
     @GetMapping("/{projectId}/tasks/{taskId}/files")
-    public ResponseEntity<List<FileEntity>> getFiles(
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<List<FileResponse>> getFiles(
             @PathVariable Long projectId,
             @PathVariable Long taskId) {
         
@@ -284,7 +287,22 @@ public class FileController {
         }
 
         List<FileEntity> files = fileRepository.findByTaskId(taskId);
-        return ResponseEntity.ok(files);
+        List<FileResponse> responses = files.stream()
+                .map(file -> {
+                    String fileUrl = "http://localhost:8080/api/projects/" + projectId + "/tasks/" + taskId + "/files/" + file.getId() + "/download";
+                    // Initialize lazy-loaded uploader
+                    User uploader = file.getUploader();
+                    return new FileResponse(
+                        file.getId(),
+                        file.getFilename(),
+                        fileUrl,
+                        file.getSizeBytes(),
+                        new FileResponse.UploadedBy(uploader.getId(), uploader.getFullName()),
+                        file.getCreatedAt()
+                    );
+                })
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{projectId}/tasks/{taskId}/files/{fileId}/download")
