@@ -60,6 +60,7 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [editData, setEditData] = useState({
+    fullName: "",
     overview: "",
     headline: "",
     hourlyRate: "",
@@ -90,6 +91,7 @@ export default function Profile() {
       const data = await profileApi.getFreelancerProfile();
       setProfile(data);
       setEditData({
+        fullName: user?.fullName || "",
         overview: data.overview || "",
         headline: data.headline || "",
         hourlyRate: data.hourlyRate?.toString() || "",
@@ -119,6 +121,12 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       setIsSaving(true);
+      
+      // Update name if changed
+      if (editData.fullName && editData.fullName !== user?.fullName) {
+        await authApi.updateProfile({ fullName: editData.fullName });
+      }
+      
       await profileApi.updateFreelancerProfile({
         headline: editData.headline || undefined,
         overview: editData.overview || undefined,
@@ -138,6 +146,13 @@ export default function Profile() {
         certifications: editData.certifications || undefined,
         experienceYears: editData.experienceYears ? parseInt(editData.experienceYears) : undefined,
       });
+      
+      // Refresh user data to get updated name
+      if (editData.fullName && editData.fullName !== user?.fullName) {
+        const auth = useAuth();
+        await auth.refreshUser();
+      }
+      
       await loadProfile();
       setIsEditing(false);
       toast.success("Profile updated successfully");
@@ -526,6 +541,15 @@ export default function Profile() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input 
+                  id="fullName" 
+                  value={editData.fullName}
+                  onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                  placeholder="Your full name"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="headline">Headline</Label>
                 <Input 
