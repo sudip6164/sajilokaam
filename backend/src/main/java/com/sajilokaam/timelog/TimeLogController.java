@@ -124,6 +124,7 @@ public class TimeLogController {
     }
 
     @GetMapping("/{projectId}/time-logs")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<TimeLog>> getProjectTimeLogs(
             @PathVariable Long projectId,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
@@ -146,7 +147,13 @@ public class TimeLogController {
         // Get all tasks for this project and then get all time logs for those tasks
         List<Task> projectTasks = taskRepository.findByProjectId(projectId);
         List<TimeLog> allTimeLogs = projectTasks.stream()
-                .flatMap(task -> timeLogRepository.findByTaskId(task.getId()).stream())
+                .flatMap(task -> {
+                    // Initialize task project to avoid lazy loading issues
+                    if (task.getProject() != null) {
+                        task.getProject().getId();
+                    }
+                    return timeLogRepository.findByTaskId(task.getId()).stream();
+                })
                 .toList();
         
         return ResponseEntity.ok(allTimeLogs);

@@ -259,6 +259,7 @@ public class TimerController {
     }
 
     @GetMapping
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<com.sajilokaam.timersession.dto.TimerSessionResponse> getActiveTimer(
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -282,22 +283,16 @@ public class TimerController {
         }
 
         TimerSession session = sessionOpt.get();
-        // Access task and project to initialize lazy loading
-        Long projectId = session.getTask() != null && session.getTask().getProject() != null 
-            ? session.getTask().getProject().getId() 
-            : null;
-        Long taskId = session.getTask() != null ? session.getTask().getId() : null;
-
-        com.sajilokaam.timersession.dto.TimerSessionResponse response = new com.sajilokaam.timersession.dto.TimerSessionResponse(
-            session.getId(),
-            projectId,
-            taskId,
-            session.getStartedAt(),
-            session.getDescription(),
-            session.getIsActive(),
-            session.getIsPaused(),
-            session.getTotalSeconds()
-        );
+        // Initialize lazy-loaded relationships
+        if (session.getTask() != null) {
+            session.getTask().getId();
+            if (session.getTask().getProject() != null) {
+                session.getTask().getProject().getId();
+            }
+        }
+        // Use the DTO constructor that takes TimerSession
+        com.sajilokaam.timersession.dto.TimerSessionResponse response = 
+            new com.sajilokaam.timersession.dto.TimerSessionResponse(session);
         return ResponseEntity.ok(response);
     }
 
