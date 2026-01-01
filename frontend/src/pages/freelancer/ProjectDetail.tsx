@@ -806,7 +806,12 @@ export default function ProjectDetail() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(file.fileUrl, "_blank")}
+                          onClick={() => {
+                            const url = file.fileUrl.startsWith('http') 
+                              ? file.fileUrl 
+                              : `http://localhost:8080${file.fileUrl}`;
+                            window.open(url, "_blank");
+                          }}
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
@@ -1015,7 +1020,7 @@ export default function ProjectDetail() {
                               {comment.attachments.map((att: any) => (
                                 <a
                                   key={att.id}
-                                  href={att.fileUrl}
+                                  href={att.fileUrl.startsWith('http') ? att.fileUrl : `http://localhost:8080${att.fileUrl}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-2 text-xs text-primary hover:underline"
@@ -1110,7 +1115,12 @@ export default function ProjectDetail() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(att.fileUrl, "_blank")}
+                            onClick={() => {
+                              const url = att.fileUrl.startsWith('http') 
+                                ? att.fileUrl 
+                                : `http://localhost:8080${att.fileUrl}`;
+                              window.open(url, "_blank");
+                            }}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
