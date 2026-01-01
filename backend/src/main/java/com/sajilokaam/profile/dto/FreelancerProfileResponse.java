@@ -33,6 +33,7 @@ public class FreelancerProfileResponse {
     private String linkedinUrl;
     private String githubUrl;
     private String videoIntroUrl;
+    private String profilePictureUrl;
     private PreferredWorkload preferredWorkload;
     private FreelancerTeamRole teamRole;
     private String teamName;
@@ -224,6 +225,14 @@ public class FreelancerProfileResponse {
 
     public void setVideoIntroUrl(String videoIntroUrl) {
         this.videoIntroUrl = videoIntroUrl;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     public PreferredWorkload getPreferredWorkload() {

@@ -33,6 +33,7 @@ public final class ProfileMapper {
         response.setLinkedinUrl(profile.getLinkedinUrl());
         response.setGithubUrl(profile.getGithubUrl());
         response.setVideoIntroUrl(profile.getVideoIntroUrl());
+        response.setProfilePictureUrl(profile.getProfilePictureUrl());
         response.setPreferredWorkload(profile.getPreferredWorkload());
         response.setTeamRole(profile.getTeamRole());
         response.setTeamName(profile.getTeamName());
