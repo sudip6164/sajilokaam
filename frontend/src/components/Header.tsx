@@ -48,7 +48,22 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user, hasRole, logout } = useAuth();
+  
+  // Safely get auth context
+  let authContext;
+  try {
+    authContext = useAuth();
+  } catch (error) {
+    // If AuthContext is not available, use default values
+    authContext = {
+      isAuthenticated: false,
+      user: null,
+      hasRole: () => false,
+      logout: () => {},
+    };
+  }
+  
+  const { isAuthenticated, user, hasRole, logout } = authContext;
   
   const isFreelancer = hasRole("FREELANCER");
   const isClient = hasRole("CLIENT");

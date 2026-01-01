@@ -1,5 +1,6 @@
 package com.sajilokaam.timersession.dto;
 
+import com.sajilokaam.timersession.TimerSession;
 import java.time.LocalDateTime;
 
 public class TimerSessionResponse {
@@ -23,6 +24,18 @@ public class TimerSessionResponse {
         this.isActive = isActive;
         this.isPaused = isPaused;
         this.totalSeconds = totalSeconds;
+    }
+
+    public TimerSessionResponse(TimerSession session) {
+        this.id = session.getId();
+        this.taskId = session.getTask() != null ? session.getTask().getId() : null;
+        this.projectId = session.getTask() != null && session.getTask().getProject() != null 
+            ? session.getTask().getProject().getId() : null;
+        this.startTime = session.getStartedAt() != null ? session.getStartedAt().toString() : null;
+        this.description = session.getDescription();
+        this.isActive = session.getIsActive();
+        this.isPaused = session.getIsPaused();
+        this.totalSeconds = session.getTotalSeconds();
     }
 
     public Long getId() { return id; }
