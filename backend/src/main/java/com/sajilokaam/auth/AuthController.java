@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -60,6 +62,30 @@ public class AuthController {
         // Auto-login: generate token
         String token = jwtService.generateToken(created.getId(), created.getEmail());
         return ResponseEntity.created(URI.create("/api/users/" + created.getId())).body(new LoginResponse(token));
+    }
+
+    // TEMPORARY PUBLIC ENDPOINT - REMOVE AFTER USE
+    @PostMapping("/fix-admin-password")
+    public ResponseEntity<Map<String, String>> fixAdminPassword() {
+        try {
+            Optional<User> adminOpt = userRepository.findByEmail("admin@sajilokaam.com");
+            if (adminOpt.isPresent()) {
+                User admin = adminOpt.get();
+                String newHash = passwordEncoder.encode("admin123");
+                admin.setPassword(newHash);
+                userRepository.save(admin);
+                boolean verified = passwordEncoder.matches("admin123", newHash);
+                return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "hash", newHash,
+                    "verified", String.valueOf(verified),
+                    "message", "Admin password reset to 'admin123'"
+                ));
+            }
+            return ResponseEntity.status(404).body(Map.of("status", "error", "message", "Admin user not found"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("status", "error", "message", e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
