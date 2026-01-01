@@ -46,6 +46,7 @@ const publicBottomNav = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -64,6 +65,21 @@ export function Header() {
   }
   
   const { isAuthenticated, user, hasRole, logout } = authContext;
+  
+  // Load profile picture for freelancers
+  useEffect(() => {
+    if (isAuthenticated && hasRole("FREELANCER")) {
+      profileApi.getFreelancerProfile()
+        .then(profile => {
+          if (profile.profilePictureUrl) {
+            setProfilePictureUrl(profile.profilePictureUrl);
+          }
+        })
+        .catch(() => {
+          // Silently fail
+        });
+    }
+  }, [isAuthenticated, hasRole]);
   
   const isFreelancer = hasRole("FREELANCER");
   const isClient = hasRole("CLIENT");
@@ -140,7 +156,7 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full text-primary-foreground hover:bg-white/10">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.fullName || 'User'}`} />
+                        <AvatarImage src={profilePictureUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.fullName || 'User'}`} />
                         <AvatarFallback className="text-xs bg-white/20 text-primary-foreground">
                           {user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                         </AvatarFallback>

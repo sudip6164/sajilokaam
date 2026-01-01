@@ -227,7 +227,7 @@ export default function Profile() {
               <div className="text-center">
                 <div className="relative inline-block mb-4">
                   <Avatar className="w-32 h-32">
-                    <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=freelancer" />
+                    <AvatarImage src={profile?.profilePictureUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=freelancer"} />
                     <AvatarFallback className="text-3xl">
                       {displayName.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>
