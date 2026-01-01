@@ -18,7 +18,7 @@ public class Bid {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Job job;
 
     @ManyToOne(fetch = FetchType.LAZY)
