@@ -3,9 +3,7 @@
 -- Password: admin123
 -- BCrypt hash for 'admin123' (strength 10)
 -- This is a default password - CHANGE IT IN PRODUCTION!
--- Note: Using UPDATE to ensure password is correct if user already exists
 
--- Insert or update admin user
 INSERT IGNORE INTO users (email, password, full_name, created_at)
 SELECT 
     'admin@sajilokaam.com',
