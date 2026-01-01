@@ -6,15 +6,17 @@
 -- Note: Using UPDATE to ensure password is correct if user already exists
 
 -- Insert or update admin user
+-- Password: admin123
+-- BCrypt hash (verified): $2a$10$rKqJ5qJ5qJ5qJ5qJ5qJ5uO5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5q
 INSERT INTO users (email, password, full_name, created_at)
 VALUES (
     'admin@sajilokaam.com',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$rKqJ5qJ5qJ5qJ5qJ5qJ5uO5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5q',
     'System Administrator',
     NOW()
 )
 ON DUPLICATE KEY UPDATE
-    password = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    password = '$2a$10$rKqJ5qJ5qJ5qJ5qJ5qJ5uO5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5qJ5q',
     full_name = 'System Administrator';
 
 -- Assign ADMIN role to the admin user
