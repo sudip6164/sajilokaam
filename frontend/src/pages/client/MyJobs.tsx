@@ -45,6 +45,7 @@ import { toast } from "sonner";
 
 const MyJobs = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -174,107 +175,100 @@ const MyJobs = () => {
     };
 
     return (
-      <Link to={`/my-jobs/${job.id}`}>
-        <Card className="transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] cursor-pointer group border-2 hover:border-primary/50 overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-primary via-secondary to-primary"></div>
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row lg:items-start gap-5">
-              <div className="flex-1 space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-xl group-hover:text-primary transition-colors mb-2 line-clamp-2">
-                      {job.title}
-                    </h3>
-                    {job.category?.name && (
-                      <p className="text-sm text-muted-foreground mb-3">{job.category.name}</p>
-                    )}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {getStatusBadge(job.status)}
-                      <span className="text-xs text-muted-foreground">• Posted {getTimeAgo(job.createdAt)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {job.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                    {job.description}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap items-center gap-3 pt-2 border-t">
-                  {(job.budgetMin || job.budgetMax) && (
-                    <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-secondary/10">
-                      <DollarSign className="h-4 w-4 text-secondary flex-shrink-0" />
-                      <span className="font-bold text-secondary">
-                        {formatCurrency(job.budgetMin, job.budgetMax)}
-                      </span>
-                    </div>
+      <Card className="transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group border-2 hover:border-primary/50 overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-primary via-secondary to-primary"></div>
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-5">
+            <div className="flex-1 space-y-4" onClick={() => navigate(`/my-jobs/${job.id}`)}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-xl group-hover:text-primary transition-colors mb-2 line-clamp-2 cursor-pointer">
+                    {job.title}
+                  </h3>
+                  {job.category?.name && (
+                    <p className="text-sm text-muted-foreground mb-3">{job.category.name}</p>
                   )}
-                  
-                  <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-blue-500/10">
-                    <Users className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                    <span className="font-bold text-blue-600">{job.bidCount || 0} bids</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {getStatusBadge(job.status)}
+                    <span className="text-xs text-muted-foreground">• Posted {getTimeAgo(job.createdAt)}</span>
                   </div>
-                  
-                  {job.expiresAt && (
-                    <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${isOverdue ? 'bg-red-500/10' : daysRemaining !== null && daysRemaining <= 7 ? 'bg-yellow-500/10' : 'bg-muted/50'}`}>
-                      <Clock className={`h-4 w-4 flex-shrink-0 ${isOverdue ? 'text-red-600' : daysRemaining !== null && daysRemaining <= 7 ? 'text-yellow-600' : 'text-muted-foreground'}`} />
-                      <span className={isOverdue ? 'text-red-600 font-semibold' : daysRemaining !== null && daysRemaining <= 7 ? 'text-yellow-600 font-semibold' : 'text-muted-foreground'}>
-                        {isOverdue 
-                          ? `Overdue by ${Math.abs(daysRemaining)} days`
-                          : daysRemaining !== null && daysRemaining <= 7
-                          ? `${daysRemaining} days remaining`
-                          : `Due ${new Date(job.expiresAt).toLocaleDateString()}`
-                        }
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div className="flex lg:flex-col gap-2 lg:min-w-[140px]">
-                <Button variant="outline" size="sm" asChild className="group/btn border-2 flex-1 lg:flex-none" onClick={(e) => e.stopPropagation()}>
-                  <Link to={`/my-jobs/${job.id}`}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                    <ArrowRight className="h-4 w-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
-                {canEdit && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 flex-1 lg:flex-none border-2"
-                      asChild
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Link to={`/my-jobs/${job.id}?edit=true`}>
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 border-2 border-destructive/20 flex-1 lg:flex-none"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedJob(job.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </Button>
-                  </>
+              {job.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer">
+                  {job.description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3 pt-2 border-t">
+                {(job.budgetMin || job.budgetMax) && (
+                  <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-secondary/10">
+                    <DollarSign className="h-4 w-4 text-secondary flex-shrink-0" />
+                    <span className="font-bold text-secondary">
+                      {formatCurrency(job.budgetMin, job.budgetMax)}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 text-sm p-2 rounded-lg bg-blue-500/10">
+                  <Users className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                  <span className="font-bold text-blue-600">{job.bidCount || 0} bids</span>
+                </div>
+                
+                {job.expiresAt && (
+                  <div className={`flex items-center gap-2 text-sm p-2 rounded-lg ${isOverdue ? 'bg-red-500/10' : daysRemaining !== null && daysRemaining <= 7 ? 'bg-yellow-500/10' : 'bg-muted/50'}`}>
+                    <Clock className={`h-4 w-4 flex-shrink-0 ${isOverdue ? 'text-red-600' : daysRemaining !== null && daysRemaining <= 7 ? 'text-yellow-600' : 'text-muted-foreground'}`} />
+                    <span className={isOverdue ? 'text-red-600 font-semibold' : daysRemaining !== null && daysRemaining <= 7 ? 'text-yellow-600 font-semibold' : 'text-muted-foreground'}>
+                      {isOverdue 
+                        ? `Overdue by ${Math.abs(daysRemaining)} days`
+                        : daysRemaining !== null && daysRemaining <= 7
+                        ? `${daysRemaining} days remaining`
+                        : `Due ${new Date(job.expiresAt).toLocaleDateString()}`
+                      }
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </Link>
+
+            <div className="flex lg:flex-col gap-2 lg:min-w-[140px]" onClick={(e) => e.stopPropagation()}>
+              <Button variant="outline" size="sm" className="group/btn border-2 flex-1 lg:flex-none" onClick={() => navigate(`/my-jobs/${job.id}`)}>
+                <Eye className="h-4 w-4 mr-2" />
+                View
+                <ArrowRight className="h-4 w-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+              </Button>
+              {canEdit && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1 lg:flex-none border-2"
+                    onClick={() => navigate(`/my-jobs/${job.id}?edit=true`)}
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 border-2 border-destructive/20 flex-1 lg:flex-none"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedJob(job.id);
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   };
 

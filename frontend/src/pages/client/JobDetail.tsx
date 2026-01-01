@@ -57,7 +57,7 @@ const JobDetail = () => {
       setIsLoading(true);
       const [jobData, bidsData] = await Promise.all([
         jobsApi.get(Number(id)),
-        api.get(`/jobs/${id}/bids/compare`).then((res) => res.data),
+        api.get(`/jobs/${id}/bids/compare`).then((res) => res.data).catch(() => []), // Return empty array on error
       ]);
       setJob(jobData);
       setBids(bidsData || []);

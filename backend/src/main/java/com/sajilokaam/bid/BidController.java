@@ -193,6 +193,7 @@ public class BidController {
     }
 
     @GetMapping("/{jobId}/bids/compare")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<BidComparisonResponse>> compareBids(
             @PathVariable Long jobId,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
