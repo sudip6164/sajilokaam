@@ -20,6 +20,7 @@ import java.util.Set;
         @Index(name = "idx_jobs_status", columnList = "status"),
         @Index(name = "idx_jobs_featured", columnList = "is_featured")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Job {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

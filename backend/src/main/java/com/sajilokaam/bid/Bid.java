@@ -1,5 +1,6 @@
 package com.sajilokaam.bid;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.user.User;
 import jakarta.persistence.*;
@@ -17,10 +18,12 @@ public class Bid {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Job job;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "freelancer_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private User freelancer;
 
     @Column(nullable = false, precision = 12, scale = 2)
