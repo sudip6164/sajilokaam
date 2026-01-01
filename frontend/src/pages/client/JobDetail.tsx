@@ -55,6 +55,16 @@ const JobDetail = () => {
     }
   }, [id]);
 
+  useEffect(() => {
+    // Check for edit query parameter
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('edit') === 'true' && job) {
+      setIsEditing(true);
+      setEditTitle(job.title || "");
+      setEditDescription(job.description || "");
+    }
+  }, [job]);
+
   const loadData = async () => {
     if (!id) return;
     try {
@@ -65,12 +75,47 @@ const JobDetail = () => {
       ]);
       setJob(jobData);
       setBids(bidsData || []);
-    } catch (error) {
-      toast.error("Failed to load job details");
+    } catch (error: any) {
+      if (error.response?.status === 403) {
+        toast.error("You don't have permission to view this job");
+      } else {
+        toast.error("Failed to load job details");
+      }
       navigate("/my-jobs");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!id || !editTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const updated = await jobsApi.update(Number(id), {
+        title: editTitle,
+        description: editDescription,
+      });
+      setJob(updated);
+      setIsEditing(false);
+      toast.success("Job updated successfully");
+      // Remove edit query parameter from URL
+      navigate(`/my-jobs/${id}`, { replace: true });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update job");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditTitle(job?.title || "");
+    setEditDescription(job?.description || "");
+    navigate(`/my-jobs/${id}`, { replace: true });
   };
 
   const handleAcceptBid = (bid: any) => {
@@ -140,30 +185,89 @@ const JobDetail = () => {
 
       {/* Job Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <Badge className="bg-secondary/10 text-secondary">{job.status}</Badge>
-            {job.category?.name && (
-              <span className="text-sm text-muted-foreground">{job.category.name}</span>
-            )}
+        {isEditing ? (
+          <div className="flex-1 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Edit Job</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input
+                    id="edit-title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Job title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Job description"
+                    rows={6}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveEdit} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button variant="outline" onClick={handleCancelEdit} disabled={isSaving}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold">
-            {job.title}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Posted on {new Date(job.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">Edit Job</Button>
-          <Button variant="outline" className="text-destructive">
-            Close Job
-          </Button>
-        </div>
+        ) : (
+          <>
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Badge className="bg-secondary/10 text-secondary">{job.status}</Badge>
+                {job.category?.name && (
+                  <span className="text-sm text-muted-foreground">{job.category.name}</span>
+                )}
+              </div>
+              <h1 className="text-2xl md:text-3xl font-display font-bold">
+                {job.title}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Posted on {new Date(job.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => {
+                setIsEditing(true);
+                setEditTitle(job.title || "");
+                setEditDescription(job.description || "");
+                navigate(`/my-jobs/${id}?edit=true`, { replace: true });
+              }}>
+                Edit Job
+              </Button>
+              {job.status === "OPEN" && (
+                <Button variant="outline" className="text-destructive" onClick={async () => {
+                  try {
+                    await jobsApi.update(Number(id), { status: "CLOSED" });
+                    toast.success("Job closed successfully");
+                    loadData();
+                  } catch (error: any) {
+                    toast.error(error.response?.data?.message || "Failed to close job");
+                  }
+                }}>
+                  Close Job
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Job Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Job Stats - Hide when editing */}
+      {!isEditing && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-accent/10">
@@ -215,9 +319,11 @@ const JobDetail = () => {
           </CardContent>
         </Card>
       </div>
+      )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="bids">
+      {/* Tabs - Hide when editing */}
+      {!isEditing && (
+        <Tabs defaultValue="bids">
         <TabsList>
           <TabsTrigger value="bids">Bids ({bids.length})</TabsTrigger>
           <TabsTrigger value="details">Job Details</TabsTrigger>
@@ -311,6 +417,7 @@ const JobDetail = () => {
         </TabsContent>
 
       </Tabs>
+      )}
 
       {/* Accept Bid Dialog */}
       <Dialog open={acceptDialogOpen} onOpenChange={setAcceptDialogOpen}>
