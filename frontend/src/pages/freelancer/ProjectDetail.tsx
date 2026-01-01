@@ -251,9 +251,12 @@ export default function ProjectDetail() {
     if (!id) return;
     try {
       const response = await timeTrackingApi.getTimeLogs(parseInt(id));
-      setTimeLogs(response.content);
+      // Handle both paginated response (with content) and direct array response
+      const logs = Array.isArray(response) ? response : (response?.content || []);
+      setTimeLogs(logs);
     } catch (error: any) {
-      // Silently fail
+      // Silently fail, but ensure timeLogs is set to empty array
+      setTimeLogs([]);
     }
   };
 

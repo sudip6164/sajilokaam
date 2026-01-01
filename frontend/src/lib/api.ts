@@ -1026,7 +1026,16 @@ export const timeTrackingApi = {
     return response.data;
   },
   getTimeLogs: async (projectId: number, params?: { page?: number; size?: number }) => {
-    const response = await api.get<{
+    const response = await api.get<Array<{
+      id: number;
+      taskId?: number;
+      startTime: string;
+      endTime: string;
+      minutes: number;
+      description?: string;
+      isBillable?: boolean;
+      loggedAt: string;
+    }> | {
       content: Array<{
         id: number;
         projectId: number;
