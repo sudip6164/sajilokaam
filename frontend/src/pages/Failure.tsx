@@ -16,7 +16,7 @@ const failureTypes = {
     icon: XCircle,
     title: "Payment Failed",
     message: "Your payment could not be processed. Please check your payment details and try again.",
-    primaryAction: { label: "Retry Payment", href: "/client/invoices" },
+    primaryAction: { label: "Retry Payment", href: "/client-invoices" },
     secondaryAction: { label: "Go to Dashboard", href: "/client" },
   },
   verification: {

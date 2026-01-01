@@ -106,7 +106,7 @@ const PostJob = () => {
 
       await jobsApi.create(jobData);
       toast.success("Job posted successfully!");
-      navigate("/client/jobs");
+      navigate("/my-jobs");
     } catch (error: any) {
       const message = error.response?.data?.message || "Failed to post job";
       toast.error(message);

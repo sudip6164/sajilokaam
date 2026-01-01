@@ -184,6 +184,21 @@ public class PaymentController {
         return ResponseEntity.ok(Map.of("status", "success"));
     }
 
+    // New eSewa v2 form-based payment endpoint
+    @PostMapping("/esewa")
+    public ResponseEntity<Map<String, Object>> esewa(
+            @RequestBody Map<String, Object> payload,
+            jakarta.servlet.http.HttpServletRequest request) {
+        return paymentService.initiateESewaPayment(payload, request);
+    }
+
+    // eSewa callback verification endpoint
+    @PostMapping("/esewa/verify")
+    public ResponseEntity<Map<String, Object>> verifyESewa(
+            @RequestBody Map<String, Object> callbackData) {
+        return paymentService.verifyESewaCallback(callbackData);
+    }
+
     @PostMapping("/{paymentId}/refund")
     public ResponseEntity<RefundResponse> refundPayment(
             @PathVariable Long paymentId,

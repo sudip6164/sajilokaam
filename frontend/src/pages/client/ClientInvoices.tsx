@@ -34,6 +34,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { invoicesApi, paymentsApi } from "@/lib/api";
 import { toast } from "sonner";
+import { ESewaPaymentForm } from "@/components/ESewaPaymentForm";
 
 const ClientInvoices = () => {
   const { user } = useAuth();
@@ -43,6 +44,7 @@ const ClientInvoices = () => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [esewaPaymentData, setEsewaPaymentData] = useState<any | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -111,8 +113,26 @@ const ClientInvoices = () => {
         status: "PENDING",
       });
 
+      // Handle eSewa separately (form-based payment)
+      if (paymentMethod === "esewa") {
+        try {
+          // Use new eSewa v2 form-based API
+          const esewaData = await paymentsApi.initiateESewa(
+            Number(selectedInvoice.totalAmount),
+            selectedInvoice.id
+          );
+          setEsewaPaymentData(esewaData);
+          setPaymentDialogOpen(false);
+          // Form will auto-submit via ESewaPaymentForm component
+        } catch (error: any) {
+          const message = error.response?.data?.error || error.response?.data?.message || "Failed to initiate eSewa payment";
+          toast.error(message);
+        }
+        return;
+      }
+
       // Map payment method to gateway
-      const gateway = paymentMethod === "esewa" ? "ESEWA" : paymentMethod === "khalti" ? "KHALTI" : null;
+      const gateway = paymentMethod === "khalti" ? "KHALTI" : null;
       
       if (!gateway) {
         // For non-gateway methods (bank, card), just mark as pending
@@ -123,7 +143,7 @@ const ClientInvoices = () => {
         return;
       }
 
-      // Initiate gateway payment
+      // Initiate gateway payment (Khalti)
       const initiationResponse = await paymentsApi.initiate(
         payment.id,
         gateway,
@@ -324,7 +344,7 @@ const ClientInvoices = () => {
 
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" asChild>
-                            <Link to={`/client/invoices/${invoice.id}`}>
+                            <Link to={`/client-invoices/${invoice.id}`}>
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Link>
@@ -404,6 +424,11 @@ const ClientInvoices = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* eSewa Payment Form (auto-submits) */}
+      {esewaPaymentData && (
+        <ESewaPaymentForm paymentData={esewaPaymentData} />
+      )}
     </div>
   );
 };

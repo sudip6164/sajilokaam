@@ -7,10 +7,13 @@ import com.sajilokaam.paymentgateway.impl.KhaltiGateway;
 import com.sajilokaam.paymentgateway.impl.ESewaGateway;
 import com.sajilokaam.transaction.Transaction;
 import com.sajilokaam.transaction.TransactionRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,15 +23,18 @@ public class PaymentService {
     private final TransactionRepository transactionRepository;
     private final KhaltiGateway khaltiGateway;
     private final ESewaGateway eSewaGateway;
+    private final ESewaPaymentHelper eSewaPaymentHelper;
 
     public PaymentService(PaymentRepository paymentRepository,
                          TransactionRepository transactionRepository,
                          KhaltiGateway khaltiGateway,
-                         ESewaGateway eSewaGateway) {
+                         ESewaGateway eSewaGateway,
+                         ESewaPaymentHelper eSewaPaymentHelper) {
         this.paymentRepository = paymentRepository;
         this.transactionRepository = transactionRepository;
         this.khaltiGateway = khaltiGateway;
         this.eSewaGateway = eSewaGateway;
+        this.eSewaPaymentHelper = eSewaPaymentHelper;
     }
 
     public PaymentInitiationResponse initiatePayment(Payment payment, String gateway, String returnUrl, String cancelUrl) {
@@ -169,6 +175,67 @@ public class PaymentService {
             return eSewaGateway;
         }
         return null;
+    }
+
+    // New eSewa v2 form-based payment initiation
+    public ResponseEntity<Map<String, Object>> initiateESewaPayment(Map<String, Object> payload, HttpServletRequest request) {
+        try {
+            Map<String, Object> paymentData = eSewaPaymentHelper.generateESewaPaymentData(payload, request);
+            return ResponseEntity.ok(paymentData);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Failed to initiate eSewa payment: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    // eSewa callback verification
+    public ResponseEntity<Map<String, Object>> verifyESewaCallback(Map<String, Object> callbackData) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            boolean isValid = eSewaPaymentHelper.verifyESewaSignature(callbackData);
+            
+            if (isValid) {
+                String transactionUuid = (String) callbackData.get("transaction_uuid");
+                String status = (String) callbackData.get("status");
+                
+                // Find transaction by UUID
+                Transaction transaction = transactionRepository.findByTransactionId(transactionUuid)
+                        .orElse(null);
+                
+                if (transaction != null && "success".equalsIgnoreCase(status)) {
+                    transaction.setStatus("SUCCESS");
+                    transaction.setProcessedAt(Instant.now());
+                    transaction.setGatewayTransactionId(transactionUuid);
+                    transactionRepository.save(transaction);
+
+                    // Update payment status
+                    Payment payment = transaction.getPayment();
+                    if (payment != null) {
+                        payment.setStatus("COMPLETED");
+                        payment.setPaidAt(Instant.now());
+                        payment.setGateway("ESEWA");
+                        payment.setGatewayTransactionId(transactionUuid);
+                        paymentRepository.save(payment);
+                    }
+                    
+                    response.put("status", "success");
+                    response.put("message", "Payment verified successfully");
+                } else {
+                    response.put("status", "failed");
+                    response.put("message", "Transaction not found or payment failed");
+                }
+            } else {
+                response.put("status", "failed");
+                response.put("message", "Invalid signature");
+            }
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Error verifying payment: " + e.getMessage());
+        }
+        
+        return ResponseEntity.ok(response);
     }
 }
 

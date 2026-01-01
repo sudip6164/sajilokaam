@@ -18,7 +18,7 @@ const successTypes = {
     icon: CreditCard,
     title: "Payment Successful!",
     message: "Your payment has been processed successfully. A confirmation email has been sent to your registered email address.",
-    primaryAction: { label: "View Invoices", href: "/client/invoices" },
+    primaryAction: { label: "View Invoices", href: "/client-invoices" },
     secondaryAction: { label: "Go to Dashboard", href: "/client" },
   },
   email: {
@@ -53,6 +53,23 @@ const Success = () => {
     if (type === "payment" && transactionId) {
       verifyPayment(transactionId);
     }
+    
+    // Handle eSewa callback verification
+    if (type === "payment") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const status = urlParams.get("status");
+      
+      // If this is an eSewa callback with transaction data
+      if (status && urlParams.has("transaction_uuid")) {
+        const callbackData: Record<string, string> = {};
+        urlParams.forEach((value, key) => {
+          callbackData[key] = value;
+        });
+        
+        // Verify eSewa payment
+        verifyESewaPayment(callbackData);
+      }
+    }
   }, [type, transactionId]);
 
   const verifyPayment = async (txnId: string) => {
@@ -66,6 +83,23 @@ const Success = () => {
       }
     } catch (error) {
       console.error("Payment verification error:", error);
+      // Don't show error toast as user is already on success page
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const verifyESewaPayment = async (callbackData: Record<string, string>) => {
+    try {
+      setVerifying(true);
+      const response = await paymentsApi.verifyESewa(callbackData);
+      if (response.status === "success") {
+        toast.success("eSewa payment verified successfully!");
+      } else {
+        toast.error(response.message || "eSewa payment verification failed");
+      }
+    } catch (error) {
+      console.error("eSewa payment verification error:", error);
       // Don't show error toast as user is already on success page
     } finally {
       setVerifying(false);
@@ -112,7 +146,7 @@ const Success = () => {
           {type === "payment" && invoiceId && (
             <Button
               variant="outline"
-              onClick={() => navigate(`/client/invoices`)}
+              onClick={() => navigate(`/client-invoices`)}
               className="mb-4"
             >
               View Invoice Details

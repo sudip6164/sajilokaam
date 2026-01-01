@@ -126,7 +126,7 @@ export default function SprintPlanner() {
       <div className="flex items-center justify-between">
         <div>
           <Link
-            to={`/freelancer/projects/${projectId}`}
+            to={`/projects/${projectId}`}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-fit mb-2"
           >
             <ArrowLeft className="h-4 w-4" />

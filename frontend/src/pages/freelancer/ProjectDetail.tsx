@@ -350,7 +350,7 @@ export default function ProjectDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Project not found</p>
-        <Link to="/freelancer/projects" className="text-primary hover:underline mt-4 inline-block">
+        <Link to="/projects" className="text-primary hover:underline mt-4 inline-block">
           Back to Projects
         </Link>
       </div>
@@ -362,7 +362,7 @@ export default function ProjectDetail() {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <Link 
-          to="/freelancer/projects" 
+          to="/projects" 
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-fit"
         >
           <ArrowLeft className="h-4 w-4" />

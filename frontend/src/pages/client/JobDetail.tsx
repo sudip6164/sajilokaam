@@ -63,7 +63,7 @@ const JobDetail = () => {
       setBids(bidsData || []);
     } catch (error) {
       toast.error("Failed to load job details");
-      navigate("/client/jobs");
+      navigate("/my-jobs");
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +89,7 @@ const JobDetail = () => {
       });
       toast.success(`Bid accepted! Project created with ${selectedBid.freelancerName}`);
       setAcceptDialogOpen(false);
-      navigate("/client/projects");
+      navigate("/my-projects");
     } catch (error: any) {
       const message = error.response?.data?.message || "Failed to accept bid";
       toast.error(message);
@@ -116,7 +116,7 @@ const JobDetail = () => {
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Job not found</p>
             <Button asChild className="mt-4">
-              <Link to="/client/jobs">Back to My Jobs</Link>
+              <Link to="/my-jobs">Back to My Jobs</Link>
             </Button>
           </CardContent>
         </Card>
@@ -128,7 +128,7 @@ const JobDetail = () => {
     <div className="space-y-6">
       {/* Back Button */}
       <Button variant="ghost" asChild className="gap-2 -ml-2">
-        <Link to="/client/jobs">
+        <Link to="/my-jobs">
           <ArrowLeft className="h-4 w-4" />
           Back to My Jobs
         </Link>

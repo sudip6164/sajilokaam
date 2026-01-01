@@ -34,12 +34,8 @@ export default function Register() {
       const role = accountType === "client" ? "CLIENT" : "FREELANCER";
       await register(formData.email, formData.password, formData.name, role);
       
-      // Redirect based on role
-      if (role === "CLIENT") {
-        navigate("/client");
-      } else {
-        navigate("/freelancer");
-      }
+      // Redirect to homepage - users will see personalized content and can navigate from there
+      navigate("/", { replace: true });
     } catch (error) {
       // Error is already handled by auth context
     } finally {

@@ -16,15 +16,19 @@ import {
   Search,
   Building2,
   UserCheck,
-  Lock
+  Lock,
+  FolderKanban,
+  FileText,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { jobsApi } from "@/lib/api";
+import { jobsApi, projectsApi, bidsApi } from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const features = [
   {
@@ -125,12 +129,23 @@ const stats = [
 
 export default function Home() {
   const navigate = useNavigate();
+  const { isAuthenticated, user, hasRole } = useAuth();
   const [featuredJobs, setFeaturedJobs] = useState<any[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [myProjects, setMyProjects] = useState<any[]>([]);
+  const [myBids, setMyBids] = useState<any[]>([]);
+  const [myJobs, setMyJobs] = useState<any[]>([]);
+  const [isLoadingPersonal, setIsLoadingPersonal] = useState(true);
+  
+  const isFreelancer = hasRole("FREELANCER");
+  const isClient = hasRole("CLIENT");
 
   useEffect(() => {
     loadFeaturedJobs();
-  }, []);
+    if (isAuthenticated) {
+      loadPersonalizedData();
+    }
+  }, [isAuthenticated, isFreelancer, isClient]);
 
   const loadFeaturedJobs = async () => {
     try {
@@ -142,6 +157,31 @@ export default function Home() {
       // Silently fail - homepage should work even if jobs fail to load
     } finally {
       setIsLoadingJobs(false);
+    }
+  };
+
+  const loadPersonalizedData = async () => {
+    try {
+      setIsLoadingPersonal(true);
+      if (isFreelancer) {
+        const [projects, bids] = await Promise.all([
+          projectsApi.list({ freelancerId: user?.id, status: "IN_PROGRESS" }).catch(() => []),
+          bidsApi.list({ freelancerId: user?.id, status: "PENDING" }).catch(() => []),
+        ]);
+        setMyProjects(projects.slice(0, 3));
+        setMyBids(bids.slice(0, 3));
+      } else if (isClient) {
+        const [jobs, projects] = await Promise.all([
+          jobsApi.list({ clientId: user?.id, status: "OPEN" }).catch(() => []),
+          projectsApi.list({ clientId: user?.id, status: "IN_PROGRESS" }).catch(() => []),
+        ]);
+        setMyJobs(jobs.slice(0, 3));
+        setMyProjects(projects.slice(0, 3));
+      }
+    } catch (error) {
+      // Silently fail
+    } finally {
+      setIsLoadingPersonal(false);
     }
   };
 
@@ -177,7 +217,7 @@ export default function Home() {
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-slide-up">
-              Hire Freelancers or 
+              Hire Talent or 
               <span className="block mt-2">
                 <span className="text-primary">Find Work</span>{" "}
                 <span className="text-secondary">in Nepal</span>
@@ -225,27 +265,64 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Dual CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <Button size="xl" variant="hero" asChild className="gap-2">
-                <Link to="/register?role=client">
-                  <Building2 className="w-5 h-5" />
-                  Post a Job
-                </Link>
-              </Button>
-              <Button size="xl" variant="outline" asChild className="gap-2">
-                <Link to="/register?role=freelancer">
-                  <Briefcase className="w-5 h-5" />
-                  Find Work
-                </Link>
-              </Button>
-              <Button size="xl" variant="ghost" asChild>
-                <Link to="/jobs">
-                  Browse Jobs
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-              </Button>
-            </div>
+            {/* Dual CTAs - Different for logged in users */}
+            {!isAuthenticated ? (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                <Button size="xl" variant="hero" asChild className="gap-2">
+                  <Link to="/register?role=client">
+                    <Building2 className="w-5 h-5" />
+                    Post a Job
+                  </Link>
+                </Button>
+                <Button size="xl" variant="outline" asChild className="gap-2">
+                  <Link to="/register?role=freelancer">
+                    <Briefcase className="w-5 h-5" />
+                    Find Work
+                  </Link>
+                </Button>
+                <Button size="xl" variant="ghost" asChild>
+                  <Link to="/jobs">
+                    Browse Jobs
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                {isFreelancer && (
+                  <>
+                    <Button size="xl" variant="hero" asChild className="gap-2">
+                      <Link to="/jobs">
+                        <Briefcase className="w-5 h-5" />
+                        Browse Jobs
+                      </Link>
+                    </Button>
+                    <Button size="xl" variant="outline" asChild className="gap-2">
+                      <Link to="/projects">
+                        <FolderKanban className="w-5 h-5" />
+                        My Projects
+                      </Link>
+                    </Button>
+                  </>
+                )}
+                {isClient && (
+                  <>
+                    <Button size="xl" variant="hero" asChild className="gap-2">
+                      <Link to="/post-job">
+                        <Building2 className="w-5 h-5" />
+                        Post a Job
+                      </Link>
+                    </Button>
+                    <Button size="xl" variant="outline" asChild className="gap-2">
+                      <Link to="/freelancers">
+                        <Users className="w-5 h-5" />
+                        Find Freelancers
+                      </Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Trust badges */}
             <div className="mt-12 pt-8 border-t border-border/50 animate-fade-in" style={{ animationDelay: "0.3s" }}>
@@ -275,6 +352,192 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Personalized Sections for Logged In Users */}
+      {isAuthenticated && (
+        <>
+          {/* Freelancer Dashboard */}
+          {isFreelancer && (
+            <section className="py-12 bg-muted/30">
+              <div className="container">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Active Projects */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <FolderKanban className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">Active Projects</h3>
+                            <p className="text-sm text-muted-foreground">Projects you're working on</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/projects">View All</Link>
+                        </Button>
+                      </div>
+                      {isLoadingPersonal ? (
+                        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                      ) : myProjects.length > 0 ? (
+                        <div className="space-y-3">
+                          {myProjects.map((project) => (
+                            <Link key={project.id} to={`/projects/${project.id}`}>
+                              <div className="p-3 rounded-lg border hover:bg-muted transition-colors">
+                                <p className="font-medium line-clamp-1">{project.title}</p>
+                                <p className="text-sm text-muted-foreground mt-1">Budget: NPR {project.budget?.toLocaleString()}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <FolderKanban className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>No active projects yet</p>
+                          <Button variant="outline" size="sm" className="mt-4" asChild>
+                            <Link to="/jobs">Browse Jobs</Link>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* My Bids */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-secondary/10">
+                            <FileText className="h-5 w-5 text-secondary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">My Bids</h3>
+                            <p className="text-sm text-muted-foreground">Your pending proposals</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/bids">View All</Link>
+                        </Button>
+                      </div>
+                      {isLoadingPersonal ? (
+                        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                      ) : myBids.length > 0 ? (
+                        <div className="space-y-3">
+                          {myBids.map((bid) => (
+                            <div key={bid.id} className="p-3 rounded-lg border">
+                              <p className="font-medium line-clamp-1">Bid: NPR {bid.amount?.toLocaleString()}</p>
+                              <Badge variant="outline" className="mt-2">{bid.status}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>No pending bids</p>
+                          <Button variant="outline" size="sm" className="mt-4" asChild>
+                            <Link to="/jobs">Browse Jobs</Link>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Client Dashboard */}
+          {isClient && (
+            <section className="py-12 bg-muted/30">
+              <div className="container">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Active Jobs */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <Briefcase className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">My Jobs</h3>
+                            <p className="text-sm text-muted-foreground">Jobs you've posted</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/my-jobs">View All</Link>
+                        </Button>
+                      </div>
+                      {isLoadingPersonal ? (
+                        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                      ) : myJobs.length > 0 ? (
+                        <div className="space-y-3">
+                          {myJobs.map((job) => (
+                            <Link key={job.id} to={`/my-jobs/${job.id}`}>
+                              <div className="p-3 rounded-lg border hover:bg-muted transition-colors">
+                                <p className="font-medium line-clamp-1">{job.title}</p>
+                                <Badge variant="secondary" className="mt-2">{job.status}</Badge>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Briefcase className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>No jobs posted yet</p>
+                          <Button variant="outline" size="sm" className="mt-4" asChild>
+                            <Link to="/post-job">Post a Job</Link>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Active Projects */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-secondary/10">
+                            <FolderKanban className="h-5 w-5 text-secondary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">Active Projects</h3>
+                            <p className="text-sm text-muted-foreground">Projects in progress</p>
+                          </div>
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/my-projects">View All</Link>
+                        </Button>
+                      </div>
+                      {isLoadingPersonal ? (
+                        <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                      ) : myProjects.length > 0 ? (
+                        <div className="space-y-3">
+                          {myProjects.map((project) => (
+                            <Link key={project.id} to={`/my-projects/${project.id}`}>
+                              <div className="p-3 rounded-lg border hover:bg-muted transition-colors">
+                                <p className="font-medium line-clamp-1">{project.title}</p>
+                                <p className="text-sm text-muted-foreground mt-1">Budget: NPR {project.budget?.toLocaleString()}</p>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <FolderKanban className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>No active projects yet</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </section>
+          )}
+        </>
+      )}
 
       {/* Featured Jobs Preview */}
       {featuredJobs.length > 0 && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,61 +48,81 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-center gap-2 mb-6">
-        <Shield className="w-8 h-8 text-primary" />
-        <h2 className="text-2xl font-bold text-foreground">Admin Login</h2>
-      </div>
-      <p className="text-muted-foreground mb-8 text-center">
-        Sign in with your admin credentials to access the admin panel
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input 
-              type="email" 
-              placeholder="admin@example.com" 
-              className="pl-11" 
-              value={formData.email} 
-              onChange={e => setFormData(p => ({...p, email: e.target.value}))} 
-              required 
-            />
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md">
+        {/* Simple Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
+            <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
+          <h1 className="text-2xl font-semibold text-foreground mb-2">
+            Admin Portal
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Sign in to access the admin panel
+          </p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Password</label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input 
-              type={showPassword ? "text" : "password"} 
-              placeholder="••••••••" 
-              className="pl-11 pr-11" 
-              value={formData.password} 
-              onChange={e => setFormData(p => ({...p, password: e.target.value}))} 
-              required 
-            />
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        {/* Simple Form Card */}
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  type="email" 
+                  placeholder="admin@example.com" 
+                  className="pl-10 h-11" 
+                  value={formData.email} 
+                  onChange={e => setFormData(p => ({...p, email: e.target.value}))} 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••" 
+                  className="pl-10 pr-10 h-11" 
+                  value={formData.password} 
+                  onChange={e => setFormData(p => ({...p, password: e.target.value}))} 
+                  required 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              variant="hero"
+              className="w-full h-11 font-medium" 
+              disabled={isLoading}
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
         </div>
 
-        <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
-          {isLoading ? "Signing in..." : "Sign In as Admin"}
-        </Button>
-      </form>
-
-      <p className="text-center text-muted-foreground mt-8">
-        Not an admin? <Link to="/login" className="text-primary font-medium hover:underline">Regular Login</Link>
-      </p>
+        {/* Simple Footer */}
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Restricted access. Authorized personnel only.
+        </p>
+      </div>
     </div>
   );
 }

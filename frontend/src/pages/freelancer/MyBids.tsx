@@ -262,7 +262,7 @@ export default function MyBids() {
                               </DropdownMenuItem>
                               {bid.status === "ACCEPTED" && (
                                 <DropdownMenuItem asChild>
-                                  <Link to={`/freelancer/projects?jobId=${bid.jobId}`}>
+                                  <Link to={`/projects?jobId=${bid.jobId}`}>
                                     <MessageSquare className="h-4 w-4 mr-2" />
                                     View Project
                                   </Link>

@@ -4,6 +4,17 @@ import { Clock, DollarSign, Calendar, ArrowLeft, Briefcase } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { jobsApi, bidsApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -15,6 +26,11 @@ export default function JobDetailPublic() {
   const [job, setJob] = useState<any>(null);
   const [bids, setBids] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [bidDialogOpen, setBidDialogOpen] = useState(false);
+  const [bidAmount, setBidAmount] = useState("");
+  const [bidProposal, setBidProposal] = useState("");
+  const [bidDuration, setBidDuration] = useState("");
+  const [isSubmittingBid, setIsSubmittingBid] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -57,6 +73,35 @@ export default function JobDetailPublic() {
     if (min) return `NPR ${min.toLocaleString()}+`;
     if (max) return `Up to NPR ${max.toLocaleString()}`;
     return "Negotiable";
+  };
+
+  const handleSubmitBid = async () => {
+    if (!bidAmount || !bidProposal) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (!job) return;
+
+    try {
+      setIsSubmittingBid(true);
+      await bidsApi.create({
+        jobId: job.id,
+        amount: parseFloat(bidAmount),
+        proposal: bidProposal,
+        estimatedCompletionDate: bidDuration ? new Date(bidDuration).toISOString() : undefined,
+      });
+      toast.success("Bid submitted successfully!");
+      setBidDialogOpen(false);
+      setBidAmount("");
+      setBidProposal("");
+      setBidDuration("");
+      loadBids(); // Refresh bid count
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to submit bid");
+    } finally {
+      setIsSubmittingBid(false);
+    }
   };
 
   if (isLoading) {
@@ -144,8 +189,8 @@ export default function JobDetailPublic() {
 
           {canBid && !isOwner && (
             <div className="pt-4 border-t">
-              <Button asChild>
-                <Link to={`/freelancer/jobs/${job.id}`}>Submit Bid</Link>
+              <Button onClick={() => setBidDialogOpen(true)}>
+                Submit Bid
               </Button>
             </div>
           )}
@@ -153,12 +198,63 @@ export default function JobDetailPublic() {
           {isOwner && (
             <div className="pt-4 border-t">
               <Button asChild>
-                <Link to={`/client/jobs/${job.id}`}>Manage Job</Link>
+                <Link to={`/my-jobs/${job.id}`}>Manage Job</Link>
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Bid Dialog */}
+      <Dialog open={bidDialogOpen} onOpenChange={setBidDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Submit a Bid</DialogTitle>
+            <DialogDescription>
+              Submit your proposal for "{job?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bidAmount">Bid Amount (NPR) *</Label>
+              <Input
+                id="bidAmount"
+                type="number"
+                placeholder="e.g., 50000"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bidProposal">Proposal *</Label>
+              <Textarea
+                id="bidProposal"
+                placeholder="Describe your approach, timeline, and why you're the best fit..."
+                rows={6}
+                value={bidProposal}
+                onChange={(e) => setBidProposal(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bidDuration">Estimated Completion Date (Optional)</Label>
+              <Input
+                id="bidDuration"
+                type="date"
+                value={bidDuration}
+                onChange={(e) => setBidDuration(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBidDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitBid} disabled={isSubmittingBid}>
+              {isSubmittingBid ? "Submitting..." : "Submit Bid"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

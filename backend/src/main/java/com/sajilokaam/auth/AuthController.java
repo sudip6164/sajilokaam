@@ -71,7 +71,15 @@ public class AuthController {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElse(null);
 
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user == null) {
+            System.err.println("Login failed: User not found for email: " + request.getEmail());
+            return ResponseEntity.status(401).build();
+        }
+
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        if (!passwordMatches) {
+            System.err.println("Login failed: Password mismatch for user: " + request.getEmail());
+            System.err.println("Stored hash starts with: " + (user.getPassword() != null ? user.getPassword().substring(0, Math.min(20, user.getPassword().length())) : "null"));
             return ResponseEntity.status(401).build();
         }
 

@@ -471,6 +471,36 @@ export const paymentsApi = {
     return response.data;
   },
 
+  // New eSewa v2 form-based payment
+  initiateESewa: async (amount: number, invoiceId?: number) => {
+    const response = await api.post<{
+      amount: string;
+      tax_amount: number;
+      total_amount: string;
+      transaction_uuid: string;
+      product_code: string;
+      product_service_charge: number;
+      product_delivery_charge: number;
+      success_url: string;
+      failure_url: string;
+      signed_field_names: string;
+      signature: string;
+      action: string;
+    }>("/payments/esewa", {
+      total_amount: amount,
+      amount: amount,
+    });
+    return response.data;
+  },
+
+  verifyESewa: async (callbackData: Record<string, any>) => {
+    const response = await api.post<{
+      status: string;
+      message: string;
+    }>("/payments/esewa/verify", callbackData);
+    return response.data;
+  },
+
   verify: async (transactionId: string) => {
     const response = await api.post<{
       success: boolean;
@@ -972,9 +1002,39 @@ export const filesApi = {
     const formData = new FormData();
     formData.append("file", file);
     const response = await api.post<{
-      tasks: Array<{ title: string; description?: string }>;
-    }>(`/projects/${projectId}/documents/process`, formData, {
+      id: number;
+      status: string;
+      message: string;
+    }>(`/projects/${projectId}/documents/upload`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+  getProcessingStatus: async (projectId: number, processingId: number) => {
+    const response = await api.get<{
+      id: number;
+      status: string;
+      fileName?: string;
+      ocrText?: string;
+    }>(`/projects/${projectId}/documents/${processingId}/status`);
+    return response.data;
+  },
+  getSuggestions: async (projectId: number, processingId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      title: string;
+      description?: string;
+      confidenceScore: number;
+    }>>(`/projects/${projectId}/documents/${processingId}/suggestions`);
+    return response.data;
+  },
+  createTasksFromSuggestions: async (projectId: number, processingId: number, suggestionIds: number[]) => {
+    const response = await api.post<{
+      message: string;
+      count: number;
+      tasks: Array<any>;
+    }>(`/projects/${projectId}/documents/${processingId}/create-tasks`, {
+      suggestionIds,
     });
     return response.data;
   },

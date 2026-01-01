@@ -21,33 +21,25 @@ export default function Login() {
   useEffect(() => {
     if (loginSuccess && user && isAuthenticated) {
       const from = (location.state as any)?.from?.pathname;
+      const roles = user.roles.map((r) => r.name);
       
-      // If there's an intended destination, use it
-      if (from && !from.startsWith("/login") && !from.startsWith("/register")) {
-        navigate(from, { replace: true });
+      // Admins always go to admin panel
+      if (roles.includes("ADMIN")) {
+        navigate("/admin", { replace: true });
+        setLoginSuccess(false);
         return;
       }
       
-      // Redirect based on selected login type and user roles
-      const roles = user.roles.map((r) => r.name);
-      
-      // Check if user has the selected role
-      if (loginType === "freelancer" && roles.includes("FREELANCER")) {
-        navigate("/freelancer", { replace: true });
-      } else if (loginType === "client" && roles.includes("CLIENT")) {
-        navigate("/client", { replace: true });
-      } else if (roles.includes("ADMIN")) {
-        navigate("/admin", { replace: true });
-      } else if (roles.includes("FREELANCER") && loginType === "freelancer") {
-        navigate("/freelancer", { replace: true });
-      } else if (roles.includes("CLIENT") && loginType === "client") {
-        navigate("/client", { replace: true });
-      } else {
-        // User doesn't have the selected role
-        toast.error(`You don't have ${loginType === "freelancer" ? "freelancer" : "client"} access. Please select the correct role or contact support.`);
-        navigate("/", { replace: true });
+      // For freelancers and clients, stay on main site
+      // If there's an intended destination (and it's not a dashboard), use it
+      if (from && !from.startsWith("/login") && !from.startsWith("/register") && !from.startsWith("/freelancer") && !from.startsWith("/client")) {
+        navigate(from, { replace: true });
+        setLoginSuccess(false);
+        return;
       }
       
+      // Otherwise, go to homepage - users will see personalized content and can navigate from there
+      navigate("/", { replace: true });
       setLoginSuccess(false);
     }
   }, [loginSuccess, user, isAuthenticated, navigate, location]);

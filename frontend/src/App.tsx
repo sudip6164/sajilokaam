@@ -26,6 +26,7 @@ import Failure from "@/pages/Failure";
 import AccessDenied from "@/pages/AccessDenied";
 import Jobs from "@/pages/Jobs";
 import JobDetailPublic from "@/pages/JobDetailPublic";
+import Freelancers from "@/pages/Freelancers";
 
 // Auth Pages
 import Login from "@/pages/auth/Login";
@@ -56,6 +57,7 @@ import Teams from "@/pages/freelancer/Teams";
 import Invoices from "@/pages/freelancer/Invoices";
 import Notifications from "@/pages/freelancer/Notifications";
 import Profile from "@/pages/freelancer/Profile";
+import Messages from "@/pages/freelancer/Messages";
 
 // Client Pages
 import ClientDashboard from "@/pages/client/ClientDashboard";
@@ -66,6 +68,7 @@ import ClientProjects from "@/pages/client/ClientProjects";
 import ClientInvoices from "@/pages/client/ClientInvoices";
 import ClientNotifications from "@/pages/client/ClientNotifications";
 import ClientProfile from "@/pages/client/ClientProfile";
+import ClientMessages from "@/pages/client/ClientMessages";
 
 const queryClient = new QueryClient();
 
@@ -88,18 +91,42 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetailPublic />} />
+              <Route path="/freelancers" element={<Freelancers />} />
+              
+              {/* Protected Action Pages - Use Main Site Layout */}
+              {/* Freelancer Actions */}
+              <Route path="/bids" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><MyBids /></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><MyProjects /></ProtectedRoute>} />
+              <Route path="/projects/:id" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><ProjectDetail /></ProtectedRoute>} />
+              <Route path="/invoices" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Invoices /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Notifications /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Profile /></ProtectedRoute>} />
+              <Route path="/messages" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Messages /></ProtectedRoute>} />
+              
+              {/* Client Actions */}
+              <Route path="/post-job" element={<ProtectedRoute allowedRoles={["CLIENT"]}><PostJob /></ProtectedRoute>} />
+              <Route path="/my-jobs" element={<ProtectedRoute allowedRoles={["CLIENT"]}><MyJobs /></ProtectedRoute>} />
+              <Route path="/my-jobs/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><JobDetail /></ProtectedRoute>} />
+              <Route path="/my-projects" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjects /></ProtectedRoute>} />
+              <Route path="/my-projects/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjects /></ProtectedRoute>} />
+              <Route path="/client-invoices" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientInvoices /></ProtectedRoute>} />
+              <Route path="/client-notifications" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientNotifications /></ProtectedRoute>} />
+              <Route path="/client-profile" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProfile /></ProtectedRoute>} />
+              <Route path="/client-messages" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientMessages /></ProtectedRoute>} />
             </Route>
 
             {/* Auth Routes */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<Login />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/email-verified" element={<EmailVerified />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
             </Route>
+
+            {/* Admin Login - No layout, simple standalone page */}
+            <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* Admin Routes - Protected */}
             <Route 
@@ -118,7 +145,7 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 
-            {/* Freelancer Routes - Protected */}
+            {/* Freelancer Dashboard - Minimal Stats Only */}
             <Route 
               path="/freelancer" 
               element={
@@ -128,20 +155,14 @@ const App = () => (
               }
             >
               <Route index element={<FreelancerDashboard />} />
-              <Route path="jobs" element={<AvailableJobs />} />
-              <Route path="bids" element={<MyBids />} />
-              <Route path="projects" element={<MyProjects />} />
-              <Route path="projects/:id" element={<ProjectDetail />} />
-              <Route path="projects/:id/sprints" element={<SprintPlanner />} />
+              {/* Keep some dashboard-specific routes here */}
               <Route path="teams" element={<Teams />} />
-              <Route path="invoices" element={<Invoices />} />
-              <Route path="notifications" element={<Notifications />} />
-              <Route path="profile" element={<Profile />} />
+              <Route path="projects/:id/sprints" element={<SprintPlanner />} />
             </Route>
 
-            {/* Client Routes - Protected */}
+            {/* Client Dashboard - Minimal Stats Only */}
             <Route 
-              path="/client" 
+              path="/client"
               element={
                 <ProtectedRoute allowedRoles={["CLIENT"]}>
                   <ClientLayout />
@@ -149,14 +170,6 @@ const App = () => (
               }
             >
               <Route index element={<ClientDashboard />} />
-              <Route path="post-job" element={<PostJob />} />
-              <Route path="jobs" element={<MyJobs />} />
-              <Route path="jobs/:id" element={<JobDetail />} />
-              <Route path="projects" element={<ClientProjects />} />
-              <Route path="projects/:id" element={<ClientProjects />} />
-              <Route path="invoices" element={<ClientInvoices />} />
-              <Route path="notifications" element={<ClientNotifications />} />
-              <Route path="profile" element={<ClientProfile />} />
             </Route>
 
             {/* Utility Routes */}
