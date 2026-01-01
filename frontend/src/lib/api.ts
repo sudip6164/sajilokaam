@@ -734,6 +734,7 @@ export const profileApi = {
       rejectionReason?: string;
       submittedAt?: string;
       reviewedAt?: string;
+      profilePictureUrl?: string;
     }>("/profile/freelancer/me");
     return response.data;
   },

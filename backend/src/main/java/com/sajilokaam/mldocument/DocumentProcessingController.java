@@ -66,19 +66,30 @@ public class DocumentProcessingController {
             CompletableFuture<DocumentProcessing> future = documentProcessingService.processDocument(
                     file, projectId, user);
             
-            // Return immediately with processing status
-            DocumentProcessing processing = future.get(); // For now, wait for completion
-            // In production, you might want to return immediately and poll for status
+            // Wait for completion to get suggestions count
+            DocumentProcessing processing = future.get();
             
             Long processingId = processing.getId();
+            
+            // Get extracted task suggestions count
+            List<ExtractedTaskSuggestion> suggestions = extractedTaskSuggestionRepository
+                    .findByDocumentProcessingIdOrderByConfidenceScoreDesc(processingId);
+            
             return ResponseEntity.ok(Map.of(
                     "id", processingId != null ? processingId : 0L,
                     "status", processing.getStatus(),
-                    "message", "Document processing started"
+                    "message", "Document processing completed",
+                    "tasks", suggestions.stream().map(s -> Map.of(
+                            "id", s.getId(),
+                            "title", s.getSuggestedTitle() != null ? s.getSuggestedTitle() : "",
+                            "description", s.getSuggestedDescription() != null ? s.getSuggestedDescription() : "",
+                            "priority", s.getSuggestedPriority() != null ? s.getSuggestedPriority() : "MEDIUM"
+                    )).collect(java.util.stream.Collectors.toList())
             ));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of(
-                    "error", e.getMessage()
+                    "error", e.getMessage() != null ? e.getMessage() : "Failed to process document"
             ));
         }
     }

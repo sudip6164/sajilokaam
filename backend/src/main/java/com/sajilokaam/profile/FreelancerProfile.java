@@ -85,6 +85,9 @@ public class FreelancerProfile {
     @Column(name = "video_intro_url")
     private String videoIntroUrl;
 
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "preferred_workload")
     private PreferredWorkload preferredWorkload;
@@ -314,6 +317,14 @@ public class FreelancerProfile {
 
     public void setVideoIntroUrl(String videoIntroUrl) {
         this.videoIntroUrl = videoIntroUrl;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     public PreferredWorkload getPreferredWorkload() {

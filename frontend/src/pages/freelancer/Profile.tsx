@@ -495,13 +495,34 @@ export default function Profile() {
           <div className="space-y-6 py-4">
             <div className="flex items-center gap-4">
               <Avatar className="w-20 h-20">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=freelancer" />
+                <AvatarImage src={profile?.profilePictureUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=freelancer"} />
                 <AvatarFallback>{displayName.split(' ').map(n => n[0]).join('').toUpperCase()}</AvatarFallback>
               </Avatar>
-              <Button variant="outline">
-                <Camera className="h-4 w-4 mr-2" />
-                Change Photo
-              </Button>
+              <label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        const result = await profileApi.uploadProfilePicture(file);
+                        toast.success("Profile picture uploaded successfully");
+                        await loadProfile();
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.error || "Failed to upload picture");
+                      }
+                    }
+                  }}
+                />
+                <Button variant="outline" asChild>
+                  <span>
+                    <Camera className="h-4 w-4 mr-2" />
+                    Change Photo
+                  </span>
+                </Button>
+              </label>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
