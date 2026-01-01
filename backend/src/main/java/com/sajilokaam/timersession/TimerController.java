@@ -65,12 +65,24 @@ public class TimerController {
             stopTimerInternal(activeTimer);
         }
 
-        // Verify task exists
-        Optional<Task> taskOpt = taskRepository.findById(request.getTaskId());
-        if (taskOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+        // Get task - either from taskId or find first task in project
+        Task task;
+        if (request.getTaskId() != null) {
+            Optional<Task> taskOpt = taskRepository.findById(request.getTaskId());
+            if (taskOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            task = taskOpt.get();
+        } else if (request.getProjectId() != null) {
+            // Find first task in project
+            List<Task> projectTasks = taskRepository.findByProjectId(request.getProjectId());
+            if (projectTasks.isEmpty()) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            task = projectTasks.get(0);
+        } else {
+            return ResponseEntity.badRequest().body(null);
         }
-        Task task = taskOpt.get();
 
         // Create new timer session
         TimerSession session = new TimerSession();
@@ -334,11 +346,14 @@ public class TimerController {
 
     public static class TimerStartRequest {
         private Long taskId;
+        private Long projectId;
         private String description;
         private Boolean isBillable;
 
         public Long getTaskId() { return taskId; }
         public void setTaskId(Long taskId) { this.taskId = taskId; }
+        public Long getProjectId() { return projectId; }
+        public void setProjectId(Long projectId) { this.projectId = projectId; }
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
         public Boolean getIsBillable() { return isBillable; }
