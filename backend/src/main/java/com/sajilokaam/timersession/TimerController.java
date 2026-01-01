@@ -214,7 +214,7 @@ public class TimerController {
         return ResponseEntity.ok(timeLog);
     }
 
-    @GetMapping("/active")
+    @GetMapping
     public ResponseEntity<TimerSession> getActiveTimer(
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -235,6 +235,12 @@ public class TimerController {
         Optional<TimerSession> sessionOpt = timerSessionRepository.findByUserIdAndIsActiveTrue(userOpt.get().getId());
         return sessionOpt.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<TimerSession> getActiveTimerAlt(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        return getActiveTimer(authorization);
     }
 
     @PostMapping("/{id}/activity")

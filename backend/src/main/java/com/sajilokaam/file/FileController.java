@@ -126,6 +126,18 @@ public class FileController {
         }
     }
 
+    @GetMapping("/{projectId}/files")
+    public ResponseEntity<List<FileEntity>> getProjectFiles(@PathVariable Long projectId) {
+        // Get all files for all tasks in the project
+        List<FileEntity> allFiles = fileRepository.findAll();
+        List<FileEntity> projectFiles = allFiles.stream()
+                .filter(file -> file.getTask() != null && 
+                               file.getTask().getProject() != null &&
+                               file.getTask().getProject().getId().equals(projectId))
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(projectFiles);
+    }
+
     @GetMapping("/{projectId}/tasks/{taskId}/files")
     public ResponseEntity<List<FileEntity>> getFiles(
             @PathVariable Long projectId,

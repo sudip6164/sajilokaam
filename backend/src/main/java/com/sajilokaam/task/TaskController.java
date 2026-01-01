@@ -35,11 +35,22 @@ public class TaskController {
     }
 
     @GetMapping("/{projectId}/tasks")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<Task>> listTasks(@PathVariable Long projectId) {
         if (!projectRepository.existsById(projectId)) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(taskRepository.findByProjectId(projectId));
+        List<Task> tasks = taskRepository.findByProjectId(projectId);
+        // Initialize lazy-loaded relationships
+        tasks.forEach(task -> {
+            if (task.getAssignee() != null) {
+                task.getAssignee().getFullName(); // Initialize
+            }
+            if (task.getLabels() != null) {
+                task.getLabels().size(); // Initialize
+            }
+        });
+        return ResponseEntity.ok(tasks);
     }
 
     @PostMapping("/{projectId}/tasks")
