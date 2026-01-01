@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class UserController {
      * This must come before /freelancers to avoid path conflicts
      */
     @GetMapping("/freelancers/{userId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<FreelancerPublicProfileResponse> getFreelancerProfile(@PathVariable Long userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
@@ -84,6 +86,7 @@ public class UserController {
      * Returns profile information including headline, hourlyRate, location, skills, etc.
      */
     @GetMapping("/freelancers")
+    @Transactional(readOnly = true)
     public ResponseEntity<FreelancerPageResponse> getFreelancers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size) {
@@ -113,7 +116,11 @@ public class UserController {
                         info.setLocationCity(profile.getLocationCity());
                         info.setPrimarySkills(profile.getPrimarySkills());
                         info.setSecondarySkills(profile.getSecondarySkills());
-                        info.setProfilePictureUrl(profile.getProfilePictureUrl());
+                        String pictureUrl = profile.getProfilePictureUrl();
+                        // If profile picture URL exists, use it; otherwise construct from filename if needed
+                        if (pictureUrl != null && !pictureUrl.isEmpty()) {
+                            info.setProfilePictureUrl(pictureUrl);
+                        }
                         info.setExperienceYears(profile.getExperienceYears());
                         info.setAvailability(profile.getAvailability() != null ? profile.getAvailability().name() : null);
                         info.setExperienceLevel(profile.getExperienceLevel() != null ? profile.getExperienceLevel().name() : null);

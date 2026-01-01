@@ -40,7 +40,16 @@ export default function Freelancers() {
       const usersData = response.data;
       
       // Transform to freelancer cards format using real data
+      console.log("Freelancers API response:", usersData);
       const freelancerCards = usersData.content.map((user: any) => {
+        console.log("Processing user:", user.id, user.fullName, "Profile data:", {
+          headline: user.headline,
+          hourlyRate: user.hourlyRate,
+          locationCity: user.locationCity,
+          locationCountry: user.locationCountry,
+          primarySkills: user.primarySkills,
+          profilePictureUrl: user.profilePictureUrl
+        });
         // Parse skills
         const parseSkills = (skills: string) => {
           if (!skills) return [];
