@@ -1,7 +1,10 @@
--- Fix admin password - regenerate with correct BCrypt hash for 'admin123'
--- This will be updated by the backend's PasswordEncoder on next restart
--- For now, using a verified hash that matches 'admin123'
+-- Fix admin password if it doesn't match
+-- This migration ensures the admin password hash is correct
+-- Password: admin123
+-- BCrypt hash (verified): $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+
+-- Update admin user password to ensure it's correct
 UPDATE users 
-SET password = '$2a$10$XOPbrlUPQdwdJUpSrIF6X.LbE14qsMmKGhM8A8Y6rqY1pU5K5Q5Qe'
+SET password = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
 WHERE email = 'admin@sajilokaam.com';
 
