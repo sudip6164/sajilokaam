@@ -66,6 +66,7 @@ import PostJob from "@/pages/client/PostJob";
 import MyJobs from "@/pages/client/MyJobs";
 import JobDetail from "@/pages/client/JobDetail";
 import ClientProjects from "@/pages/client/ClientProjects";
+import ClientProjectDetail from "@/pages/client/ClientProjectDetail";
 import ClientInvoices from "@/pages/client/ClientInvoices";
 import ClientNotifications from "@/pages/client/ClientNotifications";
 import ClientProfile from "@/pages/client/ClientProfile";
@@ -110,7 +111,7 @@ const App = () => (
               <Route path="/my-jobs" element={<ProtectedRoute allowedRoles={["CLIENT"]}><MyJobs /></ProtectedRoute>} />
               <Route path="/my-jobs/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><JobDetail /></ProtectedRoute>} />
               <Route path="/my-projects" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjects /></ProtectedRoute>} />
-              <Route path="/my-projects/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjects /></ProtectedRoute>} />
+              <Route path="/my-projects/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjectDetail /></ProtectedRoute>} />
               <Route path="/client-invoices" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientInvoices /></ProtectedRoute>} />
               <Route path="/client-notifications" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientNotifications /></ProtectedRoute>} />
               <Route path="/client-profile" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProfile /></ProtectedRoute>} />

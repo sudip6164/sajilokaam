@@ -52,10 +52,38 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Project> get(@PathVariable Long id) {
-        return projectRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Project> get(
+            @PathVariable Long id,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        Optional<Project> projectOpt = projectRepository.findById(id);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Project project = projectOpt.get();
+        
+        // If authorization is provided, verify the user has access to the project
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    // Check if user is the client or freelancer for this project
+                    boolean isClient = project.getClient() != null && project.getClient().getId().equals(user.getId());
+                    boolean isFreelancer = project.getFreelancer() != null && project.getFreelancer().getId().equals(user.getId());
+                    boolean isAdmin = user.getRoles().stream()
+                            .anyMatch(role -> role.getName().equals("ADMIN"));
+                    
+                    if (!isClient && !isFreelancer && !isAdmin) {
+                        return ResponseEntity.status(403).build();
+                    }
+                }
+            }
+        }
+        
+        return ResponseEntity.ok(project);
     }
 
     @PostMapping("/accept-bid/{bidId}")
