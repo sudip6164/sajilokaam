@@ -10,6 +10,7 @@ import com.sajilokaam.profile.FreelancerProfileRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -39,6 +40,7 @@ public class BidController {
     }
 
     @GetMapping("/{jobId}/bids")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<BidResponse>> listBids(@PathVariable Long jobId) {
         if (!jobRepository.existsById(jobId)) {
             return ResponseEntity.notFound().build();
