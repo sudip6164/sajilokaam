@@ -708,21 +708,60 @@ export const profileApi = {
     const response = await api.get<{
       id: number;
       userId: number;
-      bio?: string;
+      headline?: string;
+      overview?: string;
       hourlyRate?: number;
-      location?: string;
-      phone?: string;
-      website?: string;
-      linkedin?: string;
-      github?: string;
-      verificationStatus: string;
+      hourlyRateMin?: number;
+      hourlyRateMax?: number;
+      locationCity?: string;
+      locationCountry?: string;
+      timezone?: string;
+      primarySkills?: string;
+      secondarySkills?: string;
+      languages?: string;
+      education?: string;
+      certifications?: string;
+      portfolioUrl?: string;
+      websiteUrl?: string;
+      linkedinUrl?: string;
+      githubUrl?: string;
+      videoIntroUrl?: string;
+      availability?: string;
+      experienceLevel?: string;
+      experienceYears?: number;
+      status?: string;
+      verificationNotes?: string;
+      rejectionReason?: string;
+      submittedAt?: string;
+      reviewedAt?: string;
     }>("/profile/freelancer/me");
     return response.data;
   },
 
   updateFreelancerProfile: async (data: {
-    bio?: string;
+    headline?: string;
+    overview?: string;
     hourlyRate?: number;
+    hourlyRateMin?: number;
+    hourlyRateMax?: number;
+    locationCity?: string;
+    locationCountry?: string;
+    timezone?: string;
+    primarySkills?: string;
+    secondarySkills?: string;
+    languages?: string;
+    education?: string;
+    certifications?: string;
+    portfolioUrl?: string;
+    websiteUrl?: string;
+    linkedinUrl?: string;
+    githubUrl?: string;
+    videoIntroUrl?: string;
+    availability?: string;
+    experienceLevel?: string;
+    experienceYears?: number;
+    // Legacy fields for backward compatibility
+    bio?: string;
     location?: string;
     phone?: string;
     website?: string;
@@ -732,15 +771,33 @@ export const profileApi = {
     const response = await api.put<{
       id: number;
       userId: number;
-      bio?: string;
+      headline?: string;
+      overview?: string;
       hourlyRate?: number;
-      location?: string;
-      phone?: string;
-      website?: string;
-      linkedin?: string;
-      github?: string;
-      verificationStatus: string;
-    }>("/profile/freelancer", data);
+      hourlyRateMin?: number;
+      hourlyRateMax?: number;
+      locationCity?: string;
+      locationCountry?: string;
+      websiteUrl?: string;
+      linkedinUrl?: string;
+      githubUrl?: string;
+      portfolioUrl?: string;
+      primarySkills?: string;
+      secondarySkills?: string;
+      languages?: string;
+      education?: string;
+      certifications?: string;
+      status?: string;
+    }>("/profile/freelancer", {
+      ...data,
+      // Map legacy fields to new fields
+      overview: data.overview || data.bio,
+      locationCity: data.locationCity || (data.location ? data.location.split(",")[0]?.trim() : undefined),
+      locationCountry: data.locationCountry || (data.location ? data.location.split(",")[1]?.trim() : undefined),
+      websiteUrl: data.websiteUrl || data.website,
+      linkedinUrl: data.linkedinUrl || data.linkedin,
+      githubUrl: data.githubUrl || data.github,
+    });
     return response.data;
   },
 
