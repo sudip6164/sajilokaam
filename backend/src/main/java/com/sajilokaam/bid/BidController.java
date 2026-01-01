@@ -2,6 +2,7 @@ package com.sajilokaam.bid;
 
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.bid.dto.BidComparisonResponse;
+import com.sajilokaam.bid.dto.BidResponse;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.job.JobRepository;
 import com.sajilokaam.profile.FreelancerProfile;
@@ -38,11 +39,33 @@ public class BidController {
     }
 
     @GetMapping("/{jobId}/bids")
-    public ResponseEntity<List<Bid>> listBids(@PathVariable Long jobId) {
+    public ResponseEntity<List<BidResponse>> listBids(@PathVariable Long jobId) {
         if (!jobRepository.existsById(jobId)) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(bidRepository.findByJobId(jobId));
+        List<Bid> bids = bidRepository.findByJobId(jobId);
+        List<BidResponse> responses = bids.stream().map(bid -> {
+            // Initialize lazy-loaded entities by accessing them
+            String jobTitle = bid.getJob() != null ? bid.getJob().getTitle() : null;
+            Long jobIdValue = bid.getJob() != null ? bid.getJob().getId() : jobId;
+            String freelancerName = bid.getFreelancer() != null ? bid.getFreelancer().getFullName() : null;
+            String freelancerEmail = bid.getFreelancer() != null ? bid.getFreelancer().getEmail() : null;
+            Long freelancerId = bid.getFreelancer() != null ? bid.getFreelancer().getId() : null;
+            
+            return new BidResponse(
+                bid.getId(),
+                jobIdValue,
+                jobTitle,
+                freelancerId,
+                freelancerName,
+                freelancerEmail,
+                bid.getAmount(),
+                bid.getMessage(),
+                bid.getStatus(),
+                bid.getCreatedAt()
+            );
+        }).collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @PostMapping("/{jobId}/bids")
