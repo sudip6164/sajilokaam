@@ -215,7 +215,7 @@ public class TimerController {
     }
 
     @GetMapping
-    public ResponseEntity<TimerSession> getActiveTimer(
+    public ResponseEntity<com.sajilokaam.timersession.dto.TimerSessionResponse> getActiveTimer(
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build();
@@ -233,8 +233,28 @@ public class TimerController {
         }
 
         Optional<TimerSession> sessionOpt = timerSessionRepository.findByUserIdAndIsActiveTrue(userOpt.get().getId());
-        return sessionOpt.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        if (sessionOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        TimerSession session = sessionOpt.get();
+        // Access task and project to initialize lazy loading
+        Long projectId = session.getTask() != null && session.getTask().getProject() != null 
+            ? session.getTask().getProject().getId() 
+            : null;
+        Long taskId = session.getTask() != null ? session.getTask().getId() : null;
+
+        com.sajilokaam.timersession.dto.TimerSessionResponse response = new com.sajilokaam.timersession.dto.TimerSessionResponse(
+            session.getId(),
+            projectId,
+            taskId,
+            session.getStartedAt(),
+            session.getDescription(),
+            session.getIsActive(),
+            session.getIsPaused(),
+            session.getTotalSeconds()
+        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/active")

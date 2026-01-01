@@ -38,6 +38,37 @@ public class ConversationController {
         this.messagingTemplate = messagingTemplate;
     }
 
+    @GetMapping
+    public ResponseEntity<List<Conversation>> getConversations(
+            @RequestParam(required = false) Long projectId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (projectId != null) {
+            if (!projectRepository.existsById(projectId)) {
+                return ResponseEntity.notFound().build();
+            }
+            List<Conversation> conversations = conversationRepository.findByProjectId(projectId);
+            return ResponseEntity.ok(conversations);
+        }
+        // If no projectId, return all conversations for the authenticated user
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<Conversation> conversations = conversationRepository.findByParticipantsContaining(userOpt.get());
+        return ResponseEntity.ok(conversations);
+    }
+
     @GetMapping("/project/{projectId}")
     public ResponseEntity<List<Conversation>> getProjectConversations(@PathVariable Long projectId) {
         if (!projectRepository.existsById(projectId)) {

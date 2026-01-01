@@ -122,5 +122,34 @@ public class TimeLogController {
         
         return ResponseEntity.ok(summary);
     }
+
+    @GetMapping("/{projectId}/time-logs")
+    public ResponseEntity<List<TimeLog>> getProjectTimeLogs(
+            @PathVariable Long projectId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        // Get all tasks for this project and then get all time logs for those tasks
+        List<Task> projectTasks = taskRepository.findByProjectId(projectId);
+        List<TimeLog> allTimeLogs = projectTasks.stream()
+                .flatMap(task -> timeLogRepository.findByTaskId(task.getId()).stream())
+                .toList();
+        
+        return ResponseEntity.ok(allTimeLogs);
+    }
 }
 
