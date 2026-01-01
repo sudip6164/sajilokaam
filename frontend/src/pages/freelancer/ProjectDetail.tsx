@@ -102,10 +102,11 @@ export default function ProjectDetail() {
   }, [conversationId]);
 
   useEffect(() => {
+    if (!id) return;
     loadActiveTimer();
     const interval = setInterval(loadActiveTimer, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -207,9 +208,11 @@ export default function ProjectDetail() {
   };
 
   const loadActiveTimer = async () => {
+    if (!id) return;
     try {
       const timer = await timeTrackingApi.getActiveTimer();
-      if (timer && timer.projectId === projectId) {
+      const currentProjectId = parseInt(id);
+      if (timer && timer.projectId === currentProjectId) {
         setActiveTimer(timer);
         const startTime = new Date(timer.startTime).getTime();
         const now = Date.now();
@@ -218,9 +221,16 @@ export default function ProjectDetail() {
       } else {
         setActiveTimer(null);
         setIsTimerRunning(false);
+        setTimerSeconds(0);
       }
-    } catch (error) {
-      // Timer might not exist
+    } catch (error: any) {
+      // Timer might not exist or endpoint not available - silently handle
+      // Only set to null if we had an active timer before
+      if (activeTimer) {
+        setActiveTimer(null);
+        setIsTimerRunning(false);
+        setTimerSeconds(0);
+      }
     }
   };
 
