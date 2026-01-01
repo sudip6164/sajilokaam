@@ -768,6 +768,40 @@ export const profileApi = {
     linkedin?: string;
     github?: string;
   }) => {
+    // Build request payload, only including fields that are actually provided
+    const payload: any = {};
+    
+    if (data.headline !== undefined) payload.headline = data.headline;
+    if (data.overview !== undefined) payload.overview = data.overview;
+    if (data.bio !== undefined && !data.overview) payload.overview = data.bio; // Legacy support
+    if (data.hourlyRate !== undefined) payload.hourlyRate = data.hourlyRate;
+    if (data.hourlyRateMin !== undefined) payload.hourlyRateMin = data.hourlyRateMin;
+    if (data.hourlyRateMax !== undefined) payload.hourlyRateMax = data.hourlyRateMax;
+    if (data.locationCity !== undefined) payload.locationCity = data.locationCity;
+    if (data.locationCountry !== undefined) payload.locationCountry = data.locationCountry;
+    if (data.location !== undefined && !data.locationCity) {
+      const parts = data.location.split(",").map(s => s.trim());
+      if (parts[0]) payload.locationCity = parts[0];
+      if (parts[1]) payload.locationCountry = parts[1];
+    }
+    if (data.timezone !== undefined) payload.timezone = data.timezone;
+    if (data.primarySkills !== undefined) payload.primarySkills = data.primarySkills;
+    if (data.secondarySkills !== undefined) payload.secondarySkills = data.secondarySkills;
+    if (data.languages !== undefined) payload.languages = data.languages;
+    if (data.education !== undefined) payload.education = data.education;
+    if (data.certifications !== undefined) payload.certifications = data.certifications;
+    if (data.portfolioUrl !== undefined) payload.portfolioUrl = data.portfolioUrl;
+    if (data.websiteUrl !== undefined) payload.websiteUrl = data.websiteUrl;
+    if (data.website !== undefined && !data.websiteUrl) payload.websiteUrl = data.website; // Legacy support
+    if (data.linkedinUrl !== undefined) payload.linkedinUrl = data.linkedinUrl;
+    if (data.linkedin !== undefined && !data.linkedinUrl) payload.linkedinUrl = data.linkedin; // Legacy support
+    if (data.githubUrl !== undefined) payload.githubUrl = data.githubUrl;
+    if (data.github !== undefined && !data.githubUrl) payload.githubUrl = data.github; // Legacy support
+    if (data.videoIntroUrl !== undefined) payload.videoIntroUrl = data.videoIntroUrl;
+    if (data.availability !== undefined) payload.availability = data.availability;
+    if (data.experienceLevel !== undefined) payload.experienceLevel = data.experienceLevel;
+    if (data.experienceYears !== undefined) payload.experienceYears = data.experienceYears;
+    
     const response = await api.put<{
       id: number;
       userId: number;
@@ -788,16 +822,7 @@ export const profileApi = {
       education?: string;
       certifications?: string;
       status?: string;
-    }>("/profile/freelancer", {
-      ...data,
-      // Map legacy fields to new fields
-      overview: data.overview || data.bio,
-      locationCity: data.locationCity || (data.location ? data.location.split(",")[0]?.trim() : undefined),
-      locationCountry: data.locationCountry || (data.location ? data.location.split(",")[1]?.trim() : undefined),
-      websiteUrl: data.websiteUrl || data.website,
-      linkedinUrl: data.linkedinUrl || data.linkedin,
-      githubUrl: data.githubUrl || data.github,
-    });
+    }>("/profile/freelancer", payload);
     return response.data;
   },
 

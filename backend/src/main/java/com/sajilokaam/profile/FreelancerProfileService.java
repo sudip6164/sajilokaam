@@ -30,30 +30,79 @@ public class FreelancerProfileService {
     public FreelancerProfile updateProfile(User user, FreelancerProfileRequest request) {
         FreelancerProfile profile = getOrCreate(user);
 
-        profile.setHeadline(request.getHeadline());
-        profile.setOverview(request.getOverview());
-        profile.setHourlyRate(request.getHourlyRate());
-        profile.setHourlyRateMin(request.getHourlyRateMin());
-        profile.setHourlyRateMax(request.getHourlyRateMax());
-        profile.setAvailability(request.getAvailability());
-        profile.setExperienceLevel(request.getExperienceLevel());
-        profile.setExperienceYears(request.getExperienceYears());
-        profile.setLocationCountry(request.getLocationCountry());
-        profile.setLocationCity(request.getLocationCity());
-        profile.setTimezone(request.getTimezone());
-        profile.setPrimarySkills(request.getPrimarySkills());
-        profile.setSecondarySkills(request.getSecondarySkills());
-        profile.setLanguages(request.getLanguages());
-        profile.setEducation(request.getEducation());
-        profile.setCertifications(request.getCertifications());
-        profile.setPortfolioUrl(request.getPortfolioUrl());
-        profile.setWebsiteUrl(request.getWebsiteUrl());
-        profile.setLinkedinUrl(request.getLinkedinUrl());
-        profile.setGithubUrl(request.getGithubUrl());
-        profile.setVideoIntroUrl(request.getVideoIntroUrl());
-        profile.setPreferredWorkload(request.getPreferredWorkload());
-        profile.setTeamRole(request.getTeamRole());
-        profile.setTeamName(request.getTeamName());
+        // Only update fields that are provided (not null)
+        if (request.getHeadline() != null) {
+            profile.setHeadline(request.getHeadline());
+        }
+        if (request.getOverview() != null) {
+            profile.setOverview(request.getOverview());
+        }
+        if (request.getHourlyRate() != null) {
+            profile.setHourlyRate(request.getHourlyRate());
+        }
+        if (request.getHourlyRateMin() != null) {
+            profile.setHourlyRateMin(request.getHourlyRateMin());
+        }
+        if (request.getHourlyRateMax() != null) {
+            profile.setHourlyRateMax(request.getHourlyRateMax());
+        }
+        if (request.getAvailability() != null) {
+            profile.setAvailability(request.getAvailability());
+        }
+        if (request.getExperienceLevel() != null) {
+            profile.setExperienceLevel(request.getExperienceLevel());
+        }
+        if (request.getExperienceYears() != null) {
+            profile.setExperienceYears(request.getExperienceYears());
+        }
+        if (request.getLocationCountry() != null) {
+            profile.setLocationCountry(request.getLocationCountry());
+        }
+        if (request.getLocationCity() != null) {
+            profile.setLocationCity(request.getLocationCity());
+        }
+        if (request.getTimezone() != null) {
+            profile.setTimezone(request.getTimezone());
+        }
+        if (request.getPrimarySkills() != null) {
+            profile.setPrimarySkills(request.getPrimarySkills());
+        }
+        if (request.getSecondarySkills() != null) {
+            profile.setSecondarySkills(request.getSecondarySkills());
+        }
+        if (request.getLanguages() != null) {
+            profile.setLanguages(request.getLanguages());
+        }
+        if (request.getEducation() != null) {
+            profile.setEducation(request.getEducation());
+        }
+        if (request.getCertifications() != null) {
+            profile.setCertifications(request.getCertifications());
+        }
+        if (request.getPortfolioUrl() != null) {
+            profile.setPortfolioUrl(request.getPortfolioUrl());
+        }
+        if (request.getWebsiteUrl() != null) {
+            profile.setWebsiteUrl(request.getWebsiteUrl());
+        }
+        if (request.getLinkedinUrl() != null) {
+            profile.setLinkedinUrl(request.getLinkedinUrl());
+        }
+        if (request.getGithubUrl() != null) {
+            profile.setGithubUrl(request.getGithubUrl());
+        }
+        if (request.getVideoIntroUrl() != null) {
+            profile.setVideoIntroUrl(request.getVideoIntroUrl());
+        }
+        if (request.getPreferredWorkload() != null) {
+            profile.setPreferredWorkload(request.getPreferredWorkload());
+        }
+        if (request.getTeamRole() != null) {
+            profile.setTeamRole(request.getTeamRole());
+        }
+        if (request.getTeamName() != null) {
+            profile.setTeamName(request.getTeamName());
+        }
 
         if (profile.getStatus() == ProfileStatus.REJECTED || profile.getStatus() == ProfileStatus.NEEDS_UPDATE) {
             profile.setStatus(ProfileStatus.DRAFT);

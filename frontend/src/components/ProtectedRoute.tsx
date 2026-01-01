@@ -11,7 +11,18 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const location = useLocation();
-  const { isAuthenticated, isLoading, user, hasRole } = useAuth();
+  const auth = useAuth();
+  
+  // Handle case where AuthContext might not be available
+  if (!auth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  const { isAuthenticated, isLoading, user, hasRole } = auth;
 
   // Show loading state while checking auth
   if (isLoading) {
