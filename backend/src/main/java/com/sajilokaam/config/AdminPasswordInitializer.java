@@ -2,14 +2,14 @@ package com.sajilokaam.config;
 
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
-import jakarta.annotation.PostConstruct;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
-public class AdminPasswordInitializer {
+public class AdminPasswordInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -18,8 +18,8 @@ public class AdminPasswordInitializer {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void run(String... args) {
         try {
             Optional<User> adminOpt = userRepository.findByEmail("admin@sajilokaam.com");
             if (adminOpt.isPresent()) {
