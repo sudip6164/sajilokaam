@@ -27,6 +27,7 @@ import AccessDenied from "@/pages/AccessDenied";
 import Jobs from "@/pages/Jobs";
 import JobDetailPublic from "@/pages/JobDetailPublic";
 import Freelancers from "@/pages/Freelancers";
+import FreelancerProfile from "@/pages/FreelancerProfile";
 
 // Auth Pages
 import Login from "@/pages/auth/Login";
@@ -92,6 +93,7 @@ const App = () => (
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetailPublic />} />
               <Route path="/freelancers" element={<Freelancers />} />
+              <Route path="/freelancers/:id" element={<FreelancerProfile />} />
               
               {/* Protected Action Pages - Use Main Site Layout */}
               {/* Freelancer Actions */}
