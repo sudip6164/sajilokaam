@@ -365,7 +365,7 @@ const MyJobs = () => {
           {["all", "active", "in-progress", "completed", "cancelled"].map((tab) => (
             <TabsContent key={tab} value={tab} className="space-y-4 mt-6">
               {filterJobs(tab).length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {filterJobs(tab).map((job) => <JobCard key={job.id} job={job} />)}
                 </div>
               ) : (

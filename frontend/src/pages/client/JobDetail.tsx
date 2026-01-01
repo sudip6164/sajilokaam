@@ -103,7 +103,7 @@ const JobDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="container mx-auto px-4 py-8 space-y-6">
         <div className="text-center py-12">Loading job details...</div>
       </div>
     );
@@ -111,7 +111,7 @@ const JobDetail = () => {
 
   if (!job) {
     return (
-      <div className="space-y-6">
+      <div className="container mx-auto px-4 py-8 space-y-6">
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Job not found</p>
@@ -125,7 +125,7 @@ const JobDetail = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Back Button */}
       <Button variant="ghost" asChild className="gap-2 -ml-2">
         <Link to="/my-jobs">

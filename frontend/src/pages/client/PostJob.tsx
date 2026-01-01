@@ -116,7 +116,7 @@ const PostJob = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
       <div>
         <h1 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-3">
           <Briefcase className="h-8 w-8 text-primary" />
