@@ -36,6 +36,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"users"})
     private Set<Role> roles = new HashSet<>();
 
     public Long getId() { return id; }
