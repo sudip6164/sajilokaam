@@ -40,6 +40,10 @@ const JobDetail = () => {
   const [job, setJob] = useState<any>(null);
   const [bids, setBids] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
   const [selectedBid, setSelectedBid] = useState<any | null>(null);
   const [projectTitle, setProjectTitle] = useState("");

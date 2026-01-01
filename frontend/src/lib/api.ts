@@ -153,6 +153,20 @@ export const jobsApi = {
     return response.data;
   },
 
+  update: async (id: number, data: {
+    title?: string;
+    description?: string;
+    status?: string;
+  }) => {
+    const response = await api.put<{
+      id: number;
+      title: string;
+      description: string;
+      status: string;
+    }>(`/jobs/${id}`, data);
+    return response.data;
+  },
+
   create: async (data: {
     title: string;
     description: string;
