@@ -127,22 +127,48 @@ public class JobController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<Job> get(@PathVariable Long id) {
-        return jobRepository.findById(id)
-                .map(job -> {
-                    // Force eager loading of relationships to avoid lazy loading issues
-                    if (job.getClient() != null) {
-                        job.getClient().getEmail(); // Trigger lazy load
+    public ResponseEntity<Job> get(
+            @PathVariable Long id,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        Optional<Job> jobOpt = jobRepository.findById(id);
+        if (jobOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Job job = jobOpt.get();
+        
+        // If authorization is provided, verify the user owns the job (for client access)
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    // Check if user is the client who owns the job
+                    if (job.getClient() != null && !job.getClient().getId().equals(user.getId())) {
+                        // User is not the owner, but allow access if they're an admin
+                        boolean isAdmin = user.getRoles().stream()
+                                .anyMatch(role -> role.getName().equals("ADMIN"));
+                        if (!isAdmin) {
+                            return ResponseEntity.status(403).build();
+                        }
                     }
-                    if (job.getCategory() != null) {
-                        job.getCategory().getName(); // Trigger lazy load
-                    }
-                    if (job.getRequiredSkills() != null) {
-                        job.getRequiredSkills().size(); // Trigger lazy load
-                    }
-                    return ResponseEntity.ok(job);
-                })
-                .orElse(ResponseEntity.notFound().build());
+                }
+            }
+        }
+        
+        // Force eager loading of relationships to avoid lazy loading issues
+        if (job.getClient() != null) {
+            job.getClient().getEmail(); // Trigger lazy load
+        }
+        if (job.getCategory() != null) {
+            job.getCategory().getName(); // Trigger lazy load
+        }
+        if (job.getRequiredSkills() != null) {
+            job.getRequiredSkills().size(); // Trigger lazy load
+        }
+        return ResponseEntity.ok(job);
     }
 
     @PostMapping
