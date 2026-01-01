@@ -58,8 +58,8 @@ public class UserController {
             response.setHourlyRate(profile.getHourlyRate());
             response.setHourlyRateMin(profile.getHourlyRateMin());
             response.setHourlyRateMax(profile.getHourlyRateMax());
-            response.setAvailability(profile.getAvailability());
-            response.setExperienceLevel(profile.getExperienceLevel());
+            response.setAvailability(profile.getAvailability() != null ? profile.getAvailability().name() : null);
+            response.setExperienceLevel(profile.getExperienceLevel() != null ? profile.getExperienceLevel().name() : null);
             response.setExperienceYears(profile.getExperienceYears());
             response.setLocationCountry(profile.getLocationCountry());
             response.setLocationCity(profile.getLocationCity());
@@ -72,7 +72,7 @@ public class UserController {
             response.setWebsiteUrl(profile.getWebsiteUrl());
             response.setLinkedinUrl(profile.getLinkedinUrl());
             response.setGithubUrl(profile.getGithubUrl());
-            response.setStatus(profile.getStatus());
+            response.setStatus(profile.getStatus() != null ? profile.getStatus().name() : null);
         }
         
         return ResponseEntity.ok(response);
@@ -83,53 +83,30 @@ public class UserController {
      * Returns only basic information: id, fullName, email
      */
     @GetMapping("/freelancers")
-    public ResponseEntity<FreelancerPublicProfileResponse> getFreelancerProfile(@PathVariable Long userId) {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<FreelancerPageResponse> getFreelancers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> users = userRepository.findAll(pageable);
         
-        User user = userOpt.get();
-        // Verify user is a freelancer
-        boolean isFreelancer = user.getRoles() != null && user.getRoles().stream()
-                .anyMatch(role -> role.getName().equals("FREELANCER"));
-        if (!isFreelancer) {
-            return ResponseEntity.notFound().build();
-        }
+        // Filter for freelancers and map to public info
+        List<FreelancerPublicInfo> freelancers = users.getContent().stream()
+                .filter(user -> user.getRoles() != null && user.getRoles().stream()
+                        .anyMatch(role -> role.getName().equals("FREELANCER")))
+                .map(user -> new FreelancerPublicInfo(
+                        user.getId(),
+                        user.getFullName(),
+                        user.getEmail()
+                ))
+                .collect(Collectors.toList());
         
-        // Get freelancer profile if exists
-        Optional<FreelancerProfile> profileOpt = freelancerProfileRepository.findByUserId(userId);
-        
-        FreelancerPublicProfileResponse response = new FreelancerPublicProfileResponse();
-        response.setId(user.getId());
-        response.setFullName(user.getFullName());
-        response.setEmail(user.getEmail());
-        
-        if (profileOpt.isPresent()) {
-            FreelancerProfile profile = profileOpt.get();
-            response.setHeadline(profile.getHeadline());
-            response.setOverview(profile.getOverview());
-            response.setHourlyRate(profile.getHourlyRate());
-            response.setHourlyRateMin(profile.getHourlyRateMin());
-            response.setHourlyRateMax(profile.getHourlyRateMax());
-            response.setAvailability(profile.getAvailability());
-            response.setExperienceLevel(profile.getExperienceLevel());
-            response.setExperienceYears(profile.getExperienceYears());
-            response.setLocationCountry(profile.getLocationCountry());
-            response.setLocationCity(profile.getLocationCity());
-            response.setPrimarySkills(profile.getPrimarySkills());
-            response.setSecondarySkills(profile.getSecondarySkills());
-            response.setLanguages(profile.getLanguages());
-            response.setEducation(profile.getEducation());
-            response.setCertifications(profile.getCertifications());
-            response.setPortfolioUrl(profile.getPortfolioUrl());
-            response.setWebsiteUrl(profile.getWebsiteUrl());
-            response.setLinkedinUrl(profile.getLinkedinUrl());
-            response.setGithubUrl(profile.getGithubUrl());
-            response.setStatus(profile.getStatus());
-        }
-        
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(new FreelancerPageResponse(
+                freelancers,
+                freelancers.size(),
+                1,
+                page,
+                size
+        ));
     }
 
     // Public DTO for freelancer information
