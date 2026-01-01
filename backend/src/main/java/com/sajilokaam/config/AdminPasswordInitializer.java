@@ -20,14 +20,25 @@ public class AdminPasswordInitializer {
 
     @PostConstruct
     public void init() {
-        Optional<User> adminOpt = userRepository.findByEmail("admin@sajilokaam.com");
-        if (adminOpt.isPresent()) {
-            User admin = adminOpt.get();
-            // Always ensure admin password is correct
-            String correctHash = passwordEncoder.encode("admin123");
-            admin.setPassword(correctHash);
-            userRepository.save(admin);
-            System.out.println("Admin password has been reset to 'admin123'");
+        try {
+            Optional<User> adminOpt = userRepository.findByEmail("admin@sajilokaam.com");
+            if (adminOpt.isPresent()) {
+                User admin = adminOpt.get();
+                // Always ensure admin password is correct
+                String correctHash = passwordEncoder.encode("admin123");
+                admin.setPassword(correctHash);
+                userRepository.save(admin);
+                System.out.println("========================================");
+                System.out.println("Admin password has been reset to 'admin123'");
+                System.out.println("New hash: " + correctHash);
+                System.out.println("Verifying hash matches password: " + passwordEncoder.matches("admin123", correctHash));
+                System.out.println("========================================");
+            } else {
+                System.err.println("WARNING: Admin user not found in database!");
+            }
+        } catch (Exception e) {
+            System.err.println("ERROR resetting admin password: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
