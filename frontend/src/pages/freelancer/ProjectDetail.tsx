@@ -103,15 +103,19 @@ export default function ProjectDetail() {
   }, [conversationId]);
 
   useEffect(() => {
-    if (!id || !timerPollingEnabled) return;
+    if (!id) return;
+    // Only poll if we have an active timer or if polling is enabled
+    if (!isTimerRunning && !timerPollingEnabled) return;
+    
     loadActiveTimer();
     const interval = setInterval(() => {
-      if (timerPollingEnabled) {
+      // Only continue polling if timer is running or polling is enabled
+      if (isTimerRunning || timerPollingEnabled) {
         loadActiveTimer();
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [id, timerPollingEnabled]);
+  }, [id, isTimerRunning, timerPollingEnabled]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -225,26 +229,18 @@ export default function ProjectDetail() {
         setIsTimerRunning(true);
         setTimerPollingEnabled(true); // Re-enable if it was disabled
       } else {
+        // No active timer - stop polling
         setActiveTimer(null);
         setIsTimerRunning(false);
         setTimerSeconds(0);
+        setTimerPollingEnabled(false); // Stop polling when no timer
       }
     } catch (error: any) {
-      // If 404, stop polling to avoid spam
-      if (error.response?.status === 404) {
-        setTimerPollingEnabled(false);
-        setActiveTimer(null);
-        setIsTimerRunning(false);
-        setTimerSeconds(0);
-        return;
-      }
-      // Timer might not exist - silently handle
-      // Only set to null if we had an active timer before
-      if (activeTimer) {
-        setActiveTimer(null);
-        setIsTimerRunning(false);
-        setTimerSeconds(0);
-      }
+      // If 404 or any error, stop polling to avoid spam
+      setTimerPollingEnabled(false);
+      setActiveTimer(null);
+      setIsTimerRunning(false);
+      setTimerSeconds(0);
     }
   };
 
@@ -252,6 +248,7 @@ export default function ProjectDetail() {
     if (!id) return;
     try {
       await timeTrackingApi.startTimer({ projectId: parseInt(id) });
+      setTimerPollingEnabled(true); // Re-enable polling when starting timer
       await loadActiveTimer();
       toast.success("Timer started");
     } catch (error: any) {
@@ -264,10 +261,16 @@ export default function ProjectDetail() {
       await timeTrackingApi.stopTimer();
       setIsTimerRunning(false);
       setTimerSeconds(0);
+      setTimerPollingEnabled(false); // Stop polling when timer is stopped
+      setActiveTimer(null);
       await loadTimeLogs();
       toast.success("Timer stopped");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to stop timer");
+      // Still stop polling even on error
+      setTimerPollingEnabled(false);
+      setIsTimerRunning(false);
+      setTimerSeconds(0);
     }
   };
 
