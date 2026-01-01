@@ -270,7 +270,7 @@ public class TimerController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<TimerSession> getActiveTimerAlt(
+    public ResponseEntity<com.sajilokaam.timersession.dto.TimerSessionResponse> getActiveTimerAlt(
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         return getActiveTimer(authorization);
     }
