@@ -54,7 +54,7 @@ const parseSkills = (skills: string) => {
 };
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -149,8 +149,7 @@ export default function Profile() {
       
       // Refresh user data to get updated name
       if (editData.fullName && editData.fullName !== user?.fullName) {
-        const auth = useAuth();
-        await auth.refreshUser();
+        await refreshUser();
       }
       
       await loadProfile();
