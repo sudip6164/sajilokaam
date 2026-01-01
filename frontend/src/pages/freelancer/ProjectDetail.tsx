@@ -68,6 +68,7 @@ export default function ProjectDetail() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [activeTimer, setActiveTimer] = useState<any>(null);
+  const [timerPollingEnabled, setTimerPollingEnabled] = useState(true);
   const [timeLogs, setTimeLogs] = useState<any[]>([]);
   const [projectFiles, setProjectFiles] = useState<any[]>([]);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
@@ -102,11 +103,15 @@ export default function ProjectDetail() {
   }, [conversationId]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !timerPollingEnabled) return;
     loadActiveTimer();
-    const interval = setInterval(loadActiveTimer, 5000);
+    const interval = setInterval(() => {
+      if (timerPollingEnabled) {
+        loadActiveTimer();
+      }
+    }, 5000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, timerPollingEnabled]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -218,13 +223,22 @@ export default function ProjectDetail() {
         const now = Date.now();
         setTimerSeconds(Math.floor((now - startTime) / 1000));
         setIsTimerRunning(true);
+        setTimerPollingEnabled(true); // Re-enable if it was disabled
       } else {
         setActiveTimer(null);
         setIsTimerRunning(false);
         setTimerSeconds(0);
       }
     } catch (error: any) {
-      // Timer might not exist or endpoint not available - silently handle
+      // If 404, stop polling to avoid spam
+      if (error.response?.status === 404) {
+        setTimerPollingEnabled(false);
+        setActiveTimer(null);
+        setIsTimerRunning(false);
+        setTimerSeconds(0);
+        return;
+      }
+      // Timer might not exist - silently handle
       // Only set to null if we had an active timer before
       if (activeTimer) {
         setActiveTimer(null);
@@ -356,25 +370,29 @@ export default function ProjectDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Project not found</p>
-        <Link to="/projects" className="text-primary hover:underline mt-4 inline-block">
-          Back to Projects
-        </Link>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Project not found</p>
+          <Link to="/projects" className="text-primary hover:underline mt-4 inline-block">
+            Back to Projects
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
         <Link 
