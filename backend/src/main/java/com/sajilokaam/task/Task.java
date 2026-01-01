@@ -1,5 +1,6 @@
 package com.sajilokaam.task;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sajilokaam.project.Project;
 import com.sajilokaam.tasklabel.TaskLabel;
 import com.sajilokaam.user.User;
@@ -21,6 +22,7 @@ public class Task {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
+    @JsonIgnore
     private Project project;
 
     @Column(name = "milestone_id")
