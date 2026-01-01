@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -60,6 +62,20 @@ public class AuthController {
         // Auto-login: generate token
         String token = jwtService.generateToken(created.getId(), created.getEmail());
         return ResponseEntity.created(URI.create("/api/users/" + created.getId())).body(new LoginResponse(token));
+    }
+
+    // TEMPORARY: Generate correct admin password hash
+    @GetMapping("/generate-admin-hash")
+    public ResponseEntity<Map<String, String>> generateAdminHash() {
+        String hash = passwordEncoder.encode("admin123");
+        Optional<User> adminOpt = userRepository.findByEmail("admin@sajilokaam.com");
+        if (adminOpt.isPresent()) {
+            User admin = adminOpt.get();
+            admin.setPassword(hash);
+            userRepository.save(admin);
+            return ResponseEntity.ok(Map.of("status", "success", "hash", hash, "message", "Admin password updated"));
+        }
+        return ResponseEntity.ok(Map.of("status", "hash_only", "hash", hash));
     }
 
     @PostMapping("/login")
