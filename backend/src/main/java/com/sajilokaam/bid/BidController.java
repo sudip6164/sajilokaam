@@ -46,17 +46,22 @@ public class BidController {
             return ResponseEntity.notFound().build();
         }
         List<Bid> bids = bidRepository.findByJobId(jobId);
-        List<BidResponse> responses = bids.stream().map(bid -> {
-            // Initialize lazy-loaded entities by accessing them
-            String jobTitle = bid.getJob() != null ? bid.getJob().getTitle() : null;
-            Long jobIdValue = bid.getJob() != null ? bid.getJob().getId() : jobId;
-            String freelancerName = bid.getFreelancer() != null ? bid.getFreelancer().getFullName() : null;
-            String freelancerEmail = bid.getFreelancer() != null ? bid.getFreelancer().getEmail() : null;
-            Long freelancerId = bid.getFreelancer() != null ? bid.getFreelancer().getId() : null;
+        List<BidResponse> responses = new ArrayList<>();
+        
+        // Get job once to avoid multiple queries
+        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        String jobTitle = jobOpt.map(Job::getTitle).orElse(null);
+        
+        for (Bid bid : bids) {
+            // Access freelancer to initialize it
+            User freelancer = bid.getFreelancer();
+            String freelancerName = freelancer != null ? freelancer.getFullName() : null;
+            String freelancerEmail = freelancer != null ? freelancer.getEmail() : null;
+            Long freelancerId = freelancer != null ? freelancer.getId() : null;
             
-            return new BidResponse(
+            responses.add(new BidResponse(
                 bid.getId(),
-                jobIdValue,
+                jobId,
                 jobTitle,
                 freelancerId,
                 freelancerName,
@@ -65,8 +70,8 @@ public class BidController {
                 bid.getMessage(),
                 bid.getStatus(),
                 bid.getCreatedAt()
-            );
-        }).collect(java.util.stream.Collectors.toList());
+            ));
+        }
         return ResponseEntity.ok(responses);
     }
 
