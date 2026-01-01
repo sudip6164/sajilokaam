@@ -189,6 +189,38 @@ public class TimerController {
         return ResponseEntity.ok(updated);
     }
 
+    @PostMapping("/stop")
+    public ResponseEntity<TimeLog> stopActiveTimer(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<TimerSession> sessionOpt = timerSessionRepository.findByUserIdAndIsActiveTrue(userOpt.get().getId());
+        if (sessionOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        TimerSession session = sessionOpt.get();
+        TimeLog timeLog = stopTimerInternal(session);
+        if (timeLog != null) {
+            return ResponseEntity.ok(timeLog);
+        } else {
+            return ResponseEntity.ok().build();
+        }
+    }
+
     @PostMapping("/{id}/stop")
     public ResponseEntity<TimeLog> stopTimer(
             @PathVariable Long id,
