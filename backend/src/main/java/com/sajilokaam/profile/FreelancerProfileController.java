@@ -130,8 +130,8 @@ public class FreelancerProfileController {
         }
 
         try {
-            // Create upload directory if it doesn't exist
-            Path uploadDir = Paths.get("uploads/profile-pictures");
+            // Create upload directory if it doesn't exist - use absolute path
+            Path uploadDir = Paths.get(System.getProperty("user.dir"), "uploads", "profile-pictures");
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
@@ -147,6 +147,11 @@ public class FreelancerProfileController {
 
             // Save file
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            
+            // Verify file was saved
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.status(500).body(Map.of("error", "File was not saved"));
+            }
 
             // Update profile with picture URL
             FreelancerProfile profile = freelancerProfileService.getOrCreate(userOpt.get());
@@ -158,7 +163,8 @@ public class FreelancerProfileController {
                     "url", pictureUrl,
                     "message", "Profile picture uploaded successfully"
             ));
-        } catch (IOException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("error", "Failed to upload picture: " + e.getMessage()));
         }
     }
@@ -166,18 +172,28 @@ public class FreelancerProfileController {
     @GetMapping("/picture/{filename}")
     public ResponseEntity<org.springframework.core.io.Resource> getProfilePicture(@PathVariable String filename) {
         try {
-            Path filePath = Paths.get("uploads/profile-pictures").resolve(filename);
+            Path filePath = Paths.get(System.getProperty("user.dir"), "uploads", "profile-pictures", filename);
             org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
             
             if (!resource.exists() || !resource.isReadable()) {
                 return ResponseEntity.notFound().build();
             }
 
+            // Determine content type from file extension
+            String contentType = "image/jpeg";
+            if (filename.toLowerCase().endsWith(".png")) {
+                contentType = "image/png";
+            } else if (filename.toLowerCase().endsWith(".gif")) {
+                contentType = "image/gif";
+            } else if (filename.toLowerCase().endsWith(".webp")) {
+                contentType = "image/webp";
+            }
+
             return ResponseEntity.ok()
-                    .contentType(org.springframework.http.MediaType.parseMediaType(
-                            org.springframework.http.MediaType.IMAGE_JPEG_VALUE))
+                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
                     .body(resource);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         }
     }
