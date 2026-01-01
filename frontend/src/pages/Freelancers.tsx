@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { adminApi } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -35,15 +35,12 @@ export default function Freelancers() {
   const loadFreelancers = async () => {
     try {
       setIsLoading(true);
-      // Get all users and filter for freelancers
-      // Note: This uses admin API - in production, create a public endpoint
-      const usersData = await adminApi.getUsers(0, 100);
-      const freelancerUsers = usersData.content.filter((user: any) =>
-        user.roles.some((role: any) => role.name === "FREELANCER")
-      );
+      // Use public endpoint to get freelancers
+      const response = await api.get("/users/freelancers", { params: { page: 0, size: 100 } });
+      const usersData = response.data;
       
       // Transform to freelancer cards format
-      const freelancerCards = freelancerUsers.map((user: any) => ({
+      const freelancerCards = usersData.content.map((user: any) => ({
         id: user.id,
         name: user.fullName,
         email: user.email,
@@ -58,13 +55,9 @@ export default function Freelancers() {
       
       setFreelancers(freelancerCards);
     } catch (error: any) {
-      // If admin API fails (not admin), show empty state or use mock data
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        // Not admin - show empty state for now
-        setFreelancers([]);
-      } else {
-        toast.error("Failed to load freelancers");
-      }
+      console.error("Failed to load freelancers:", error);
+      toast.error("Failed to load freelancers");
+      setFreelancers([]);
     } finally {
       setIsLoading(false);
     }
