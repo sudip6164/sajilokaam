@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { projectsApi, conversationsApi, filesApi, tasksApiEnhanced } from "@/lib/api";
+import { projectsApi, conversationsApi, filesApi, timeTrackingApi } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -130,7 +130,7 @@ export default function ClientProjectDetail() {
   const loadFiles = async () => {
     if (!id) return;
     try {
-      const files = await filesApi.getProjectFiles(parseInt(id));
+      const files = await filesApi.list(parseInt(id));
       setProjectFiles(files || []);
     } catch (error: any) {
       setProjectFiles([]);
