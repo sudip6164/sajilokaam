@@ -839,10 +839,14 @@ export default function ProjectDetail() {
                         </div>
                         <div>
                           <p className="font-medium">
-                            {format(new Date(log.startTime), "MMM dd, yyyy")}
+                            {log.startTime ? format(new Date(log.startTime), "MMM dd, yyyy") : "N/A"}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(log.startTime), "h:mm a")} - {format(new Date(log.endTime), "h:mm a")}
+                            {log.startTime && log.endTime 
+                              ? `${format(new Date(log.startTime), "h:mm a")} - ${format(new Date(log.endTime), "h:mm a")}`
+                              : log.loggedAt 
+                              ? format(new Date(log.loggedAt), "MMM dd, yyyy h:mm a")
+                              : "N/A"}
                           </p>
                           {log.description && (
                             <p className="text-sm text-muted-foreground mt-1">{log.description}</p>
