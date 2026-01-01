@@ -854,7 +854,9 @@ export default function ProjectDetail() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">{formatTime(log.duration)}</p>
+                        <p className="font-semibold">
+                          {formatTime(log.duration || (log.minutes ? log.minutes * 60 : 0))}
+                        </p>
                         {log.category && (
                           <Badge variant="outline" className="mt-1">
                             {log.category.name}
