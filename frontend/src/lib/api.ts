@@ -122,6 +122,23 @@ export const jobsApi = {
     categoryId?: number;
     featured?: boolean;
   }) => {
+    // If clientId is provided, use the my-jobs endpoint which filters by authenticated user
+    if (params?.clientId) {
+      const response = await api.get<Array<{
+        id: number;
+        title: string;
+        description: string;
+        budget?: number;
+        budgetType?: string;
+        deadline?: string;
+        status: string;
+        clientId: number;
+        categoryId?: number;
+        createdAt: string;
+      }>>("/jobs/my-jobs");
+      return response.data;
+    }
+    // Otherwise, use the public jobs endpoint
     const response = await api.get<Array<{
       id: number;
       title: string;
