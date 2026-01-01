@@ -66,6 +66,6 @@ SET
         WHEN u.email = 'freelancer2@example.com' THEN 'Bachelor of Engineering in Software Engineering, Pokhara University'
         ELSE fp.education
     END,
-    fp.status = 'VERIFIED'
+    fp.status = 'APPROVED'
 WHERE u.email IN ('freelancer1@example.com', 'freelancer2@example.com');
 
