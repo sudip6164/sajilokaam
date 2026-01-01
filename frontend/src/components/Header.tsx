@@ -74,13 +74,18 @@ export function Header() {
         .then(profile => {
           if (profile.profilePictureUrl) {
             setProfilePictureUrl(profile.profilePictureUrl);
+          } else {
+            setProfilePictureUrl(null);
           }
         })
         .catch(() => {
           // Silently fail
+          setProfilePictureUrl(null);
         });
+    } else {
+      setProfilePictureUrl(null);
     }
-  }, [isAuthenticated, hasRole]);
+  }, [isAuthenticated, hasRole, user]);
   
   const isFreelancer = hasRole("FREELANCER");
   const isClient = hasRole("CLIENT");
