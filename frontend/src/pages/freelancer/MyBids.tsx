@@ -2,41 +2,24 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   Search, 
-  Filter,
   Clock,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
   AlertCircle,
   Eye,
   MessageSquare,
-  Trash2,
-  ChevronDown
+  DollarSign,
+  Calendar,
+  TrendingUp,
+  ArrowRight,
+  Briefcase,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -48,10 +31,37 @@ import { useAuth } from "@/contexts/AuthContext";
 import { bidsApi, jobsApi } from "@/lib/api";
 import { toast } from "sonner";
 
-const statusConfig: Record<string, { label: string; icon: any; color: string }> = {
-  PENDING: { label: "Pending", icon: Clock, color: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" },
-  ACCEPTED: { label: "Accepted", icon: CheckCircle, color: "bg-secondary/10 text-secondary border-secondary/20" },
-  REJECTED: { label: "Rejected", icon: XCircle, color: "bg-destructive/10 text-destructive border-destructive/20" },
+const statusConfig: Record<string, { label: string; icon: any; color: string; bgColor: string }> = {
+  PENDING: { 
+    label: "Pending", 
+    icon: Clock, 
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-500/10 border-yellow-500/20"
+  },
+  ACCEPTED: { 
+    label: "Accepted", 
+    icon: CheckCircle2, 
+    color: "text-green-600",
+    bgColor: "bg-green-500/10 border-green-500/20"
+  },
+  REJECTED: { 
+    label: "Rejected", 
+    icon: XCircle, 
+    color: "text-red-600",
+    bgColor: "bg-red-500/10 border-red-500/20"
+  },
+};
+
+const getRelativeTime = (date: string) => {
+  const now = new Date();
+  const then = new Date(date);
+  const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return "Just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  return then.toLocaleDateString();
 };
 
 export default function MyBids() {
@@ -106,7 +116,8 @@ export default function MyBids() {
   const filteredBids = bids.filter(bid => {
     const job = jobs[bid.jobId];
     const matchesSearch = job?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job?.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      job?.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bid.message?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || bid.status === statusFilter.toUpperCase();
     return matchesSearch && matchesStatus;
   });
@@ -121,42 +132,86 @@ export default function MyBids() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">Loading bids...</div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your bids...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">My Bids</h1>
-        <p className="text-muted-foreground mt-1">Track and manage your job proposals</p>
+      {/* Header with Gradient */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background border border-primary/20 p-8">
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Briefcase className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">My Bids</h1>
+              <p className="text-muted-foreground">Track and manage your job proposals</p>
+            </div>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{stats.total}</p>
-            <p className="text-sm text-muted-foreground">Total Bids</p>
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Bids</p>
+                <p className="text-3xl font-bold mt-1">{stats.total}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/10">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            <p className="text-sm text-muted-foreground">Pending</p>
+        <Card className="border-l-4 border-l-yellow-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                <p className="text-3xl font-bold text-yellow-600 mt-1">{stats.pending}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-yellow-500/10">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-destructive">{stats.rejected}</p>
-            <p className="text-sm text-muted-foreground">Rejected</p>
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Accepted</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{stats.accepted}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-500/10">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-secondary">{stats.accepted}</p>
-            <p className="text-sm text-muted-foreground">Accepted</p>
+        <Card className="border-l-4 border-l-red-500">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Rejected</p>
+                <p className="text-3xl font-bold text-red-600 mt-1">{stats.rejected}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-red-500/10">
+                <XCircle className="h-5 w-5 text-red-600" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -168,162 +223,275 @@ export default function MyBids() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search by job title or client..." 
+                placeholder="Search by job title, description, or proposal..." 
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="ACCEPTED">Accepted</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Bids table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Job Title</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Your Bid</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBids.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12">
-                      <p className="text-muted-foreground">No bids found</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredBids.map((bid) => {
-                    const job = jobs[bid.jobId];
-                    const status = statusConfig[bid.status] || statusConfig.PENDING;
-                    const StatusIcon = status.icon;
-                    return (
-                      <TableRow key={bid.id}>
-                        <TableCell>
-                          <Link to={`/jobs/${bid.jobId}`} className="font-medium max-w-[200px] truncate hover:text-primary">
-                            {job?.title || `Job #${bid.jobId}`}
-                          </Link>
-                          {job && (job.budgetMin || job.budgetMax) && (
-                            <div className="text-xs text-muted-foreground">
-                              Budget: {job.budgetMin && job.budgetMax
-                                ? `NPR ${job.budgetMin.toLocaleString()} - ${job.budgetMax.toLocaleString()}`
-                                : formatCurrency(job.budgetMin || job.budgetMax)}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>Client ID: {job?.clientId || "N/A"}</TableCell>
-                        <TableCell className="font-medium text-secondary">{formatCurrency(Number(bid.amount))}</TableCell>
-                        <TableCell>{bid.estimatedCompletionDate ? new Date(bid.estimatedCompletionDate).toLocaleDateString() : "Not set"}</TableCell>
-                        <TableCell>{new Date(bid.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={status.color}>
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {status.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                Actions
-                                <ChevronDown className="h-4 w-4 ml-1" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setSelectedBid(bid)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link to={`/jobs/${bid.jobId}`}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Job
-                                </Link>
-                              </DropdownMenuItem>
-                              {bid.status === "ACCEPTED" && (
-                                <DropdownMenuItem asChild>
-                                  <Link to={`/projects?jobId=${bid.jobId}`}>
-                                    <MessageSquare className="h-4 w-4 mr-2" />
-                                    View Project
-                                  </Link>
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Status Tabs */}
+      <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
+          <TabsTrigger value="PENDING">Pending ({stats.pending})</TabsTrigger>
+          <TabsTrigger value="ACCEPTED">Accepted ({stats.accepted})</TabsTrigger>
+          <TabsTrigger value="REJECTED">Rejected ({stats.rejected})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-      {/* Bid details modal */}
+      {/* Bids Grid */}
+      {filteredBids.length === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 rounded-full bg-muted">
+                <Briefcase className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-1">No bids found</h3>
+                <p className="text-muted-foreground">
+                  {searchQuery || statusFilter !== "all" 
+                    ? "Try adjusting your search or filters"
+                    : "Start bidding on jobs to see them here"}
+                </p>
+              </div>
+              {!searchQuery && statusFilter === "all" && (
+                <Button asChild>
+                  <Link to="/jobs">
+                    Browse Jobs
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {filteredBids.map((bid) => {
+            const job = jobs[bid.jobId];
+            const status = statusConfig[bid.status] || statusConfig.PENDING;
+            const StatusIcon = status.icon;
+            
+            return (
+              <Card 
+                key={bid.id} 
+                className="group hover:shadow-lg transition-all duration-300 border-t-4 border-t-primary/20 hover:border-t-primary/60"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <Link 
+                        to={`/jobs/${bid.jobId}`} 
+                        className="block group-hover:text-primary transition-colors"
+                      >
+                        <h3 className="text-lg font-semibold line-clamp-2 mb-2">
+                          {job?.title || `Job #${bid.jobId}`}
+                        </h3>
+                      </Link>
+                      {job?.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {job.description}
+                        </p>
+                      )}
+                    </div>
+                    <Badge className={`${status.bgColor} ${status.color} border`}>
+                      <StatusIcon className="h-3 w-3 mr-1" />
+                      {status.label}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Bid Amount */}
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium text-muted-foreground">Your Bid</span>
+                    </div>
+                    <span className="text-lg font-bold text-primary">
+                      {formatCurrency(Number(bid.amount))}
+                    </span>
+                  </div>
+
+                  {/* Job Budget Range */}
+                  {job && (job.budgetMin || job.budgetMax) && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Sparkles className="h-4 w-4" />
+                      <span>
+                        Budget: {job.budgetMin && job.budgetMax
+                          ? `NPR ${job.budgetMin.toLocaleString()} - ${job.budgetMax.toLocaleString()}`
+                          : formatCurrency(job.budgetMin || job.budgetMax)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Proposal Message Preview */}
+                  {bid.message && (
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Your Proposal</p>
+                      <p className="text-sm line-clamp-2">{bid.message}</p>
+                    </div>
+                  )}
+
+                  {/* Metadata */}
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>Submitted {getRelativeTime(bid.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => setSelectedBid(bid)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="flex-1"
+                      asChild
+                    >
+                      <Link to={`/jobs/${bid.jobId}`}>
+                        View Job
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                    {bid.status === "ACCEPTED" && (
+                      <Button 
+                        variant="secondary" 
+                        size="sm"
+                        asChild
+                      >
+                        <Link to={`/projects?jobId=${bid.jobId}`}>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Project
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Bid Details Modal */}
       <Dialog open={!!selectedBid} onOpenChange={() => setSelectedBid(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Bid Details</DialogTitle>
-            <DialogDescription>{selectedBid?.job}</DialogDescription>
+            <DialogDescription>
+              {selectedBid && jobs[selectedBid.jobId]?.title}
+            </DialogDescription>
           </DialogHeader>
           {selectedBid && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Job</p>
-                  <p className="font-medium">{jobs[selectedBid.jobId]?.title || `Job #${selectedBid.jobId}`}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <Badge variant="outline" className={statusConfig[selectedBid.status]?.color || statusConfig.PENDING.color}>
-                    {statusConfig[selectedBid.status]?.label || selectedBid.status}
-                  </Badge>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Your Bid</p>
-                  <p className="font-medium text-secondary">{formatCurrency(Number(selectedBid.amount))}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Submitted</p>
-                  <p className="font-medium">{new Date(selectedBid.createdAt).toLocaleDateString()}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Duration</p>
-                  <p className="font-medium">{selectedBid.duration}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground">Submitted</p>
-                  <p className="font-medium">{selectedBid.submittedAt}</p>
-                </div>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Job Title</p>
+                    <p className="font-semibold">
+                      {jobs[selectedBid.jobId]?.title || `Job #${selectedBid.jobId}`}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Status</p>
+                    <Badge className={`${statusConfig[selectedBid.status]?.bgColor || statusConfig.PENDING.bgColor} ${statusConfig[selectedBid.status]?.color || statusConfig.PENDING.color} border`}>
+                      {statusConfig[selectedBid.status]?.label || selectedBid.status}
+                    </Badge>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Your Bid Amount</p>
+                    <p className="text-lg font-bold text-primary">
+                      {formatCurrency(Number(selectedBid.amount))}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Submitted</p>
+                    <p className="font-medium">
+                      {new Date(selectedBid.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric"
+                      })}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {getRelativeTime(selectedBid.createdAt)}
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
+              
               {selectedBid.message && (
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground mb-2">Your Proposal</p>
-                  <p className="text-sm">{selectedBid.message}</p>
-                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Your Proposal</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{selectedBid.message}</p>
+                  </CardContent>
+                </Card>
               )}
+
+              {jobs[selectedBid.jobId] && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Job Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {jobs[selectedBid.jobId].description && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
+                        <p className="text-sm">{jobs[selectedBid.jobId].description}</p>
+                      </div>
+                    )}
+                    {(jobs[selectedBid.jobId].budgetMin || jobs[selectedBid.jobId].budgetMax) && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Budget Range</p>
+                        <p className="text-sm font-medium">
+                          {jobs[selectedBid.jobId].budgetMin && jobs[selectedBid.jobId].budgetMax
+                            ? `NPR ${jobs[selectedBid.jobId].budgetMin.toLocaleString()} - ${jobs[selectedBid.jobId].budgetMax.toLocaleString()}`
+                            : formatCurrency(jobs[selectedBid.jobId].budgetMin || jobs[selectedBid.jobId].budgetMax)}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link to={`/jobs/${selectedBid.jobId}`}>
+                    View Job Posting
+                  </Link>
+                </Button>
+                {selectedBid.status === "ACCEPTED" && (
+                  <Button variant="default" className="flex-1" asChild>
+                    <Link to={`/projects?jobId=${selectedBid.jobId}`}>
+                      Go to Project
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
