@@ -39,19 +39,45 @@ export default function Freelancers() {
       const response = await api.get("/users/freelancers", { params: { page: 0, size: 100 } });
       const usersData = response.data;
       
-      // Transform to freelancer cards format
-      const freelancerCards = usersData.content.map((user: any) => ({
-        id: user.id,
-        name: user.fullName,
-        email: user.email,
-        location: "Kathmandu, Nepal", // Placeholder - would come from profile
-        hourlyRate: 1500, // Placeholder - would come from profile
-        rating: 4.8, // Placeholder
-        completedProjects: 25, // Placeholder
-        skills: ["React", "Node.js", "TypeScript"], // Placeholder
-        verified: true, // Placeholder
-        bio: "Experienced developer with expertise in modern web technologies.", // Placeholder
-      }));
+      // Transform to freelancer cards format using real data
+      const freelancerCards = usersData.content.map((user: any) => {
+        // Parse skills
+        const parseSkills = (skills: string) => {
+          if (!skills) return [];
+          try {
+            return JSON.parse(skills);
+          } catch {
+            return skills.split(",").map((s: string) => s.trim()).filter(Boolean);
+          }
+        };
+        
+        const primarySkills = parseSkills(user.primarySkills || "");
+        const secondarySkills = parseSkills(user.secondarySkills || "");
+        const allSkills = [...primarySkills, ...secondarySkills];
+        
+        // Build location string
+        const locationParts = [user.locationCity, user.locationCountry].filter(Boolean);
+        const location = locationParts.length > 0 ? locationParts.join(", ") : "Location not specified";
+        
+        // Use hourlyRate or hourlyRateMin, fallback to 0
+        const hourlyRate = user.hourlyRate 
+          ? parseFloat(user.hourlyRate.toString())
+          : (user.hourlyRateMin ? parseFloat(user.hourlyRateMin.toString()) : 0);
+        
+        return {
+          id: user.id,
+          name: user.fullName,
+          email: user.email,
+          location: location,
+          hourlyRate: hourlyRate,
+          rating: 4.8, // Placeholder - not in backend yet
+          completedProjects: 25, // Placeholder - not in backend yet
+          skills: allSkills.length > 0 ? allSkills : ["Skills not specified"],
+          verified: user.status === "VERIFIED",
+          bio: user.overview || user.headline || "No bio available",
+          profilePictureUrl: user.profilePictureUrl,
+        };
+      });
       
       setFreelancers(freelancerCards);
     } catch (error: any) {
@@ -205,7 +231,7 @@ export default function Freelancers() {
               <CardContent className="p-6">
                 <div className="flex items-start gap-4 mb-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${freelancer.name}`} />
+                    <AvatarImage src={freelancer.profilePictureUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${freelancer.name}`} />
                     <AvatarFallback className="text-lg">
                       {freelancer.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>
@@ -276,7 +302,7 @@ export default function Freelancers() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <Avatar className="h-16 w-16 flex-shrink-0">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${freelancer.name}`} />
+                      <AvatarImage src={freelancer.profilePictureUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${freelancer.name}`} />
                       <AvatarFallback>
                         {freelancer.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>

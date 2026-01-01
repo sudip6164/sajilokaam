@@ -73,6 +73,7 @@ public class UserController {
             response.setLinkedinUrl(profile.getLinkedinUrl());
             response.setGithubUrl(profile.getGithubUrl());
             response.setStatus(profile.getStatus() != null ? profile.getStatus().name() : null);
+            response.setProfilePictureUrl(profile.getProfilePictureUrl());
         }
         
         return ResponseEntity.ok(response);
@@ -80,7 +81,7 @@ public class UserController {
 
     /**
      * Public endpoint to get freelancers (no admin required)
-     * Returns only basic information: id, fullName, email
+     * Returns profile information including headline, hourlyRate, location, skills, etc.
      */
     @GetMapping("/freelancers")
     public ResponseEntity<FreelancerPageResponse> getFreelancers(
@@ -89,15 +90,37 @@ public class UserController {
         Pageable pageable = PageRequest.of(page, size);
         Page<User> users = userRepository.findAll(pageable);
         
-        // Filter for freelancers and map to public info
+        // Filter for freelancers and map to public info with profile data
         List<FreelancerPublicInfo> freelancers = users.getContent().stream()
                 .filter(user -> user.getRoles() != null && user.getRoles().stream()
                         .anyMatch(role -> role.getName().equals("FREELANCER")))
-                .map(user -> new FreelancerPublicInfo(
-                        user.getId(),
-                        user.getFullName(),
-                        user.getEmail()
-                ))
+                .map(user -> {
+                    Optional<FreelancerProfile> profileOpt = freelancerProfileRepository.findByUserId(user.getId());
+                    FreelancerPublicInfo info = new FreelancerPublicInfo(
+                            user.getId(),
+                            user.getFullName(),
+                            user.getEmail()
+                    );
+                    
+                    if (profileOpt.isPresent()) {
+                        FreelancerProfile profile = profileOpt.get();
+                        info.setHeadline(profile.getHeadline());
+                        info.setOverview(profile.getOverview());
+                        info.setHourlyRate(profile.getHourlyRate());
+                        info.setHourlyRateMin(profile.getHourlyRateMin());
+                        info.setHourlyRateMax(profile.getHourlyRateMax());
+                        info.setLocationCountry(profile.getLocationCountry());
+                        info.setLocationCity(profile.getLocationCity());
+                        info.setPrimarySkills(profile.getPrimarySkills());
+                        info.setSecondarySkills(profile.getSecondarySkills());
+                        info.setProfilePictureUrl(profile.getProfilePictureUrl());
+                        info.setExperienceYears(profile.getExperienceYears());
+                        info.setAvailability(profile.getAvailability() != null ? profile.getAvailability().name() : null);
+                        info.setExperienceLevel(profile.getExperienceLevel() != null ? profile.getExperienceLevel().name() : null);
+                    }
+                    
+                    return info;
+                })
                 .collect(Collectors.toList());
         
         return ResponseEntity.ok(new FreelancerPageResponse(
@@ -114,6 +137,19 @@ public class UserController {
         private Long id;
         private String fullName;
         private String email;
+        private String headline;
+        private String overview;
+        private java.math.BigDecimal hourlyRate;
+        private java.math.BigDecimal hourlyRateMin;
+        private java.math.BigDecimal hourlyRateMax;
+        private String locationCountry;
+        private String locationCity;
+        private String primarySkills;
+        private String secondarySkills;
+        private String profilePictureUrl;
+        private Integer experienceYears;
+        private String availability;
+        private String experienceLevel;
 
         public FreelancerPublicInfo(Long id, String fullName, String email) {
             this.id = id;
@@ -129,6 +165,45 @@ public class UserController {
 
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
+
+        public String getHeadline() { return headline; }
+        public void setHeadline(String headline) { this.headline = headline; }
+
+        public String getOverview() { return overview; }
+        public void setOverview(String overview) { this.overview = overview; }
+
+        public java.math.BigDecimal getHourlyRate() { return hourlyRate; }
+        public void setHourlyRate(java.math.BigDecimal hourlyRate) { this.hourlyRate = hourlyRate; }
+
+        public java.math.BigDecimal getHourlyRateMin() { return hourlyRateMin; }
+        public void setHourlyRateMin(java.math.BigDecimal hourlyRateMin) { this.hourlyRateMin = hourlyRateMin; }
+
+        public java.math.BigDecimal getHourlyRateMax() { return hourlyRateMax; }
+        public void setHourlyRateMax(java.math.BigDecimal hourlyRateMax) { this.hourlyRateMax = hourlyRateMax; }
+
+        public String getLocationCountry() { return locationCountry; }
+        public void setLocationCountry(String locationCountry) { this.locationCountry = locationCountry; }
+
+        public String getLocationCity() { return locationCity; }
+        public void setLocationCity(String locationCity) { this.locationCity = locationCity; }
+
+        public String getPrimarySkills() { return primarySkills; }
+        public void setPrimarySkills(String primarySkills) { this.primarySkills = primarySkills; }
+
+        public String getSecondarySkills() { return secondarySkills; }
+        public void setSecondarySkills(String secondarySkills) { this.secondarySkills = secondarySkills; }
+
+        public String getProfilePictureUrl() { return profilePictureUrl; }
+        public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+        public Integer getExperienceYears() { return experienceYears; }
+        public void setExperienceYears(Integer experienceYears) { this.experienceYears = experienceYears; }
+
+        public String getAvailability() { return availability; }
+        public void setAvailability(String availability) { this.availability = availability; }
+
+        public String getExperienceLevel() { return experienceLevel; }
+        public void setExperienceLevel(String experienceLevel) { this.experienceLevel = experienceLevel; }
     }
 
     // Response wrapper matching frontend expectations
@@ -188,6 +263,7 @@ public class UserController {
         private String linkedinUrl;
         private String githubUrl;
         private String status;
+        private String profilePictureUrl;
 
         // Getters and setters
         public Long getId() { return id; }
@@ -258,5 +334,8 @@ public class UserController {
 
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
+
+        public String getProfilePictureUrl() { return profilePictureUrl; }
+        public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
     }
 }

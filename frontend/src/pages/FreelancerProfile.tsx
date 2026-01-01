@@ -112,7 +112,7 @@ export default function FreelancerProfile() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <Avatar className="h-24 w-24 mx-auto mb-4">
-                  <AvatarImage src="" alt={profile.fullName} />
+                  <AvatarImage src={profile.profilePictureUrl || ""} alt={profile.fullName} />
                   <AvatarFallback className="text-2xl">
                     {getInitials(profile.fullName)}
                   </AvatarFallback>
