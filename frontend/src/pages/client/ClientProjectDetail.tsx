@@ -95,7 +95,9 @@ export default function ClientProjectDetail() {
     if (!conversationId) return;
     try {
       const response = await conversationsApi.getMessages(conversationId);
-      setMessages(response.content || []);
+      // Handle both paginated response (with content) and direct array response
+      const msgs = Array.isArray(response) ? response : (response?.content || []);
+      setMessages(msgs);
     } catch (error: any) {
       // Silently fail
     }
