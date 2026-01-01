@@ -521,11 +521,16 @@ export default function Profile() {
                     const file = e.target.files?.[0];
                     if (file) {
                       try {
+                        console.log("Uploading file:", file.name, file.size, file.type);
                         const result = await profileApi.uploadProfilePicture(file);
+                        console.log("Upload result:", result);
                         toast.success("Profile picture uploaded successfully");
                         await loadProfile();
                       } catch (error: any) {
-                        toast.error(error.response?.data?.error || "Failed to upload picture");
+                        console.error("Upload error:", error);
+                        console.error("Error response:", error.response);
+                        console.error("Error data:", error.response?.data);
+                        toast.error(error.response?.data?.error || error.message || "Failed to upload picture");
                       }
                     }
                   }}

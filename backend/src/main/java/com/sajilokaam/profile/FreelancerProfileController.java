@@ -109,31 +109,48 @@ public class FreelancerProfileController {
     public ResponseEntity<Map<String, String>> uploadProfilePicture(
             @RequestParam("file") MultipartFile file,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
+        System.out.println("========================================");
+        System.out.println("PROFILE PICTURE UPLOAD REQUEST");
+        System.out.println("Authorization: " + (authorization != null ? "Present" : "Missing"));
+        System.out.println("File name: " + file.getOriginalFilename());
+        System.out.println("File size: " + file.getSize());
+        System.out.println("File type: " + file.getContentType());
+        System.out.println("Is empty: " + file.isEmpty());
+        System.out.println("========================================");
+        
         Optional<User> userOpt = userContextService.resolveUser(authorization);
         if (userOpt.isEmpty()) {
-            return ResponseEntity.status(401).build();
+            System.err.println("ERROR: User not found or unauthorized");
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
+        System.out.println("User authenticated: " + userOpt.get().getEmail());
 
         if (file.isEmpty()) {
+            System.err.println("ERROR: File is empty");
             return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
         }
 
         // Validate image type
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
+            System.err.println("ERROR: Invalid file type: " + contentType);
             return ResponseEntity.badRequest().body(Map.of("error", "File must be an image"));
         }
 
         // Validate file size (max 5MB)
         if (file.getSize() > 5 * 1024 * 1024) {
+            System.err.println("ERROR: File too large: " + file.getSize());
             return ResponseEntity.badRequest().body(Map.of("error", "File size exceeds 5MB"));
         }
 
         try {
             // Create upload directory if it doesn't exist - use absolute path
             Path uploadDir = Paths.get(System.getProperty("user.dir"), "uploads", "profile-pictures");
+            System.out.println("Upload directory: " + uploadDir.toAbsolutePath());
+            
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
+                System.out.println("Created upload directory");
             }
 
             // Generate unique filename
@@ -144,27 +161,42 @@ public class FreelancerProfileController {
             }
             String uniqueFilename = UUID.randomUUID().toString() + extension;
             Path filePath = uploadDir.resolve(uniqueFilename);
+            System.out.println("Saving to: " + filePath.toAbsolutePath());
 
             // Save file
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("File copied successfully");
             
             // Verify file was saved
             if (!Files.exists(filePath)) {
+                System.err.println("ERROR: File was not saved to disk");
                 return ResponseEntity.status(500).body(Map.of("error", "File was not saved"));
             }
+            
+            long fileSize = Files.size(filePath);
+            System.out.println("File saved, size: " + fileSize + " bytes");
 
             // Update profile with picture URL
             FreelancerProfile profile = freelancerProfileService.getOrCreate(userOpt.get());
             String pictureUrl = "http://localhost:8080/api/profile/freelancer/picture/" + uniqueFilename;
             profile.setProfilePictureUrl(pictureUrl);
             freelancerProfileRepository.save(profile);
+            System.out.println("Profile updated with picture URL: " + pictureUrl);
 
+            System.out.println("========================================");
+            System.out.println("UPLOAD SUCCESS");
+            System.out.println("========================================");
+            
             return ResponseEntity.ok(Map.of(
                     "url", pictureUrl,
                     "message", "Profile picture uploaded successfully"
             ));
         } catch (Exception e) {
+            System.err.println("========================================");
+            System.err.println("UPLOAD ERROR");
+            System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
+            System.err.println("========================================");
             return ResponseEntity.status(500).body(Map.of("error", "Failed to upload picture: " + e.getMessage()));
         }
     }
