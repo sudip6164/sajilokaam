@@ -120,13 +120,23 @@ export default function Profile() {
     try {
       setIsSaving(true);
       await profileApi.updateFreelancerProfile({
-        bio: editData.overview, // Map to bio for backward compatibility
+        headline: editData.headline || undefined,
+        overview: editData.overview || undefined,
         hourlyRate: editData.hourlyRate ? parseFloat(editData.hourlyRate) : undefined,
-        location: editData.locationCity ? `${editData.locationCity}, ${editData.locationCountry}`.trim() : undefined,
-        phone: editData.phone,
-        website: editData.websiteUrl,
-        linkedin: editData.linkedinUrl,
-        github: editData.githubUrl,
+        hourlyRateMin: editData.hourlyRateMin ? parseFloat(editData.hourlyRateMin) : undefined,
+        hourlyRateMax: editData.hourlyRateMax ? parseFloat(editData.hourlyRateMax) : undefined,
+        locationCity: editData.locationCity || undefined,
+        locationCountry: editData.locationCountry || undefined,
+        websiteUrl: editData.websiteUrl || undefined,
+        linkedinUrl: editData.linkedinUrl || undefined,
+        githubUrl: editData.githubUrl || undefined,
+        portfolioUrl: editData.portfolioUrl || undefined,
+        primarySkills: editData.primarySkills || undefined,
+        secondarySkills: editData.secondarySkills || undefined,
+        languages: editData.languages || undefined,
+        education: editData.education || undefined,
+        certifications: editData.certifications || undefined,
+        experienceYears: editData.experienceYears ? parseInt(editData.experienceYears) : undefined,
       });
       await loadProfile();
       setIsEditing(false);
