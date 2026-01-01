@@ -826,6 +826,17 @@ export const profileApi = {
     }>("/profile/freelancer", payload);
     return response.data;
   },
+  uploadProfilePicture: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<{
+      url: string;
+      message: string;
+    }>("/profile/freelancer/picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
 
   // Client Profile
   getClientProfile: async () => {
