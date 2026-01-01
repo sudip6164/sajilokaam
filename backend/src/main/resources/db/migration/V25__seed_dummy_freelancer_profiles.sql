@@ -56,7 +56,7 @@ SET
         ELSE fp.availability
     END,
     fp.experience_level = CASE 
-        WHEN u.email = 'freelancer1@example.com' THEN 'MID_LEVEL'
+        WHEN u.email = 'freelancer1@example.com' THEN 'MID'
         WHEN u.email = 'freelancer2@example.com' THEN 'SENIOR'
         ELSE fp.experience_level
     END,
