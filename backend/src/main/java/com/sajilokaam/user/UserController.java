@@ -25,40 +25,64 @@ public class UserController {
     }
 
     /**
+     * Public endpoint to get freelancer profile by user ID (no authentication required)
+     * This must come before /freelancers to avoid path conflicts
+     */
+    @GetMapping("/freelancers/{userId}")
+    public ResponseEntity<FreelancerPublicProfileResponse> getFreelancerProfile(@PathVariable Long userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        User user = userOpt.get();
+        // Verify user is a freelancer
+        boolean isFreelancer = user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals("FREELANCER"));
+        if (!isFreelancer) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Get freelancer profile if exists
+        Optional<FreelancerProfile> profileOpt = freelancerProfileRepository.findByUserId(userId);
+        
+        FreelancerPublicProfileResponse response = new FreelancerPublicProfileResponse();
+        response.setId(user.getId());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        
+        if (profileOpt.isPresent()) {
+            FreelancerProfile profile = profileOpt.get();
+            response.setHeadline(profile.getHeadline());
+            response.setOverview(profile.getOverview());
+            response.setHourlyRate(profile.getHourlyRate());
+            response.setHourlyRateMin(profile.getHourlyRateMin());
+            response.setHourlyRateMax(profile.getHourlyRateMax());
+            response.setAvailability(profile.getAvailability());
+            response.setExperienceLevel(profile.getExperienceLevel());
+            response.setExperienceYears(profile.getExperienceYears());
+            response.setLocationCountry(profile.getLocationCountry());
+            response.setLocationCity(profile.getLocationCity());
+            response.setPrimarySkills(profile.getPrimarySkills());
+            response.setSecondarySkills(profile.getSecondarySkills());
+            response.setLanguages(profile.getLanguages());
+            response.setEducation(profile.getEducation());
+            response.setCertifications(profile.getCertifications());
+            response.setPortfolioUrl(profile.getPortfolioUrl());
+            response.setWebsiteUrl(profile.getWebsiteUrl());
+            response.setLinkedinUrl(profile.getLinkedinUrl());
+            response.setGithubUrl(profile.getGithubUrl());
+            response.setStatus(profile.getStatus());
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Public endpoint to get freelancers (no admin required)
      * Returns only basic information: id, fullName, email
      */
     @GetMapping("/freelancers")
-    public ResponseEntity<FreelancerPageResponse> getFreelancers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "100") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<User> users = userRepository.findAll(pageable);
-        
-        // Filter for freelancers and map to public info
-        List<FreelancerPublicInfo> freelancers = users.getContent().stream()
-                .filter(user -> user.getRoles() != null && user.getRoles().stream()
-                        .anyMatch(role -> role.getName().equals("FREELANCER")))
-                .map(user -> new FreelancerPublicInfo(
-                        user.getId(),
-                        user.getFullName(),
-                        user.getEmail()
-                ))
-                .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(new FreelancerPageResponse(
-                freelancers,
-                freelancers.size(),
-                1,
-                page,
-                size
-        ));
-    }
-
-    /**
-     * Public endpoint to get freelancer profile by user ID (no authentication required)
-     */
-    @GetMapping("/freelancers/{userId}")
     public ResponseEntity<FreelancerPublicProfileResponse> getFreelancerProfile(@PathVariable Long userId) {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
