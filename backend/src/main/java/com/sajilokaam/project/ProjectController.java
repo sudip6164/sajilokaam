@@ -71,8 +71,23 @@ public class ProjectController {
                 if (userOpt.isPresent()) {
                     User user = userOpt.get();
                     // Check if user is the client or freelancer for this project
-                    boolean isClient = project.getClient() != null && project.getClient().getId().equals(user.getId());
-                    boolean isFreelancer = project.getFreelancer() != null && project.getFreelancer().getId().equals(user.getId());
+                    Job job = project.getJob();
+                    boolean isClient = job != null && job.getClient() != null && job.getClient().getId().equals(user.getId());
+                    
+                    // Check if user is the freelancer (from accepted bid)
+                    boolean isFreelancer = false;
+                    if (job != null) {
+                        List<Bid> bids = bidRepository.findByJobId(job.getId());
+                        for (Bid bid : bids) {
+                            if ("ACCEPTED".equals(bid.getStatus()) && 
+                                bid.getFreelancer() != null && 
+                                bid.getFreelancer().getId().equals(user.getId())) {
+                                isFreelancer = true;
+                                break;
+                            }
+                        }
+                    }
+                    
                     boolean isAdmin = user.getRoles().stream()
                             .anyMatch(role -> role.getName().equals("ADMIN"));
                     

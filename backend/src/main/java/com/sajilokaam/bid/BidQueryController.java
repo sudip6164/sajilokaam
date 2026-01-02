@@ -31,12 +31,15 @@ public class BidQueryController {
     @Transactional(readOnly = true)
     public ResponseEntity<List<BidResponse>> getBids(
             @RequestParam(required = false) Long freelancerId,
+            @RequestParam(required = false) Long jobId,
             @RequestParam(required = false) String status,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         
         List<Bid> bids;
         
-        if (freelancerId != null) {
+        if (jobId != null) {
+            bids = bidRepository.findByJobId(jobId);
+        } else if (freelancerId != null) {
             bids = bidRepository.findByFreelancerId(freelancerId);
         } else if (authorization != null && authorization.startsWith("Bearer ")) {
             // Get bids for authenticated user
@@ -66,8 +69,17 @@ public class BidQueryController {
         // Convert to BidResponse
         List<BidResponse> responses = new ArrayList<>();
         for (Bid bid : bids) {
+            // Initialize lazy-loaded relationships
             User freelancer = bid.getFreelancer();
+            if (freelancer != null) {
+                freelancer.getEmail(); // Trigger lazy load
+            }
+            
             Job job = bid.getJob();
+            if (job != null) {
+                job.getTitle(); // Trigger lazy load
+            }
+            
             responses.add(new BidResponse(
                 bid.getId(),
                 job != null ? job.getId() : null,

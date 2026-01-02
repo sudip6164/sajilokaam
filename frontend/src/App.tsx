@@ -59,6 +59,7 @@ import Invoices from "@/pages/freelancer/Invoices";
 import Notifications from "@/pages/freelancer/Notifications";
 import Profile from "@/pages/freelancer/Profile";
 import Messages from "@/pages/freelancer/Messages";
+import SubmitBid from "@/pages/freelancer/SubmitBid";
 
 // Client Pages
 import ClientDashboard from "@/pages/client/ClientDashboard";
@@ -99,6 +100,7 @@ const App = () => (
               {/* Protected Action Pages - Use Main Site Layout */}
               {/* Freelancer Actions */}
               <Route path="/bids" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><MyBids /></ProtectedRoute>} />
+              <Route path="/jobs/:id/bid" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><SubmitBid /></ProtectedRoute>} />
               <Route path="/projects" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><MyProjects /></ProtectedRoute>} />
               <Route path="/projects/:id" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><ProjectDetail /></ProtectedRoute>} />
               <Route path="/invoices" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Invoices /></ProtectedRoute>} />

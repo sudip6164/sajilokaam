@@ -48,6 +48,7 @@ public class JobController {
     }
 
     @GetMapping
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<Job>> list(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String jobType,
@@ -100,10 +101,25 @@ public class JobController {
         };
         
         List<Job> jobs = jobRepository.findAll(spec);
+        
+        // Initialize lazy-loaded relationships to avoid LazyInitializationException
+        for (Job job : jobs) {
+            if (job.getClient() != null) {
+                job.getClient().getEmail(); // Trigger lazy load
+            }
+            if (job.getCategory() != null) {
+                job.getCategory().getName(); // Trigger lazy load
+            }
+            if (job.getRequiredSkills() != null) {
+                job.getRequiredSkills().size(); // Trigger lazy load
+            }
+        }
+        
         return ResponseEntity.ok(jobs);
     }
 
     @GetMapping("/my-jobs")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<Job>> getMyJobs(
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
@@ -122,11 +138,26 @@ public class JobController {
         }
 
         List<Job> jobs = jobRepository.findByClientId(userOpt.get().getId());
+        
+        // Initialize lazy-loaded relationships to avoid LazyInitializationException
+        for (Job job : jobs) {
+            if (job.getClient() != null) {
+                job.getClient().getEmail(); // Trigger lazy load
+            }
+            if (job.getCategory() != null) {
+                job.getCategory().getName(); // Trigger lazy load
+            }
+            if (job.getRequiredSkills() != null) {
+                job.getRequiredSkills().size(); // Trigger lazy load
+            }
+        }
+        
         return ResponseEntity.ok(jobs);
     }
 
 
     @GetMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<Job> get(
             @PathVariable Long id,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
