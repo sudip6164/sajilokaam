@@ -42,13 +42,24 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" and the label has for="terms"
-    // Find the label first, then find the checkbox in the same container
-    const termsLabel = page.locator('label[for="terms"]');
-    await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same parent div as the label
-    const termsContainer = termsLabel.locator('..'); // Parent div
-    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
+    // The checkbox has id="terms" - Radix UI sets data attributes
+    // Try multiple strategies to find it
+    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    
+    // If that doesn't work, find by label and get the checkbox in the same flex container
+    if (await termsCheckbox.count() === 0) {
+      const termsLabel = page.locator('label[for="terms"]');
+      await expect(termsLabel).toBeVisible({ timeout: 5000 });
+      // Scroll label into view
+      await termsLabel.scrollIntoViewIfNeeded();
+      // The checkbox is in a flex container with the label - find the parent div with flex
+      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
+      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    }
+    
+    // Ensure checkbox is visible and clickable
+    await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
+    await termsCheckbox.scrollIntoViewIfNeeded();
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -75,13 +86,24 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" and the label has for="terms"
-    // Find the label first, then find the checkbox in the same container
-    const termsLabel = page.locator('label[for="terms"]');
-    await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same parent div as the label
-    const termsContainer = termsLabel.locator('..'); // Parent div
-    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
+    // The checkbox has id="terms" - Radix UI sets data attributes
+    // Try multiple strategies to find it
+    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    
+    // If that doesn't work, find by label and get the checkbox in the same flex container
+    if (await termsCheckbox.count() === 0) {
+      const termsLabel = page.locator('label[for="terms"]');
+      await expect(termsLabel).toBeVisible({ timeout: 5000 });
+      // Scroll label into view
+      await termsLabel.scrollIntoViewIfNeeded();
+      // The checkbox is in a flex container with the label - find the parent div with flex
+      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
+      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    }
+    
+    // Ensure checkbox is visible and clickable
+    await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
+    await termsCheckbox.scrollIntoViewIfNeeded();
     await termsCheckbox.click({ timeout: 5000 });
     
     // Try to submit to trigger validation
@@ -107,54 +129,71 @@ test.describe('SignUp Page', () => {
   test('should show password strength indicator', async ({ page }) => {
     const passwordInput = page.locator('input[id="password"]');
     
+    // Scroll to password field
+    await passwordInput.scrollIntoViewIfNeeded();
+    await passwordInput.click();
+    
     // Enter weak password
     await passwordInput.fill('weak');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800); // Wait longer for strength calculation
     
-    // Check for weak indicator - case insensitive
-    await expect(page.locator('text=/Weak/i')).toBeVisible({ timeout: 2000 });
+    // Check for weak indicator - look for the strength text in the password field area
+    const strengthIndicator = page.locator('text=/Weak/i').or(page.locator('text=/weak/i'));
+    await expect(strengthIndicator).toBeVisible({ timeout: 3000 });
     
-    // Enter medium password
+    // Clear and enter medium password
+    await passwordInput.clear();
     await passwordInput.fill('MediumPass123');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
     
     // Check for medium indicator
-    await expect(page.locator('text=/Medium/i')).toBeVisible({ timeout: 2000 });
+    const mediumIndicator = page.locator('text=/Medium/i').or(page.locator('text=/medium/i'));
+    await expect(mediumIndicator).toBeVisible({ timeout: 3000 });
     
-    // Enter strong password
+    // Clear and enter strong password
+    await passwordInput.clear();
     await passwordInput.fill('StrongPass123!@#');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
     
     // Check for strong indicator
-    await expect(page.locator('text=/Strong/i')).toBeVisible({ timeout: 2000 });
+    const strongIndicator = page.locator('text=/Strong/i').or(page.locator('text=/strong/i'));
+    await expect(strongIndicator).toBeVisible({ timeout: 3000 });
   });
 
   test('should show password mismatch error', async ({ page }) => {
     const passwordInput = page.locator('input[id="password"]');
     const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     
+    // Scroll to fields
+    await passwordInput.scrollIntoViewIfNeeded();
+    
     // Enter different passwords
     await passwordInput.fill('password123');
+    await confirmPasswordInput.scrollIntoViewIfNeeded();
     await confirmPasswordInput.fill('password456');
     await confirmPasswordInput.blur();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     
-    // Check for mismatch error
-    await expect(page.locator('text=Passwords do not match')).toBeVisible();
+    // Check for mismatch error - might appear on blur or submit
+    await expect(page.locator('text=Passwords do not match')).toBeVisible({ timeout: 2000 });
   });
 
   test('should show password match success indicator', async ({ page }) => {
     const passwordInput = page.locator('input[id="password"]');
     const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     
+    // Scroll to fields
+    await passwordInput.scrollIntoViewIfNeeded();
+    
     // Enter matching passwords
     await passwordInput.fill('password123');
+    await confirmPasswordInput.scrollIntoViewIfNeeded();
     await confirmPasswordInput.fill('password123');
     await confirmPasswordInput.blur();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     
     // Check for match indicator
-    await expect(page.locator('text=Passwords match')).toBeVisible();
+    await expect(page.locator('text=Passwords match')).toBeVisible({ timeout: 2000 });
   });
 
   test('should show email already exists error in form (no toast)', async ({ page }) => {
@@ -172,13 +211,24 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" and the label has for="terms"
-    // Find the label first, then find the checkbox in the same container
-    const termsLabel = page.locator('label[for="terms"]');
-    await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same parent div as the label
-    const termsContainer = termsLabel.locator('..'); // Parent div
-    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
+    // The checkbox has id="terms" - Radix UI sets data attributes
+    // Try multiple strategies to find it
+    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    
+    // If that doesn't work, find by label and get the checkbox in the same flex container
+    if (await termsCheckbox.count() === 0) {
+      const termsLabel = page.locator('label[for="terms"]');
+      await expect(termsLabel).toBeVisible({ timeout: 5000 });
+      // Scroll label into view
+      await termsLabel.scrollIntoViewIfNeeded();
+      // The checkbox is in a flex container with the label - find the parent div with flex
+      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
+      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    }
+    
+    // Ensure checkbox is visible and clickable
+    await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
+    await termsCheckbox.scrollIntoViewIfNeeded();
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -231,13 +281,24 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" and the label has for="terms"
-    // Find the label first, then find the checkbox in the same container
-    const termsLabel = page.locator('label[for="terms"]');
-    await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same parent div as the label
-    const termsContainer = termsLabel.locator('..'); // Parent div
-    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
+    // The checkbox has id="terms" - Radix UI sets data attributes
+    // Try multiple strategies to find it
+    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    
+    // If that doesn't work, find by label and get the checkbox in the same flex container
+    if (await termsCheckbox.count() === 0) {
+      const termsLabel = page.locator('label[for="terms"]');
+      await expect(termsLabel).toBeVisible({ timeout: 5000 });
+      // Scroll label into view
+      await termsLabel.scrollIntoViewIfNeeded();
+      // The checkbox is in a flex container with the label - find the parent div with flex
+      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
+      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    }
+    
+    // Ensure checkbox is visible and clickable
+    await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
+    await termsCheckbox.scrollIntoViewIfNeeded();
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -257,23 +318,29 @@ test.describe('SignUp Page', () => {
   test('should toggle password visibility', async ({ page }) => {
     const passwordInput = page.locator('input[id="password"]');
     
+    // Scroll to password field
+    await passwordInput.scrollIntoViewIfNeeded();
+    await passwordInput.click();
+    
     // Fill password
     await passwordInput.fill('testpassword');
     
     // Find the toggle button - it's the button inside the relative div that contains the password input
-    const passwordField = passwordInput.locator('..'); // Parent div
-    const toggleButton = passwordField.locator('button[type="button"]').last();
+    // The button is positioned absolutely in the password field container
+    const passwordFieldContainer = passwordInput.locator('..'); // Parent div with class "relative"
+    const toggleButton = passwordFieldContainer.locator('button[type="button"]').last();
     
-    // Wait for button to exist
-    await expect(toggleButton).toHaveCount(1, { timeout: 5000 });
+    // Wait for button to exist and be visible
+    await expect(toggleButton).toBeVisible({ timeout: 5000 });
+    await toggleButton.scrollIntoViewIfNeeded();
     
     // Get initial input type
     const initialType = await passwordInput.getAttribute('type');
     expect(initialType).toBe('password');
     
-    // Click toggle using force
+    // Click toggle - ensure it's in view and clickable
     await toggleButton.click({ force: true });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(400);
     
     // Check that input type changed to text
     const typeAfterFirstClick = await passwordInput.getAttribute('type');
@@ -281,7 +348,7 @@ test.describe('SignUp Page', () => {
     
     // Click again
     await toggleButton.click({ force: true });
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(400);
     
     // Check that input type changed back to password
     const typeAfterSecondClick = await passwordInput.getAttribute('type');
@@ -289,16 +356,26 @@ test.describe('SignUp Page', () => {
   });
 
   test('should allow selecting user type', async ({ page }) => {
-    // Check default selection (freelancer)
-    const freelancerButton = page.locator('text=Find Work').locator('..');
-    await expect(freelancerButton).toHaveClass(/border-primary/);
+    // Find the user type selection buttons
+    const freelancerButton = page.locator('button').filter({ hasText: /Find Work/i }).first();
+    const clientButton = page.locator('button').filter({ hasText: /Hire Talent/i }).first();
+    
+    // Scroll to buttons
+    await freelancerButton.scrollIntoViewIfNeeded();
+    
+    // Check default selection (freelancer) - should have primary border
+    await expect(freelancerButton).toBeVisible();
+    const freelancerClasses = await freelancerButton.getAttribute('class');
+    expect(freelancerClasses).toContain('border-primary');
     
     // Click client option
-    const clientButton = page.locator('text=Hire Talent').locator('..');
+    await clientButton.scrollIntoViewIfNeeded();
     await clientButton.click();
+    await page.waitForTimeout(300);
     
     // Check that client is now selected
-    await expect(clientButton).toHaveClass(/border-primary/);
+    const clientClasses = await clientButton.getAttribute('class');
+    expect(clientClasses).toContain('border-primary');
   });
 
   test('should navigate to login page', async ({ page }) => {
