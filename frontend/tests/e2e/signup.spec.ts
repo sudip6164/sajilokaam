@@ -42,8 +42,9 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // First try to find by ID, then by role and label
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    // Find by label text first, then get the associated checkbox
+    const termsLabel = page.locator('label[for="terms"]');
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -70,8 +71,9 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // First try to find by ID, then by role and label
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    // Find by label text first, then get the associated checkbox
+    const termsLabel = page.locator('label[for="terms"]');
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
     await termsCheckbox.click({ timeout: 5000 });
     
     // Try to submit to trigger validation
@@ -162,8 +164,9 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // First try to find by ID, then by role and label
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    // Find by label text first, then get the associated checkbox
+    const termsLabel = page.locator('label[for="terms"]');
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -216,8 +219,9 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // First try to find by ID, then by role and label
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    // Find by label text first, then get the associated checkbox
+    const termsLabel = page.locator('label[for="terms"]');
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
