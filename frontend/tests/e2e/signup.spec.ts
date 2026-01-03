@@ -42,24 +42,50 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" - Radix UI sets data attributes
-    // Try multiple strategies to find it
-    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    // Strategy 1: Find by label, then find checkbox in the same container
+    const termsLabel = page.locator('label[for="terms"]');
+    await expect(termsLabel).toBeVisible({ timeout: 5000 });
+    await termsLabel.scrollIntoViewIfNeeded();
     
-    // If that doesn't work, find by label and get the checkbox in the same flex container
+    // The checkbox and label are in a flex container (div with flex items-start)
+    // Find the parent div that contains both
+    const flexContainer = termsLabel.locator('xpath=ancestor::div[contains(@class, "flex") and contains(@class, "items-start")]').first();
+    
+    // Find the checkbox button in that container
+    let termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    
+    // If xpath doesn't work, try simpler approach
     if (await termsCheckbox.count() === 0) {
-      const termsLabel = page.locator('label[for="terms"]');
-      await expect(termsLabel).toBeVisible({ timeout: 5000 });
-      // Scroll label into view
-      await termsLabel.scrollIntoViewIfNeeded();
-      // The checkbox is in a flex container with the label - find the parent div with flex
-      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
-      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+      // Find all checkboxes and filter by proximity to the label
+      const allCheckboxes = page.locator('button[role="checkbox"]');
+      const labelBox = await termsLabel.boundingBox();
+      let closestCheckbox = null;
+      let minDistance = Infinity;
+      
+      for (let i = 0; i < await allCheckboxes.count(); i++) {
+        const checkbox = allCheckboxes.nth(i);
+        const checkboxBox = await checkbox.boundingBox();
+        if (labelBox && checkboxBox) {
+          const distance = Math.abs(labelBox.y - checkboxBox.y);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestCheckbox = checkbox;
+          }
+        }
+      }
+      
+      if (closestCheckbox) {
+        termsCheckbox = closestCheckbox;
+      } else {
+        // Last resort: just get the last checkbox on the page (should be terms)
+        termsCheckbox = allCheckboxes.last();
+      }
     }
     
     // Ensure checkbox is visible and clickable
     await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
     await termsCheckbox.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200); // Small wait for scroll
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -86,24 +112,50 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" - Radix UI sets data attributes
-    // Try multiple strategies to find it
-    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    // Strategy 1: Find by label, then find checkbox in the same container
+    const termsLabel = page.locator('label[for="terms"]');
+    await expect(termsLabel).toBeVisible({ timeout: 5000 });
+    await termsLabel.scrollIntoViewIfNeeded();
     
-    // If that doesn't work, find by label and get the checkbox in the same flex container
+    // The checkbox and label are in a flex container (div with flex items-start)
+    // Find the parent div that contains both
+    const flexContainer = termsLabel.locator('xpath=ancestor::div[contains(@class, "flex") and contains(@class, "items-start")]').first();
+    
+    // Find the checkbox button in that container
+    let termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    
+    // If xpath doesn't work, try simpler approach
     if (await termsCheckbox.count() === 0) {
-      const termsLabel = page.locator('label[for="terms"]');
-      await expect(termsLabel).toBeVisible({ timeout: 5000 });
-      // Scroll label into view
-      await termsLabel.scrollIntoViewIfNeeded();
-      // The checkbox is in a flex container with the label - find the parent div with flex
-      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
-      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+      // Find all checkboxes and filter by proximity to the label
+      const allCheckboxes = page.locator('button[role="checkbox"]');
+      const labelBox = await termsLabel.boundingBox();
+      let closestCheckbox = null;
+      let minDistance = Infinity;
+      
+      for (let i = 0; i < await allCheckboxes.count(); i++) {
+        const checkbox = allCheckboxes.nth(i);
+        const checkboxBox = await checkbox.boundingBox();
+        if (labelBox && checkboxBox) {
+          const distance = Math.abs(labelBox.y - checkboxBox.y);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestCheckbox = checkbox;
+          }
+        }
+      }
+      
+      if (closestCheckbox) {
+        termsCheckbox = closestCheckbox;
+      } else {
+        // Last resort: just get the last checkbox on the page (should be terms)
+        termsCheckbox = allCheckboxes.last();
+      }
     }
     
     // Ensure checkbox is visible and clickable
     await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
     await termsCheckbox.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200); // Small wait for scroll
     await termsCheckbox.click({ timeout: 5000 });
     
     // Try to submit to trigger validation
@@ -211,24 +263,50 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" - Radix UI sets data attributes
-    // Try multiple strategies to find it
-    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    // Strategy 1: Find by label, then find checkbox in the same container
+    const termsLabel = page.locator('label[for="terms"]');
+    await expect(termsLabel).toBeVisible({ timeout: 5000 });
+    await termsLabel.scrollIntoViewIfNeeded();
     
-    // If that doesn't work, find by label and get the checkbox in the same flex container
+    // The checkbox and label are in a flex container (div with flex items-start)
+    // Find the parent div that contains both
+    const flexContainer = termsLabel.locator('xpath=ancestor::div[contains(@class, "flex") and contains(@class, "items-start")]').first();
+    
+    // Find the checkbox button in that container
+    let termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    
+    // If xpath doesn't work, try simpler approach
     if (await termsCheckbox.count() === 0) {
-      const termsLabel = page.locator('label[for="terms"]');
-      await expect(termsLabel).toBeVisible({ timeout: 5000 });
-      // Scroll label into view
-      await termsLabel.scrollIntoViewIfNeeded();
-      // The checkbox is in a flex container with the label - find the parent div with flex
-      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
-      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+      // Find all checkboxes and filter by proximity to the label
+      const allCheckboxes = page.locator('button[role="checkbox"]');
+      const labelBox = await termsLabel.boundingBox();
+      let closestCheckbox = null;
+      let minDistance = Infinity;
+      
+      for (let i = 0; i < await allCheckboxes.count(); i++) {
+        const checkbox = allCheckboxes.nth(i);
+        const checkboxBox = await checkbox.boundingBox();
+        if (labelBox && checkboxBox) {
+          const distance = Math.abs(labelBox.y - checkboxBox.y);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestCheckbox = checkbox;
+          }
+        }
+      }
+      
+      if (closestCheckbox) {
+        termsCheckbox = closestCheckbox;
+      } else {
+        // Last resort: just get the last checkbox on the page (should be terms)
+        termsCheckbox = allCheckboxes.last();
+      }
     }
     
     // Ensure checkbox is visible and clickable
     await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
     await termsCheckbox.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200); // Small wait for scroll
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -281,24 +359,50 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" - Radix UI sets data attributes
-    // Try multiple strategies to find it
-    let termsCheckbox = page.locator('button[role="checkbox"]').filter({ has: page.locator('[id="terms"]') });
+    // Strategy 1: Find by label, then find checkbox in the same container
+    const termsLabel = page.locator('label[for="terms"]');
+    await expect(termsLabel).toBeVisible({ timeout: 5000 });
+    await termsLabel.scrollIntoViewIfNeeded();
     
-    // If that doesn't work, find by label and get the checkbox in the same flex container
+    // The checkbox and label are in a flex container (div with flex items-start)
+    // Find the parent div that contains both
+    const flexContainer = termsLabel.locator('xpath=ancestor::div[contains(@class, "flex") and contains(@class, "items-start")]').first();
+    
+    // Find the checkbox button in that container
+    let termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+    
+    // If xpath doesn't work, try simpler approach
     if (await termsCheckbox.count() === 0) {
-      const termsLabel = page.locator('label[for="terms"]');
-      await expect(termsLabel).toBeVisible({ timeout: 5000 });
-      // Scroll label into view
-      await termsLabel.scrollIntoViewIfNeeded();
-      // The checkbox is in a flex container with the label - find the parent div with flex
-      const flexContainer = termsLabel.locator('..').filter({ hasText: /I agree to the/i });
-      termsCheckbox = flexContainer.locator('button[role="checkbox"]').first();
+      // Find all checkboxes and filter by proximity to the label
+      const allCheckboxes = page.locator('button[role="checkbox"]');
+      const labelBox = await termsLabel.boundingBox();
+      let closestCheckbox = null;
+      let minDistance = Infinity;
+      
+      for (let i = 0; i < await allCheckboxes.count(); i++) {
+        const checkbox = allCheckboxes.nth(i);
+        const checkboxBox = await checkbox.boundingBox();
+        if (labelBox && checkboxBox) {
+          const distance = Math.abs(labelBox.y - checkboxBox.y);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestCheckbox = checkbox;
+          }
+        }
+      }
+      
+      if (closestCheckbox) {
+        termsCheckbox = closestCheckbox;
+      } else {
+        // Last resort: just get the last checkbox on the page (should be terms)
+        termsCheckbox = allCheckboxes.last();
+      }
     }
     
     // Ensure checkbox is visible and clickable
     await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
     await termsCheckbox.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200); // Small wait for scroll
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
