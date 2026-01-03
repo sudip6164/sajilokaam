@@ -29,14 +29,24 @@ test.describe('SignUp Page', () => {
 
   test('should show validation error for empty first name', async ({ page }) => {
     const firstNameInput = page.locator('input[id="firstName"]');
+    const lastNameInput = page.locator('input[id="lastName"]');
+    const emailInput = page.locator('input[id="email"]');
+    const passwordInput = page.locator('input[id="password"]');
+    const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     const submitButton = page.locator('button[type="submit"]');
     
-    // Clear first name if it has any value
+    // Clear first name and fill other required fields to bypass HTML5 validation
     await firstNameInput.clear();
+    await lastNameInput.fill('Test');
+    await emailInput.fill('test@example.com');
+    await passwordInput.fill('password123');
+    await confirmPasswordInput.fill('password123');
+    await page.locator('input[id="terms"]').check();
+    
     await submitButton.click();
     
     // Wait for validation
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     
     // Check for validation error
     await expect(page.locator('text=Name is required')).toBeVisible({ timeout: 2000 });
@@ -44,13 +54,25 @@ test.describe('SignUp Page', () => {
 
   test('should show validation error for short first name', async ({ page }) => {
     const firstNameInput = page.locator('input[id="firstName"]');
+    const lastNameInput = page.locator('input[id="lastName"]');
+    const emailInput = page.locator('input[id="email"]');
+    const passwordInput = page.locator('input[id="password"]');
+    const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
+    const submitButton = page.locator('button[type="submit"]');
     
-    // Enter single character
+    // Enter single character and fill other required fields
     await firstNameInput.fill('A');
-    await firstNameInput.blur();
-    await page.waitForTimeout(300);
+    await lastNameInput.fill('Test');
+    await emailInput.fill('test@example.com');
+    await passwordInput.fill('password123');
+    await confirmPasswordInput.fill('password123');
+    await page.locator('input[id="terms"]').check();
     
-    // Check for validation error - might appear on blur or submit
+    // Try to submit to trigger validation
+    await submitButton.click();
+    await page.waitForTimeout(500);
+    
+    // Check for validation error
     await expect(page.locator('text=Name must be at least 2 characters')).toBeVisible({ timeout: 2000 });
   });
 
