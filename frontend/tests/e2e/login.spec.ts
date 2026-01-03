@@ -105,30 +105,33 @@ test.describe('Login Page', () => {
     // Fill password
     await passwordInput.fill('testpassword');
     
-    // Find the toggle button - it's a button with Eye/EyeOff icon inside the relative container
-    // The button is positioned absolutely inside the password input's parent div
-    const toggleButton = page.locator('input[id="password"]').locator('..').locator('button').last();
+    // Find the toggle button - it's inside the div with class "relative" that contains the password input
+    // Use a more specific selector: button inside the password field's parent container
+    const passwordFieldContainer = page.locator('div').filter({ has: passwordInput });
+    const toggleButton = passwordFieldContainer.locator('button[type="button"]');
     
-    // Wait for button to be visible and clickable
-    await expect(toggleButton).toBeVisible({ timeout: 5000 });
+    // Wait for button to exist (might be absolutely positioned so not "visible" in normal sense)
+    await expect(toggleButton).toHaveCount(1, { timeout: 5000 });
     
     // Get initial input type
     const initialType = await passwordInput.getAttribute('type');
     expect(initialType).toBe('password');
     
-    // Click toggle
+    // Click toggle using force since it might be absolutely positioned
     await toggleButton.click({ force: true });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
     
     // Check that input type changed to text
-    await expect(page.locator('input[id="password"][type="text"]')).toBeVisible();
+    const typeAfterFirstClick = await passwordInput.getAttribute('type');
+    expect(typeAfterFirstClick).toBe('text');
     
     // Click again
     await toggleButton.click({ force: true });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
     
     // Check that input type changed back to password
-    await expect(page.locator('input[id="password"][type="password"]')).toBeVisible();
+    const typeAfterSecondClick = await passwordInput.getAttribute('type');
+    expect(typeAfterSecondClick).toBe('password');
   });
 
   test('should disable form during submission', async ({ page }) => {

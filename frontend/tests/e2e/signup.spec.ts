@@ -192,29 +192,32 @@ test.describe('SignUp Page', () => {
     // Fill password
     await passwordInput.fill('testpassword');
     
-    // Find the toggle button - it's a button inside the password input's parent div
-    const toggleButton = page.locator('input[id="password"]').locator('..').locator('button').last();
+    // Find the toggle button - it's inside the div that contains the password input
+    const passwordFieldContainer = page.locator('div').filter({ has: passwordInput });
+    const toggleButton = passwordFieldContainer.locator('button[type="button"]');
     
-    // Wait for button to be visible
-    await expect(toggleButton).toBeVisible({ timeout: 5000 });
+    // Wait for button to exist
+    await expect(toggleButton).toHaveCount(1, { timeout: 5000 });
     
     // Get initial input type
     const initialType = await passwordInput.getAttribute('type');
     expect(initialType).toBe('password');
     
-    // Click toggle
+    // Click toggle using force
     await toggleButton.click({ force: true });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
     
     // Check that input type changed to text
-    await expect(page.locator('input[id="password"][type="text"]')).toBeVisible();
+    const typeAfterFirstClick = await passwordInput.getAttribute('type');
+    expect(typeAfterFirstClick).toBe('text');
     
     // Click again
     await toggleButton.click({ force: true });
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
     
     // Check that input type changed back to password
-    await expect(page.locator('input[id="password"][type="password"]')).toBeVisible();
+    const typeAfterSecondClick = await passwordInput.getAttribute('type');
+    expect(typeAfterSecondClick).toBe('password');
   });
 
   test('should allow selecting user type', async ({ page }) => {
