@@ -79,7 +79,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-[100] border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
         <div className="w-full px-4 md:px-8 lg:px-12">
           <div className="flex h-16 max-w-7xl mx-auto items-center justify-between">
             <button 
