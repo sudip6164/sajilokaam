@@ -42,9 +42,13 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // Find by label text first, then get the associated checkbox
+    // The checkbox has id="terms" and the label has for="terms"
+    // Find the checkbox button near the label that says "I agree to the"
     const termsLabel = page.locator('label[for="terms"]');
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
+    await expect(termsLabel).toBeVisible();
+    // The checkbox should be in the same container as the label
+    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -71,9 +75,13 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // Find by label text first, then get the associated checkbox
+    // The checkbox has id="terms" and the label has for="terms"
+    // Find the checkbox button near the label that says "I agree to the"
     const termsLabel = page.locator('label[for="terms"]');
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
+    await expect(termsLabel).toBeVisible();
+    // The checkbox should be in the same container as the label
+    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
     // Try to submit to trigger validation
@@ -164,9 +172,13 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // Find by label text first, then get the associated checkbox
+    // The checkbox has id="terms" and the label has for="terms"
+    // Find the checkbox button near the label that says "I agree to the"
     const termsLabel = page.locator('label[for="terms"]');
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
+    await expect(termsLabel).toBeVisible();
+    // The checkbox should be in the same container as the label
+    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
@@ -219,9 +231,13 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // Find by label text first, then get the associated checkbox
+    // The checkbox has id="terms" and the label has for="terms"
+    // Find the checkbox button near the label that says "I agree to the"
     const termsLabel = page.locator('label[for="terms"]');
-    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: termsLabel }).or(page.locator('button[role="checkbox"]').last());
+    await expect(termsLabel).toBeVisible();
+    // The checkbox should be in the same container as the label
+    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
