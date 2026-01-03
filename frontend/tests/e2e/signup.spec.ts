@@ -41,9 +41,10 @@ test.describe('SignUp Page', () => {
     await emailInput.fill('test@example.com');
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    // Find the terms checkbox - it might be a Checkbox component, not a native input
-    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
-    await termsCheckbox.check({ timeout: 5000 });
+    // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
+    // First try to find by ID, then by role and label
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
     
@@ -68,9 +69,10 @@ test.describe('SignUp Page', () => {
     await emailInput.fill('test@example.com');
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    // Find the terms checkbox - it might be a Checkbox component, not a native input
-    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
-    await termsCheckbox.check({ timeout: 5000 });
+    // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
+    // First try to find by ID, then by role and label
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    await termsCheckbox.click({ timeout: 5000 });
     
     // Try to submit to trigger validation
     await submitButton.click();
@@ -159,9 +161,10 @@ test.describe('SignUp Page', () => {
     await emailInput.fill('existing@example.com'); // Assuming this email exists
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    // Find the terms checkbox - it might be a Checkbox component, not a native input
-    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
-    await termsCheckbox.check({ timeout: 5000 });
+    // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
+    // First try to find by ID, then by role and label
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
     
@@ -212,9 +215,10 @@ test.describe('SignUp Page', () => {
     await emailInput.fill(uniqueEmail);
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    // Find the terms checkbox - it might be a Checkbox component, not a native input
-    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
-    await termsCheckbox.check({ timeout: 5000 });
+    // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
+    // First try to find by ID, then by role and label
+    const termsCheckbox = page.locator('button[role="checkbox"][aria-labelledby*="terms"], button[role="checkbox"]').filter({ has: page.locator('text=/agree to the/i').locator('..') }).or(page.locator('button[role="checkbox"]').last());
+    await termsCheckbox.click({ timeout: 5000 });
     
     await submitButton.click();
     
