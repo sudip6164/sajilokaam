@@ -111,20 +111,6 @@ export function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (userType: 'freelancer' | 'client') => {
-    try {
-      setIsLoading(true);
-      const demoEmail = userType === 'freelancer' ? 'freelancer@demo.com' : 'client@demo.com';
-      const demoPassword = 'demo123';
-      
-      await authLogin(demoEmail, demoPassword);
-      // Navigation handled by useEffect watching authUser
-    } catch (error) {
-      // Error handled by AuthContext
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex flex-col">
