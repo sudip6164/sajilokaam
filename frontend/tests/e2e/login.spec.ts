@@ -47,28 +47,26 @@ test.describe('Login Page', () => {
     // Clear password field to ensure it's empty
     await passwordInput.clear();
     
-    // Try to submit - HTML5 validation might prevent it, so we need to check for either:
-    // 1. HTML5 validation message (browser native)
-    // 2. Our custom validation error
+    // Try to submit
     await submitButton.click();
     
     // Wait a bit for any validation
     await page.waitForTimeout(500);
     
-    // Check for password error - either HTML5 native or our custom message
-    // HTML5 validation shows as a tooltip, so we check if password field is invalid
+    // Check if HTML5 validation prevented submission by checking if field is invalid
     const isInvalid = await passwordInput.evaluate((el: HTMLInputElement) => {
       return !el.validity.valid;
     });
     
-    // If HTML5 validation prevented submission, the field should be invalid
-    // Otherwise, check for our custom error message
-    if (isInvalid) {
-      // HTML5 validation is working
-      expect(isInvalid).toBe(true);
-    } else {
-      // Our custom validation should show
+    // HTML5 validation should mark the field as invalid
+    // Our custom validation might also show if the form submission was prevented differently
+    // Check for either HTML5 validation (field is invalid) or our custom error message
+    if (!isInvalid) {
+      // If HTML5 didn't catch it, our custom validation should
       await expect(page.locator('text=Password is required')).toBeVisible({ timeout: 2000 });
+    } else {
+      // HTML5 validation is working - verify the field is invalid
+      expect(isInvalid).toBe(true);
     }
   });
 
@@ -132,12 +130,12 @@ test.describe('Login Page', () => {
     // Fill password
     await passwordInput.fill('testpassword');
     
-    // Find the toggle button - it's inside the div with class "relative" that contains the password input
-    // Use a more specific selector: button inside the password field's parent container
-    const passwordFieldContainer = page.locator('div').filter({ has: passwordInput });
-    const toggleButton = passwordFieldContainer.locator('button[type="button"]');
+    // Find the toggle button - it's the button inside the relative div that contains the password input
+    // More specific: find the parent div with class "relative" that contains the password input, then get the button
+    const passwordContainer = passwordInput.locator('xpath=ancestor::div[contains(@class, "relative")]');
+    const toggleButton = passwordContainer.locator('button[type="button"]').last();
     
-    // Wait for button to exist (might be absolutely positioned so not "visible" in normal sense)
+    // Wait for button to exist
     await expect(toggleButton).toHaveCount(1, { timeout: 5000 });
     
     // Get initial input type

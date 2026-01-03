@@ -41,7 +41,9 @@ test.describe('SignUp Page', () => {
     await emailInput.fill('test@example.com');
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    await page.locator('input[id="terms"]').check();
+    // Find the terms checkbox - it might be a Checkbox component, not a native input
+    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
+    await termsCheckbox.check({ timeout: 5000 });
     
     await submitButton.click();
     
@@ -66,7 +68,9 @@ test.describe('SignUp Page', () => {
     await emailInput.fill('test@example.com');
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    await page.locator('input[id="terms"]').check();
+    // Find the terms checkbox - it might be a Checkbox component, not a native input
+    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
+    await termsCheckbox.check({ timeout: 5000 });
     
     // Try to submit to trigger validation
     await submitButton.click();
@@ -93,24 +97,24 @@ test.describe('SignUp Page', () => {
     
     // Enter weak password
     await passwordInput.fill('weak');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     
-    // Check for weak indicator
-    await expect(page.locator('text=Weak')).toBeVisible();
+    // Check for weak indicator - case insensitive
+    await expect(page.locator('text=/Weak/i')).toBeVisible({ timeout: 2000 });
     
     // Enter medium password
     await passwordInput.fill('MediumPass123');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     
     // Check for medium indicator
-    await expect(page.locator('text=Medium')).toBeVisible();
+    await expect(page.locator('text=/Medium/i')).toBeVisible({ timeout: 2000 });
     
     // Enter strong password
     await passwordInput.fill('StrongPass123!@#');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     
     // Check for strong indicator
-    await expect(page.locator('text=Strong')).toBeVisible();
+    await expect(page.locator('text=/Strong/i')).toBeVisible({ timeout: 2000 });
   });
 
   test('should show password mismatch error', async ({ page }) => {
@@ -155,7 +159,9 @@ test.describe('SignUp Page', () => {
     await emailInput.fill('existing@example.com'); // Assuming this email exists
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    await page.locator('input[id="terms"]').check();
+    // Find the terms checkbox - it might be a Checkbox component, not a native input
+    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
+    await termsCheckbox.check({ timeout: 5000 });
     
     await submitButton.click();
     
@@ -206,7 +212,9 @@ test.describe('SignUp Page', () => {
     await emailInput.fill(uniqueEmail);
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    await page.locator('input[id="terms"]').check();
+    // Find the terms checkbox - it might be a Checkbox component, not a native input
+    const termsCheckbox = page.locator('input[id="terms"], button[role="checkbox"][aria-labelledby*="terms"], input[type="checkbox"]').filter({ hasText: /terms/i }).or(page.locator('input[type="checkbox"]').last());
+    await termsCheckbox.check({ timeout: 5000 });
     
     await submitButton.click();
     
@@ -228,9 +236,9 @@ test.describe('SignUp Page', () => {
     // Fill password
     await passwordInput.fill('testpassword');
     
-    // Find the toggle button - it's inside the div that contains the password input
-    const passwordFieldContainer = page.locator('div').filter({ has: passwordInput });
-    const toggleButton = passwordFieldContainer.locator('button[type="button"]');
+    // Find the toggle button - it's the button inside the relative div that contains the password input
+    const passwordContainer = passwordInput.locator('xpath=ancestor::div[contains(@class, "relative")]');
+    const toggleButton = passwordContainer.locator('button[type="button"]').last();
     
     // Wait for button to exist
     await expect(toggleButton).toHaveCount(1, { timeout: 5000 });
