@@ -168,36 +168,6 @@ export function LoginPage() {
               </p>
             </div>
 
-            {/* Demo Login Buttons */}
-            <div className="space-y-3 mb-6">
-              <Button 
-                onClick={() => handleDemoLogin('freelancer')}
-                variant="outline" 
-                className="w-full border-2 hover:border-primary hover:bg-primary/5" 
-                size="lg"
-                disabled={isLoading}
-              >
-                🎨 Demo Login as Freelancer
-              </Button>
-              <Button 
-                onClick={() => handleDemoLogin('client')}
-                variant="outline" 
-                className="w-full border-2 hover:border-primary hover:bg-primary/5" 
-                size="lg"
-                disabled={isLoading}
-              >
-                💼 Demo Login as Client
-              </Button>
-            </div>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground font-medium">or continue with email</span>
-              </div>
-            </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
