@@ -35,45 +35,34 @@ test.describe('SignUp Page', () => {
     const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     const submitButton = page.locator('button[type="submit"]');
     
-    // Clear first name and fill other required fields to bypass HTML5 validation
-    await firstNameInput.clear();
+    // Scroll to form
+    await firstNameInput.scrollIntoViewIfNeeded();
+    
+    // Fill other required fields first, then clear first name
     await lastNameInput.fill('Test');
     await emailInput.fill('test@example.com');
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" which Radix sets on the button
-    // Also has data-slot="checkbox"
-    let termsCheckbox = page.locator('button[role="checkbox"][id="terms"]').or(
-      page.locator('button[role="checkbox"][data-slot="checkbox"]').filter({ 
-        has: page.locator('label[for="terms"]').locator('..') 
-      })
-    );
     
-    // If still not found, find by label and get checkbox in same container
-    if (await termsCheckbox.count() === 0) {
-      const termsLabel = page.locator('label[for="terms"]');
-      await expect(termsLabel).toBeVisible({ timeout: 5000 });
-      await termsLabel.scrollIntoViewIfNeeded();
-      
-      // Get the parent div that contains both checkbox and label (flex container)
-      const parentDiv = termsLabel.locator('..'); // div with flex items-start
-      termsCheckbox = parentDiv.locator('button[role="checkbox"]').first();
-    }
+    // Check terms checkbox
+    const termsLabel = page.locator('label[for="terms"]');
+    await termsLabel.scrollIntoViewIfNeeded();
+    const parentDiv = termsLabel.locator('..');
+    const termsCheckbox = parentDiv.locator('button[role="checkbox"]').first();
+    await termsCheckbox.click();
+    await page.waitForTimeout(200);
     
-    // Ensure checkbox is visible and clickable
-    await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
-    await termsCheckbox.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(200); // Small wait for scroll
-    await termsCheckbox.click({ timeout: 5000 });
+    // Now clear first name (this should trigger validation on submit)
+    await firstNameInput.clear();
+    await firstNameInput.blur();
     
+    // Try to submit
     await submitButton.click();
+    await page.waitForTimeout(800);
     
-    // Wait for validation
-    await page.waitForTimeout(500);
-    
-    // Check for validation error
-    await expect(page.locator('text=Name is required')).toBeVisible({ timeout: 2000 });
+    // Check for validation error - should appear near first name field
+    const firstNameError = firstNameInput.locator('..').locator('text=Name is required');
+    await expect(firstNameError).toBeVisible({ timeout: 3000 });
   });
 
   test('should show validation error for short first name', async ({ page }) => {
@@ -84,44 +73,35 @@ test.describe('SignUp Page', () => {
     const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     const submitButton = page.locator('button[type="submit"]');
     
-    // Enter single character and fill other required fields
-    await firstNameInput.fill('A');
+    // Scroll to form
+    await firstNameInput.scrollIntoViewIfNeeded();
+    
+    // Fill other fields first
     await lastNameInput.fill('Test');
     await emailInput.fill('test@example.com');
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
-    // The checkbox has id="terms" which Radix sets on the button
-    // Also has data-slot="checkbox"
-    let termsCheckbox = page.locator('button[role="checkbox"][id="terms"]').or(
-      page.locator('button[role="checkbox"][data-slot="checkbox"]').filter({ 
-        has: page.locator('label[for="terms"]').locator('..') 
-      })
-    );
     
-    // If still not found, find by label and get checkbox in same container
-    if (await termsCheckbox.count() === 0) {
-      const termsLabel = page.locator('label[for="terms"]');
-      await expect(termsLabel).toBeVisible({ timeout: 5000 });
-      await termsLabel.scrollIntoViewIfNeeded();
-      
-      // Get the parent div that contains both checkbox and label (flex container)
-      const parentDiv = termsLabel.locator('..'); // div with flex items-start
-      termsCheckbox = parentDiv.locator('button[role="checkbox"]').first();
-    }
+    // Check terms checkbox
+    const termsLabel = page.locator('label[for="terms"]');
+    await termsLabel.scrollIntoViewIfNeeded();
+    const parentDiv = termsLabel.locator('..');
+    const termsCheckbox = parentDiv.locator('button[role="checkbox"]').first();
+    await termsCheckbox.click();
+    await page.waitForTimeout(200);
     
-    // Ensure checkbox is visible and clickable
-    await expect(termsCheckbox).toBeVisible({ timeout: 5000 });
-    await termsCheckbox.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(200); // Small wait for scroll
-    await termsCheckbox.click({ timeout: 5000 });
+    // Enter single character
+    await firstNameInput.fill('A');
+    await firstNameInput.blur();
+    await page.waitForTimeout(300);
     
     // Try to submit to trigger validation
     await submitButton.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
     
-    // Check for validation error
-    await expect(page.locator('text=Name must be at least 2 characters')).toBeVisible({ timeout: 2000 });
+    // Check for validation error - should appear near first name field
+    const firstNameError = firstNameInput.locator('..').locator('text=Name must be at least 2 characters');
+    await expect(firstNameError).toBeVisible({ timeout: 3000 });
   });
 
   test('should show email validation error for invalid email', async ({ page }) => {
@@ -142,31 +122,33 @@ test.describe('SignUp Page', () => {
     // Scroll to password field
     await passwordInput.scrollIntoViewIfNeeded();
     await passwordInput.click();
+    await page.waitForTimeout(200);
     
     // Enter weak password
     await passwordInput.fill('weak');
-    await page.waitForTimeout(800); // Wait longer for strength calculation
+    await page.waitForTimeout(1000); // Wait longer for strength calculation
     
-    // Check for weak indicator - look for the strength text in the password field area
-    const strengthIndicator = page.locator('text=/Weak/i').or(page.locator('text=/weak/i'));
+    // Check for weak indicator - look in the password field container
+    const passwordContainer = passwordInput.locator('..').locator('..'); // Go up to find the container with strength indicator
+    const strengthIndicator = passwordContainer.locator('text=/Weak/i').first();
     await expect(strengthIndicator).toBeVisible({ timeout: 3000 });
     
     // Clear and enter medium password
     await passwordInput.clear();
     await passwordInput.fill('MediumPass123');
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
     
     // Check for medium indicator
-    const mediumIndicator = page.locator('text=/Medium/i').or(page.locator('text=/medium/i'));
+    const mediumIndicator = passwordContainer.locator('text=/Medium/i').first();
     await expect(mediumIndicator).toBeVisible({ timeout: 3000 });
     
     // Clear and enter strong password
     await passwordInput.clear();
     await passwordInput.fill('StrongPass123!@#');
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
     
     // Check for strong indicator
-    const strongIndicator = page.locator('text=/Strong/i').or(page.locator('text=/strong/i'));
+    const strongIndicator = passwordContainer.locator('text=/Strong/i').first();
     await expect(strongIndicator).toBeVisible({ timeout: 3000 });
   });
 
