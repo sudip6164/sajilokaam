@@ -23,8 +23,7 @@ export function SignUpPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    agreeToTerms: false,
-    marketingEmails: false
+    agreeToTerms: false
   });
 
   useEffect(() => {
@@ -272,18 +271,6 @@ export function SignUpPage() {
                     >
                       Privacy Policy
                     </button>
-                  </Label>
-                </div>
-
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="marketing"
-                    checked={formData.marketingEmails}
-                    onCheckedChange={(checked) => handleInputChange('marketingEmails', checked as boolean)}
-                    className="mt-0.5"
-                  />
-                  <Label htmlFor="marketing" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
-                    Send me emails about product updates
                   </Label>
                 </div>
               </div>

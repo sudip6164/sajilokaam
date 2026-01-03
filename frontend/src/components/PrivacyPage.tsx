@@ -127,7 +127,7 @@ export function PrivacyPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="container max-w-4xl px-4 md:px-6 pt-24 pb-20">
+      <div className="container max-w-4xl px-4 md:px-6 pt-32 pb-20">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -181,9 +181,24 @@ export function PrivacyPage() {
                   )}
                   <h2 className="text-2xl font-semibold">{section.title}</h2>
                 </div>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line ml-13">
-                  {section.content}
-                </p>
+                <div className="text-muted-foreground leading-relaxed">
+                  {section.content.split('\n').map((line, idx) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return <br key={idx} />;
+                    if (trimmed.startsWith('•')) {
+                      return (
+                        <p key={idx} className="ml-4 mb-2">
+                          {trimmed}
+                        </p>
+                      );
+                    }
+                    return (
+                      <p key={idx} className="mb-3">
+                        {trimmed}
+                      </p>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

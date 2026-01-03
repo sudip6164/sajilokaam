@@ -303,7 +303,7 @@ export function EnhancedFindWorkPage() {
     <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
       <Header />
 
-      <main className="w-full px-4 md:px-8 lg:px-12 py-8">
+      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Find Work</h1>

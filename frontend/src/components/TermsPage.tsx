@@ -57,7 +57,7 @@ export function TermsPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="container max-w-4xl px-4 md:px-6 pt-24 pb-20">
+      <div className="container max-w-4xl px-4 md:px-6 pt-32 pb-20">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -82,9 +82,17 @@ export function TermsPage() {
           {sections.map((section, index) => (
             <div key={index} className="pb-8 border-b border-border last:border-0">
               <h2 className="text-2xl font-semibold mb-4">{section.title}</h2>
-              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                {section.content}
-              </p>
+              <div className="text-muted-foreground leading-relaxed">
+                {section.content.split('\n').map((line, idx) => {
+                  const trimmed = line.trim();
+                  if (!trimmed) return <br key={idx} />;
+                  return (
+                    <p key={idx} className="mb-3">
+                      {trimmed}
+                    </p>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
