@@ -131,9 +131,9 @@ test.describe('Login Page', () => {
     await passwordInput.fill('testpassword');
     
     // Find the toggle button - it's the button inside the relative div that contains the password input
-    // More specific: find the parent div with class "relative" that contains the password input, then get the button
-    const passwordContainer = passwordInput.locator('xpath=ancestor::div[contains(@class, "relative")]');
-    const toggleButton = passwordContainer.locator('button[type="button"]').last();
+    // The password input is inside a div with class "relative", and the button is a sibling or child
+    const passwordField = passwordInput.locator('..'); // Parent div
+    const toggleButton = passwordField.locator('button[type="button"]').last();
     
     // Wait for button to exist
     await expect(toggleButton).toHaveCount(1, { timeout: 5000 });

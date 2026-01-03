@@ -43,11 +43,11 @@ test.describe('SignUp Page', () => {
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
     // The checkbox has id="terms" and the label has for="terms"
-    // Find the checkbox button near the label that says "I agree to the"
+    // Find the label first, then find the checkbox in the same container
     const termsLabel = page.locator('label[for="terms"]');
     await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same container as the label
-    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    // The checkbox should be in the same parent div as the label
+    const termsContainer = termsLabel.locator('..'); // Parent div
     const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
@@ -76,11 +76,11 @@ test.describe('SignUp Page', () => {
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
     // The checkbox has id="terms" and the label has for="terms"
-    // Find the checkbox button near the label that says "I agree to the"
+    // Find the label first, then find the checkbox in the same container
     const termsLabel = page.locator('label[for="terms"]');
     await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same container as the label
-    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    // The checkbox should be in the same parent div as the label
+    const termsContainer = termsLabel.locator('..'); // Parent div
     const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
@@ -173,11 +173,11 @@ test.describe('SignUp Page', () => {
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
     // The checkbox has id="terms" and the label has for="terms"
-    // Find the checkbox button near the label that says "I agree to the"
+    // Find the label first, then find the checkbox in the same container
     const termsLabel = page.locator('label[for="terms"]');
     await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same container as the label
-    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    // The checkbox should be in the same parent div as the label
+    const termsContainer = termsLabel.locator('..'); // Parent div
     const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
@@ -232,11 +232,11 @@ test.describe('SignUp Page', () => {
     await confirmPasswordInput.fill('password123');
     // Find the terms checkbox - Radix UI Checkbox renders as a button with role="checkbox"
     // The checkbox has id="terms" and the label has for="terms"
-    // Find the checkbox button near the label that says "I agree to the"
+    // Find the label first, then find the checkbox in the same container
     const termsLabel = page.locator('label[for="terms"]');
     await expect(termsLabel).toBeVisible();
-    // The checkbox should be in the same container as the label
-    const termsContainer = termsLabel.locator('xpath=ancestor::div[1]');
+    // The checkbox should be in the same parent div as the label
+    const termsContainer = termsLabel.locator('..'); // Parent div
     const termsCheckbox = termsContainer.locator('button[role="checkbox"]').first();
     await termsCheckbox.click({ timeout: 5000 });
     
@@ -261,8 +261,8 @@ test.describe('SignUp Page', () => {
     await passwordInput.fill('testpassword');
     
     // Find the toggle button - it's the button inside the relative div that contains the password input
-    const passwordContainer = passwordInput.locator('xpath=ancestor::div[contains(@class, "relative")]');
-    const toggleButton = passwordContainer.locator('button[type="button"]').last();
+    const passwordField = passwordInput.locator('..'); // Parent div
+    const toggleButton = passwordField.locator('button[type="button"]').last();
     
     // Wait for button to exist
     await expect(toggleButton).toHaveCount(1, { timeout: 5000 });
