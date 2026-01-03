@@ -71,8 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(null);
       setUser(null);
       
-      const message = error.response?.data?.message || error.message || "Login failed. Please check your credentials.";
-      toast.error(message);
+      // Don't show toast for 401 errors - let the form handle it
+      if (error.response?.status !== 401) {
+        const message = error.response?.data?.message || error.message || "Login failed. Please try again.";
+        toast.error(message);
+      }
       throw error;
     }
   };
@@ -90,16 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       toast.success("Registration successful!");
     } catch (error: any) {
-      // Handle specific error cases
-      if (error.response?.status === 409) {
-        const message = "This email is already registered. Please use a different email or try logging in.";
-        toast.error(message);
-      } else if (error.response?.status === 400) {
-        const message = error.response?.data?.message || "Invalid registration data. Please check your information.";
-        toast.error(message);
-      } else {
-        const message = error.response?.data?.message || error.message || "Registration failed. Please try again.";
-        toast.error(message);
+      // Don't show toast for 409 (email exists) - let the form handle it
+      // Only show toast for other errors
+      if (error.response?.status !== 409) {
+        if (error.response?.status === 400) {
+          const message = error.response?.data?.message || "Invalid registration data. Please check your information.";
+          toast.error(message);
+        } else {
+          const message = error.response?.data?.message || error.message || "Registration failed. Please try again.";
+          toast.error(message);
+        }
       }
       throw error;
     }

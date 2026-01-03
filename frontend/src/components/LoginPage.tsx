@@ -76,10 +76,15 @@ export function LoginPage() {
         localStorage.removeItem('remember_me');
       }
     } catch (error: any) {
-      // Error already handled by AuthContext, but we can add field-specific errors
+      // Show error in form instead of just toast
       if (error.response?.status === 401) {
-        // Could check if it's email or password issue, but backend doesn't specify
-        // So we'll show a general error via toast (already handled by AuthContext)
+        setErrors({ 
+          password: 'Invalid email or password. Please check your credentials and try again.' 
+        });
+      } else if (error.response?.status === 400) {
+        setErrors({ email: 'Invalid email format' });
+      } else if (error.message) {
+        setErrors({ password: error.message });
       }
     } finally {
       setIsLoading(false);
