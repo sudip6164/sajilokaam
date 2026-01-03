@@ -4,9 +4,10 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { Checkbox } from "./ui/checkbox";
-import { ArrowLeft, Eye, EyeOff, Github } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Github, AlertCircle } from "lucide-react";
 import { useRouter } from "./Router";
 import { useAuth } from "@/contexts/AuthContext";
+import { validateEmail } from "@/lib/validation";
 
 // Social login icons (using Github as example, would include Google, LinkedIn, etc.)
 const socialLogins = [
@@ -20,6 +21,7 @@ export function LoginPage() {
   const { login: authLogin, user: authUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -45,13 +47,40 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) return;
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate email
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.valid) {
+      setErrors({ email: emailValidation.error });
+      return;
+    }
+    
+    // Validate password
+    if (!formData.password) {
+      setErrors({ password: 'Password is required' });
+      return;
+    }
     
     try {
       setIsLoading(true);
       await authLogin(formData.email, formData.password);
-    } catch (error) {
-      // Error already handled by AuthContext
+      
+      // Handle remember me - store token with longer expiry if needed
+      // (Currently token expiry is handled by backend, but we can add a flag)
+      if (formData.rememberMe) {
+        // Could store a flag in localStorage to remember user
+        localStorage.setItem('remember_me', 'true');
+      } else {
+        localStorage.removeItem('remember_me');
+      }
+    } catch (error: any) {
+      // Error already handled by AuthContext, but we can add field-specific errors
+      if (error.response?.status === 401) {
+        // Could check if it's email or password issue, but backend doesn't specify
+        // So we'll show a general error via toast (already handled by AuthContext)
+      }
     } finally {
       setIsLoading(false);
     }
@@ -59,6 +88,22 @@ export function LoginPage() {
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error when user starts typing
+    if (field === 'email' && errors.email) {
+      setErrors(prev => ({ ...prev, email: undefined }));
+    }
+    if (field === 'password' && errors.password) {
+      setErrors(prev => ({ ...prev, password: undefined }));
+    }
+    
+    // Real-time email validation
+    if (field === 'email' && typeof value === 'string') {
+      const emailValidation = validateEmail(value);
+      if (value && !emailValidation.valid) {
+        setErrors(prev => ({ ...prev, email: emailValidation.error }));
+      }
+    }
   };
 
   const handleDemoLogin = async (userType: 'freelancer' | 'client') => {
@@ -157,11 +202,17 @@ export function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  className="mt-1.5"
+                  className={`mt-1.5 ${errors.email ? 'border-destructive focus:border-destructive' : ''}`}
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   required
                 />
+                {errors.email && (
+                  <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.email}</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -171,7 +222,7 @@ export function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    className="pr-10"
+                    className={`pr-10 ${errors.password ? 'border-destructive focus:border-destructive' : ''}`}
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
@@ -184,6 +235,12 @@ export function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.password}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between">

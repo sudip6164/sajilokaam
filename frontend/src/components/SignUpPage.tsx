@@ -5,10 +5,11 @@ import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { Checkbox } from "./ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
-import { ArrowLeft, Eye, EyeOff, User, Briefcase } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, User, Briefcase, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useRouter } from "./Router";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { validateEmail, validatePassword, validateName } from "@/lib/validation";
 
 export function SignUpPage() {
   const { navigate } = useRouter();
@@ -16,6 +17,14 @@ export function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ 
+    firstName?: string; 
+    lastName?: string; 
+    email?: string; 
+    password?: string; 
+    confirmPassword?: string;
+  }>({});
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
   const [formData, setFormData] = useState({
     userType: 'freelancer',
     firstName: '',
@@ -45,16 +54,44 @@ export function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate first name
+    const firstNameValidation = validateName(formData.firstName);
+    if (!firstNameValidation.valid) {
+      setErrors({ firstName: firstNameValidation.error });
+      return;
+    }
+    
+    // Validate last name
+    const lastNameValidation = validateName(formData.lastName);
+    if (!lastNameValidation.valid) {
+      setErrors({ lastName: lastNameValidation.error });
+      return;
+    }
+    
+    // Validate email
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.valid) {
+      setErrors({ email: emailValidation.error });
+      return;
+    }
+    
+    // Validate password
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.valid) {
+      setErrors({ password: passwordValidation.errors[0] || 'Password is required' });
+      return;
+    }
+    
+    // Validate password match
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      setErrors({ confirmPassword: 'Passwords do not match' });
       return;
     }
     
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-    
+    // Validate terms agreement
     if (!formData.agreeToTerms) {
       toast.error('Please agree to the terms and conditions');
       return;
@@ -67,8 +104,12 @@ export function SignUpPage() {
       
       await authRegister(formData.email, formData.password, fullName, role);
       // Router will auto-redirect based on user role via useEffect
-    } catch (error) {
-      // Error already handled by AuthContext
+    } catch (error: any) {
+      // Error already handled by AuthContext, but we can add field-specific errors
+      if (error.response?.status === 409) {
+        // Email already exists
+        setErrors({ email: 'This email is already registered. Please use a different email or try logging in.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +117,70 @@ export function SignUpPage() {
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error when user starts typing
+    if (field === 'firstName' && errors.firstName) {
+      setErrors(prev => ({ ...prev, firstName: undefined }));
+    }
+    if (field === 'lastName' && errors.lastName) {
+      setErrors(prev => ({ ...prev, lastName: undefined }));
+    }
+    if (field === 'email' && errors.email) {
+      setErrors(prev => ({ ...prev, email: undefined }));
+    }
+    if (field === 'password' && errors.password) {
+      setErrors(prev => ({ ...prev, password: undefined }));
+    }
+    if (field === 'confirmPassword' && errors.confirmPassword) {
+      setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+    }
+    
+    // Real-time validation
+    if (field === 'firstName' && typeof value === 'string') {
+      const validation = validateName(value);
+      if (value && !validation.valid) {
+        setErrors(prev => ({ ...prev, firstName: validation.error }));
+      }
+    }
+    
+    if (field === 'lastName' && typeof value === 'string') {
+      const validation = validateName(value);
+      if (value && !validation.valid) {
+        setErrors(prev => ({ ...prev, lastName: validation.error }));
+      }
+    }
+    
+    if (field === 'email' && typeof value === 'string') {
+      const validation = validateEmail(value);
+      if (value && !validation.valid) {
+        setErrors(prev => ({ ...prev, email: validation.error }));
+      }
+    }
+    
+    if (field === 'password' && typeof value === 'string') {
+      const validation = validatePassword(value);
+      setPasswordStrength(validation.strength);
+      if (value && !validation.valid) {
+        setErrors(prev => ({ ...prev, password: validation.errors[0] }));
+      }
+      
+      // Check password match if confirm password is filled
+      if (formData.confirmPassword) {
+        if (value !== formData.confirmPassword) {
+          setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
+        } else {
+          setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+        }
+      }
+    }
+    
+    if (field === 'confirmPassword' && typeof value === 'string') {
+      if (value && value !== formData.password) {
+        setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
+      } else if (value && value === formData.password) {
+        setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+      }
+    }
   };
 
   return (
@@ -169,11 +274,17 @@ export function SignUpPage() {
                     id="firstName"
                     type="text"
                     placeholder="John"
-                    className="mt-1.5"
+                    className={`mt-1.5 ${errors.firstName ? 'border-destructive focus:border-destructive' : ''}`}
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     required
                   />
+                  {errors.firstName && (
+                    <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{errors.firstName}</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="lastName" className="text-sm font-medium">Last name</Label>
@@ -181,11 +292,17 @@ export function SignUpPage() {
                     id="lastName"
                     type="text"
                     placeholder="Doe"
-                    className="mt-1.5"
+                    className={`mt-1.5 ${errors.lastName ? 'border-destructive focus:border-destructive' : ''}`}
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     required
                   />
+                  {errors.lastName && (
+                    <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{errors.lastName}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -195,11 +312,17 @@ export function SignUpPage() {
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  className="mt-1.5"
+                  className={`mt-1.5 ${errors.email ? 'border-destructive focus:border-destructive' : ''}`}
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   required
                 />
+                {errors.email && (
+                  <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.email}</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -209,7 +332,7 @@ export function SignUpPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a strong password"
-                    className="pr-10"
+                    className={`pr-10 ${errors.password ? 'border-destructive focus:border-destructive' : ''}`}
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     required
@@ -222,6 +345,39 @@ export function SignUpPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.password}</span>
+                  </div>
+                )}
+                {formData.password && !errors.password && passwordStrength && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all ${
+                            passwordStrength === 'weak' ? 'bg-destructive w-1/3' :
+                            passwordStrength === 'medium' ? 'bg-yellow-500 w-2/3' :
+                            'bg-green-500 w-full'
+                          }`}
+                        />
+                      </div>
+                      <span className={`text-xs font-medium ${
+                        passwordStrength === 'weak' ? 'text-destructive' :
+                        passwordStrength === 'medium' ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
+                        {passwordStrength === 'weak' ? 'Weak' :
+                         passwordStrength === 'medium' ? 'Medium' :
+                         'Strong'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Use 8+ characters with a mix of letters, numbers, and symbols
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -231,7 +387,7 @@ export function SignUpPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
-                    className="pr-10"
+                    className={`pr-10 ${errors.confirmPassword ? 'border-destructive focus:border-destructive' : formData.confirmPassword && formData.password === formData.confirmPassword ? 'border-green-500 focus:border-green-500' : ''}`}
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     required
@@ -244,6 +400,18 @@ export function SignUpPage() {
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {errors.confirmPassword && (
+                  <div className="flex items-center gap-1 mt-1.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{errors.confirmPassword}</span>
+                  </div>
+                )}
+                {formData.confirmPassword && !errors.confirmPassword && formData.password === formData.confirmPassword && (
+                  <div className="flex items-center gap-1 mt-1.5 text-sm text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Passwords match</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 pt-2">

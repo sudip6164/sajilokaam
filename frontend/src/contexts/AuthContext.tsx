@@ -90,8 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       toast.success("Registration successful!");
     } catch (error: any) {
-      const message = error.response?.data?.message || "Registration failed. Please try again.";
-      toast.error(message);
+      // Handle specific error cases
+      if (error.response?.status === 409) {
+        const message = "This email is already registered. Please use a different email or try logging in.";
+        toast.error(message);
+      } else if (error.response?.status === 400) {
+        const message = error.response?.data?.message || "Invalid registration data. Please check your information.";
+        toast.error(message);
+      } else {
+        const message = error.response?.data?.message || error.message || "Registration failed. Please try again.";
+        toast.error(message);
+      }
       throw error;
     }
   };
