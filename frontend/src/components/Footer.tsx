@@ -3,24 +3,24 @@ import { useRouter } from "./Router";
 
 const footerLinks = {
   "For Clients": [
-    { label: "How to Hire", page: null },
+    { label: "How to Hire", page: "features" as const },
     { label: "Find Freelancers", page: "find-freelancers" as const },
-    { label: "Post a Job", page: null },
+    { label: "Post a Job", page: "post-job" as const },
     { label: "Pricing", page: "pricing" as const },
   ],
   "For Freelancers": [
-    { label: "How to Find Work", page: null },
+    { label: "How to Find Work", page: "features" as const },
     { label: "Find Jobs", page: "find-work" as const },
-    { label: "Success Stories", page: null },
+    { label: "Success Stories", page: "about" as const },
   ],
   "Resources": [
-    { label: "Help & Support", page: null },
+    { label: "Help & Support", page: "contact" as const },
     { label: "Contact", page: "contact" as const },
-    { label: "Blog", page: null },
+    { label: "Blog", page: "about" as const },
   ],
   "Company": [
     { label: "About Us", page: "about" as const },
-    { label: "Careers", page: null },
+    { label: "Careers", page: "contact" as const },
     { label: "Contact Us", page: "contact" as const },
   ],
 };

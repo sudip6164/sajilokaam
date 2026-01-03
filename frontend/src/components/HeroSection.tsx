@@ -43,7 +43,7 @@ export function HeroSection() {
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
-              onClick={() => navigate('find-freelancers')}
+              onClick={() => navigate('post-job')}
               className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity shadow-lg"
             >
               Post a Job

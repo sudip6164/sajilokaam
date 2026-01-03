@@ -131,7 +131,7 @@ export function Header() {
           <Button 
             size="sm" 
             className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
-            onClick={() => navigate('find-freelancers')}
+            onClick={() => navigate('post-job')}
           >
             Post a Job
           </Button>

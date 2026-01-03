@@ -67,7 +67,7 @@ export function SignUpPage() {
       const role = formData.userType === 'freelancer' ? 'FREELANCER' : 'CLIENT';
       
       await authRegister(formData.email, formData.password, fullName, role);
-      // Navigation handled by useEffect watching authUser
+      // Router will auto-redirect based on user role via useEffect
     } catch (error) {
       // Error already handled by AuthContext
     } finally {
