@@ -1,195 +1,148 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Router, useRouter } from "./components/Router";
+import { Toaster } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/contexts/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthProvider } from "./contexts/AuthContext";
 
-// Layouts
-import { PublicLayout } from "@/layouts/PublicLayout";
-import { AuthLayout } from "@/layouts/AuthLayout";
-import AdminLayout from "@/layouts/AdminLayout";
-import FreelancerLayout from "@/layouts/FreelancerLayout";
-import ClientLayout from "@/layouts/ClientLayout";
-
-// Public Pages
-import Home from "@/pages/Home";
-import About from "@/pages/About";
-import Contact from "@/pages/Contact";
-import Pricing from "@/pages/Pricing";
-import Terms from "@/pages/Terms";
-import Privacy from "@/pages/Privacy";
-import NotFound from "@/pages/NotFound";
-import Success from "@/pages/Success";
-import Failure from "@/pages/Failure";
-import AccessDenied from "@/pages/AccessDenied";
-import Jobs from "@/pages/Jobs";
-import JobDetailPublic from "@/pages/JobDetailPublic";
-import Freelancers from "@/pages/Freelancers";
-import FreelancerProfile from "@/pages/FreelancerProfile";
-
-// Auth Pages
-import Login from "@/pages/auth/Login";
-import AdminLogin from "@/pages/auth/AdminLogin";
-import Register from "@/pages/auth/Register";
-import VerifyEmail from "@/pages/auth/VerifyEmail";
-import EmailVerified from "@/pages/auth/EmailVerified";
-import ForgotPassword from "@/pages/auth/ForgotPassword";
-import ResetPassword from "@/pages/auth/ResetPassword";
-import ProtectedRoute from "@/components/ProtectedRoute";
-
-// Admin Pages
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import UserManagement from "@/pages/admin/UserManagement";
-import VerificationQueue from "@/pages/admin/VerificationQueue";
-import Statistics from "@/pages/admin/Statistics";
-import Reports from "@/pages/admin/Reports";
-import AdminSettings from "@/pages/admin/AdminSettings";
-
-// Freelancer Pages
-import FreelancerDashboard from "@/pages/freelancer/FreelancerDashboard";
-import AvailableJobs from "@/pages/freelancer/AvailableJobs";
-import MyBids from "@/pages/freelancer/MyBids";
-import MyProjects from "@/pages/freelancer/MyProjects";
-import ProjectDetail from "@/pages/freelancer/ProjectDetail";
-import SprintPlanner from "@/pages/freelancer/SprintPlanner";
-import Teams from "@/pages/freelancer/Teams";
-import Invoices from "@/pages/freelancer/Invoices";
-import Notifications from "@/pages/freelancer/Notifications";
-import Profile from "@/pages/freelancer/Profile";
-import Messages from "@/pages/freelancer/Messages";
-import SubmitBid from "@/pages/freelancer/SubmitBid";
-
-// Client Pages
-import ClientDashboard from "@/pages/client/ClientDashboard";
-import PostJob from "@/pages/client/PostJob";
-import MyJobs from "@/pages/client/MyJobs";
-import JobDetail from "@/pages/client/JobDetail";
-import ClientProjects from "@/pages/client/ClientProjects";
-import ClientProjectDetail from "@/pages/client/ClientProjectDetail";
-import ClientInvoices from "@/pages/client/ClientInvoices";
-import ClientNotifications from "@/pages/client/ClientNotifications";
-import ClientProfile from "@/pages/client/ClientProfile";
-import ClientMessages from "@/pages/client/ClientMessages";
+// Page Components
+import { Header } from "./components/Header";
+import { HeroSection } from "./components/HeroSection";
+import { PopularCategories } from "./components/PopularCategories";
+import { FeaturedFreelancers } from "./components/FeaturedFreelancers";
+import { StatsSection } from "./components/StatsSection";
+import { HowItWorksSection } from "./components/HowItWorksSection";
+import { TestimonialsSection } from "./components/TestimonialsSection";
+import { CallToAction } from "./components/CallToAction";
+import { Footer } from "./components/Footer";
+import { LoginPage } from "./components/LoginPage";
+import { SignUpPage } from "./components/SignUpPage";
+import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
+import { ResetPasswordPage } from "./components/ResetPasswordPage";
+import { EmailVerificationPage } from "./components/EmailVerificationPage";
+import { AccountSettingsPage } from "./components/AccountSettingsPage";
+import { EnhancedFindWorkPage } from "./components/EnhancedFindWorkPage";
+import { FindFreelancersPage } from "./components/FindFreelancersPage";
+import { FreelancerDashboard } from "./components/FreelancerDashboard";
+import { ClientDashboard } from "./components/ClientDashboard";
+import { FreelancerProfilePage } from "./components/FreelancerProfilePage";
+import { JobDetailPage } from "./components/JobDetailPage";
+import { MessagesPage } from "./components/MessagesPage";
+import { ProjectDetailPage } from "./components/ProjectDetailPage";
+import { EarningsPage } from "./components/EarningsPage";
+import { PostJobPage } from "./components/PostJobPage";
+import { FeaturesPage } from "./components/FeaturesPage";
+import { AboutPage } from "./components/AboutPage";
+import { ContactPage } from "./components/ContactPage";
+import { PricingPage } from "./components/PricingPage";
+import { TermsPage } from "./components/TermsPage";
+import { PrivacyPage } from "./components/PrivacyPage";
+import { NotFoundPage } from "./components/NotFoundPage";
+import { AccessDeniedPage } from "./components/AccessDeniedPage";
+import { SuccessPage } from "./components/SuccessPage";
+import { FailurePage } from "./components/FailurePage";
+import { AdminDashboard } from "./components/admin/AdminDashboard";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-            {/* Public Routes */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/jobs" element={<Jobs />} />
-              <Route path="/jobs/:id" element={<JobDetailPublic />} />
-              <Route path="/freelancers" element={<Freelancers />} />
-              <Route path="/freelancers/:id" element={<FreelancerProfile />} />
-              
-              {/* Protected Action Pages - Use Main Site Layout */}
-              {/* Freelancer Actions */}
-              <Route path="/bids" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><MyBids /></ProtectedRoute>} />
-              <Route path="/jobs/:id/bid" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><SubmitBid /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><MyProjects /></ProtectedRoute>} />
-              <Route path="/projects/:id" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><ProjectDetail /></ProtectedRoute>} />
-              <Route path="/invoices" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Invoices /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Notifications /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Profile /></ProtectedRoute>} />
-              <Route path="/messages" element={<ProtectedRoute allowedRoles={["FREELANCER"]}><Messages /></ProtectedRoute>} />
-              
-              {/* Client Actions */}
-              <Route path="/post-job" element={<ProtectedRoute allowedRoles={["CLIENT"]}><PostJob /></ProtectedRoute>} />
-              <Route path="/my-jobs" element={<ProtectedRoute allowedRoles={["CLIENT"]}><MyJobs /></ProtectedRoute>} />
-              <Route path="/my-jobs/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><JobDetail /></ProtectedRoute>} />
-              <Route path="/my-projects" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjects /></ProtectedRoute>} />
-              <Route path="/my-projects/:id" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProjectDetail /></ProtectedRoute>} />
-              <Route path="/client-invoices" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientInvoices /></ProtectedRoute>} />
-              <Route path="/client-notifications" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientNotifications /></ProtectedRoute>} />
-              <Route path="/client-profile" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientProfile /></ProtectedRoute>} />
-              <Route path="/client-messages" element={<ProtectedRoute allowedRoles={["CLIENT"]}><ClientMessages /></ProtectedRoute>} />
-            </Route>
+function HomePage() {
+  return (
+    <div className="w-full min-h-screen bg-background overflow-x-hidden" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw' }}>
+      <Header />
+      <main className="w-full pt-16" style={{ width: '100%', maxWidth: '100vw' }}>
+        <HeroSection />
+        <StatsSection />
+        <PopularCategories />
+        <HowItWorksSection />
+        <FeaturedFreelancers />
+        <TestimonialsSection />
+        <CallToAction />
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
-            {/* Auth Routes */}
-            <Route element={<AuthLayout />}>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/email-verified" element={<EmailVerified />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-            </Route>
+function AppContent() {
+  const { currentPage } = useRouter();
 
-            {/* Admin Login - No layout, simple standalone page */}
-            <Route path="/admin/login" element={<AdminLogin />} />
+  switch (currentPage) {
+    case 'login':
+      return <LoginPage />;
+    case 'signup':
+      return <SignUpPage />;
+    case 'forgot-password':
+      return <ForgotPasswordPage />;
+    case 'reset-password':
+      return <ResetPasswordPage />;
+    case 'verify-email':
+      return <EmailVerificationPage />;
+    case 'account-settings':
+      return <AccountSettingsPage />;
+    case 'find-work':
+      return <EnhancedFindWorkPage />;
+    case 'find-freelancers':
+      return <FindFreelancersPage />;
+    case 'freelancer-dashboard':
+      return <FreelancerDashboard />;
+    case 'client-dashboard':
+      return <ClientDashboard />;
+    case 'freelancer-profile':
+      return <FreelancerProfilePage />;
+    case 'job-detail':
+      return <JobDetailPage />;
+    case 'messages':
+      return <MessagesPage />;
+    case 'project-detail':
+    case 'project-workspace':
+      return <ProjectDetailPage />;
+    case 'earnings':
+      return <EarningsPage />;
+    case 'post-job':
+      return <PostJobPage />;
+    case 'features':
+      return <FeaturesPage />;
+    case 'about':
+      return <AboutPage />;
+    case 'contact':
+      return <ContactPage />;
+    case 'pricing':
+      return <PricingPage />;
+    case 'terms':
+      return <TermsPage />;
+    case 'privacy':
+      return <PrivacyPage />;
+    case 'admin-dashboard':
+      return <AdminDashboard />;
+    case '404':
+      return <NotFoundPage />;
+    case 'access-denied':
+      return <AccessDeniedPage />;
+    case 'success':
+      return <SuccessPage />;
+    case 'failure':
+      return <FailurePage />;
+    case 'home':
+    default:
+      return <HomePage />;
+  }
+}
 
-            {/* Admin Routes - Protected */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<UserManagement />} />
-              <Route path="verification" element={<VerificationQueue />} />
-              <Route path="statistics" element={<Statistics />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-
-            {/* Freelancer Dashboard - Minimal Stats Only */}
-            <Route 
-              path="/freelancer" 
-              element={
-                <ProtectedRoute allowedRoles={["FREELANCER"]}>
-                  <FreelancerLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<FreelancerDashboard />} />
-              {/* Keep some dashboard-specific routes here */}
-              <Route path="teams" element={<Teams />} />
-              <Route path="projects/:id/sprints" element={<SprintPlanner />} />
-            </Route>
-
-            {/* Client Dashboard - Minimal Stats Only */}
-            <Route 
-              path="/client"
-              element={
-                <ProtectedRoute allowedRoles={["CLIENT"]}>
-                  <ClientLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<ClientDashboard />} />
-            </Route>
-
-            {/* Utility Routes */}
-            <Route path="/success" element={<Success />} />
-            <Route path="/failure" element={<Failure />} />
-            <Route path="/access-denied" element={<AccessDenied />} />
-
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+function App() {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router>
+              <AppContent />
+            </Router>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}
 
 export default App;

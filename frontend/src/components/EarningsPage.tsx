@@ -1,0 +1,41 @@
+import { DashboardHeader } from './DashboardHeader';
+import { Footer } from './Footer';
+import { EarningsDashboard } from './analytics/EarningsDashboard';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from './ui/button';
+import { useRouter } from './Router';
+
+export function EarningsPage() {
+  const { navigate } = useRouter();
+
+  return (
+    <div className="min-h-screen bg-background">
+      <DashboardHeader />
+
+      <main className="w-full px-4 md:px-8 lg:px-12 py-8">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate('freelancer-dashboard')}
+          className="mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Button>
+
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Earnings</h1>
+          <p className="text-muted-foreground">
+            Track your income, transactions, and financial analytics
+          </p>
+        </div>
+
+        {/* Earnings Dashboard */}
+        <EarningsDashboard />
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

@@ -2,8 +2,12 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "ax
 import { toast } from "sonner";
 
 // Create axios instance
+// Frontend runs in browser, so always use localhost (Docker maps ports)
+// Can override with VITE_API_URL environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+
 const api: AxiosInstance = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

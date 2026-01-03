@@ -1,9 +1,12 @@
 node_modules
 dist
-.playwright
-test-results
-playwright-report
+build
+.DS_Store
 *.log
 .env.local
 .env.*.local
+coverage
+.nyc_output
+.vscode
+.idea
 
