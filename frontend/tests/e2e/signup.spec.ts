@@ -246,6 +246,9 @@ test.describe('SignUp Page', () => {
     const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     const submitButton = page.locator('button[type="submit"]');
     
+    // Scroll to form
+    await firstNameInput.scrollIntoViewIfNeeded();
+    
     // Fill form but don't check terms
     await firstNameInput.fill('Test');
     await lastNameInput.fill('User');
@@ -254,10 +257,15 @@ test.describe('SignUp Page', () => {
     await confirmPasswordInput.fill('password123');
     
     await submitButton.click();
+    await page.waitForTimeout(500);
     
     // Check for terms error (should show as toast)
     // The error message is: "Please agree to the terms and conditions"
-    await expect(page.locator('text=/agree to the terms/i')).toBeVisible({ timeout: 3000 });
+    // Use a more specific selector to avoid matching the label text
+    const toastError = page.locator('[data-sonner-toast]').filter({ hasText: /Please agree to the terms/i }).or(
+      page.locator('div').filter({ hasText: /Please agree to the terms and conditions/i }).first()
+    );
+    await expect(toastError).toBeVisible({ timeout: 3000 });
   });
 
   test('should successfully register new user', async ({ page }) => {
