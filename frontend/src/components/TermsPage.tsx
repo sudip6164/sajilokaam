@@ -57,7 +57,10 @@ export function TermsPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="w-full max-w-4xl mx-auto px-4 md:px-6 pt-64 pb-20">
+      {/* Spacer for fixed header */}
+      <div className="h-20"></div>
+
+      <div className="w-full max-w-4xl mx-auto px-4 md:px-6 pt-8 pb-20">
         {/* Header */}
         <div className="mb-12 mt-16">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
