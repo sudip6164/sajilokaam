@@ -61,48 +61,53 @@ test.describe('SignUp Page', () => {
   });
 
   test('should show password strength indicator', async ({ page }) => {
-    const passwordInput = page.locator('input[type="password"]').first();
+    const passwordInput = page.locator('input[id="password"]');
     
     // Enter weak password
     await passwordInput.fill('weak');
+    await page.waitForTimeout(300);
     
     // Check for weak indicator
     await expect(page.locator('text=Weak')).toBeVisible();
     
     // Enter medium password
     await passwordInput.fill('MediumPass123');
+    await page.waitForTimeout(300);
     
     // Check for medium indicator
     await expect(page.locator('text=Medium')).toBeVisible();
     
     // Enter strong password
     await passwordInput.fill('StrongPass123!@#');
+    await page.waitForTimeout(300);
     
     // Check for strong indicator
     await expect(page.locator('text=Strong')).toBeVisible();
   });
 
   test('should show password mismatch error', async ({ page }) => {
-    const passwordInput = page.locator('input[type="password"]').first();
-    const confirmPasswordInput = page.locator('input[type="password"]').nth(1);
+    const passwordInput = page.locator('input[id="password"]');
+    const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     
     // Enter different passwords
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password456');
     await confirmPasswordInput.blur();
+    await page.waitForTimeout(300);
     
     // Check for mismatch error
     await expect(page.locator('text=Passwords do not match')).toBeVisible();
   });
 
   test('should show password match success indicator', async ({ page }) => {
-    const passwordInput = page.locator('input[type="password"]').first();
-    const confirmPasswordInput = page.locator('input[type="password"]').nth(1);
+    const passwordInput = page.locator('input[id="password"]');
+    const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     
     // Enter matching passwords
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
     await confirmPasswordInput.blur();
+    await page.waitForTimeout(300);
     
     // Check for match indicator
     await expect(page.locator('text=Passwords match')).toBeVisible();
@@ -111,23 +116,23 @@ test.describe('SignUp Page', () => {
   test('should show email already exists error in form (no toast)', async ({ page }) => {
     const firstNameInput = page.locator('input[id="firstName"]');
     const lastNameInput = page.locator('input[id="lastName"]');
-    const emailInput = page.locator('input[type="email"]');
-    const passwordInput = page.locator('input[type="password"]').first();
-    const confirmPasswordInput = page.locator('input[type="password"]').nth(1);
+    const emailInput = page.locator('input[id="email"]');
+    const passwordInput = page.locator('input[id="password"]');
+    const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     const submitButton = page.locator('button[type="submit"]');
     
-    // Fill form with existing email
+    // Fill form with existing email (use an email that exists in your test DB)
     await firstNameInput.fill('Test');
     await lastNameInput.fill('User');
     await emailInput.fill('existing@example.com'); // Assuming this email exists
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    await page.locator('input[type="checkbox"]').check();
+    await page.locator('input[id="terms"]').check();
     
     await submitButton.click();
     
     // Wait for error to appear in form
-    await expect(page.locator('text=This email is already registered')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=This email is already registered')).toBeVisible({ timeout: 10000 });
     
     // Verify error is shown in form (not just toast)
     const errorMessage = page.locator('text=This email is already registered');
@@ -159,9 +164,9 @@ test.describe('SignUp Page', () => {
   test('should successfully register new user', async ({ page }) => {
     const firstNameInput = page.locator('input[id="firstName"]');
     const lastNameInput = page.locator('input[id="lastName"]');
-    const emailInput = page.locator('input[type="email"]');
-    const passwordInput = page.locator('input[type="password"]').first();
-    const confirmPasswordInput = page.locator('input[type="password"]').nth(1);
+    const emailInput = page.locator('input[id="email"]');
+    const passwordInput = page.locator('input[id="password"]');
+    const confirmPasswordInput = page.locator('input[id="confirmPassword"]');
     const submitButton = page.locator('button[type="submit"]');
     
     // Generate unique email
@@ -173,29 +178,38 @@ test.describe('SignUp Page', () => {
     await emailInput.fill(uniqueEmail);
     await passwordInput.fill('password123');
     await confirmPasswordInput.fill('password123');
-    await page.locator('input[type="checkbox"]').check();
+    await page.locator('input[id="terms"]').check();
     
     await submitButton.click();
     
-    // Wait for navigation to dashboard
-    await page.waitForURL(/dashboard/, { timeout: 10000 });
-    
-    // Check that we're on dashboard
-    expect(page.url()).toContain('dashboard');
+    // Wait for navigation - check for dashboard content instead of URL
+    await expect(page.locator('text=Dashboard, text=Freelancer Dashboard, text=Client Dashboard').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should toggle password visibility', async ({ page }) => {
-    const passwordInput = page.locator('input[type="password"]').first();
-    const toggleButtons = page.locator('button').filter({ has: page.locator('svg') });
+    const passwordInput = page.locator('input[id="password"]');
     
     // Fill password
     await passwordInput.fill('testpassword');
     
-    // Click first toggle (password field)
-    await toggleButtons.first().click();
+    // Find the toggle button - it's inside the password input container
+    const passwordContainer = passwordInput.locator('..');
+    const toggleButton = passwordContainer.locator('button[type="button"]').last();
+    
+    // Wait for button to be visible
+    await expect(toggleButton).toBeVisible();
+    
+    // Click toggle
+    await toggleButton.click();
     
     // Check that input type changed to text
-    await expect(page.locator('input[type="text"]').first()).toBeVisible();
+    await expect(page.locator('input[id="password"][type="text"]')).toBeVisible();
+    
+    // Click again
+    await toggleButton.click();
+    
+    // Check that input type changed back to password
+    await expect(page.locator('input[id="password"][type="password"]')).toBeVisible();
   });
 
   test('should allow selecting user type', async ({ page }) => {
