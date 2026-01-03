@@ -26,16 +26,15 @@ test.describe('Login Page', () => {
 
   test('should show email validation error for invalid email', async ({ page }) => {
     const emailInput = page.locator('input[id="email"]');
+    const submitButton = page.locator('button[type="submit"]');
     
     // Enter invalid email
     await emailInput.fill('invalid-email');
-    await emailInput.blur();
+    // Try to submit to trigger validation
+    await submitButton.click();
     
-    // Wait a bit for validation
-    await page.waitForTimeout(300);
-    
-    // Check for validation error
-    await expect(page.locator('text=Please enter a valid email address')).toBeVisible();
+    // Wait for validation error
+    await expect(page.locator('text=Please enter a valid email address')).toBeVisible({ timeout: 2000 });
   });
 
   test('should show password required error', async ({ page }) => {
