@@ -39,6 +39,14 @@ public class User {
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"users"})
     private Set<Role> roles = new HashSet<>();
 
+    @Column(name = "reset_token", length = 255)
+    @JsonIgnore
+    private String resetToken;
+
+    @Column(name = "reset_token_expires_at")
+    @JsonIgnore
+    private Instant resetTokenExpiresAt;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getEmail() { return email; }
@@ -51,6 +59,10 @@ public class User {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+    public Instant getResetTokenExpiresAt() { return resetTokenExpiresAt; }
+    public void setResetTokenExpiresAt(Instant resetTokenExpiresAt) { this.resetTokenExpiresAt = resetTokenExpiresAt; }
 }
 
 

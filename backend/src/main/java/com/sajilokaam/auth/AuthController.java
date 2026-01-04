@@ -9,8 +9,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -140,6 +144,84 @@ public class AuthController {
 
         User updated = userRepository.save(u);
         return ResponseEntity.ok(new UserProfile(updated.getId(), updated.getEmail(), updated.getFullName(), updated.getRoles()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var userOpt = userRepository.findByEmail(email);
+        // For security, don't reveal if email exists or not
+        // Always return success message
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Generate reset token (UUID)
+            String resetToken = UUID.randomUUID().toString();
+            // Token expires in 1 hour
+            Instant expiresAt = Instant.now().plusSeconds(3600);
+            
+            user.setResetToken(resetToken);
+            user.setResetTokenExpiresAt(expiresAt);
+            userRepository.save(user);
+            
+            // TODO: Send email with reset link
+            // For now, in development, we can log the token
+            // In production, this should be sent via email
+            System.out.println("Password reset token for " + email + ": " + resetToken);
+            System.out.println("Reset link: http://localhost:5173/reset-password?token=" + resetToken);
+        }
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "If an account exists with this email, you will receive password reset instructions.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String password = request.get("password");
+        
+        if (token == null || token.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        if (password.length() < 6) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Password must be at least 6 characters");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        // Find user by reset token
+        var users = userRepository.findAll();
+        User user = null;
+        for (User u : users) {
+            if (token.equals(u.getResetToken()) && 
+                u.getResetTokenExpiresAt() != null && 
+                u.getResetTokenExpiresAt().isAfter(Instant.now())) {
+                user = u;
+                break;
+            }
+        }
+
+        if (user == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", "Invalid or expired reset token");
+            return ResponseEntity.status(400).body(error);
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(password));
+        // Clear reset token
+        user.setResetToken(null);
+        user.setResetTokenExpiresAt(null);
+        userRepository.save(user);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Password reset successfully");
+        return ResponseEntity.ok(response);
     }
 }
 
