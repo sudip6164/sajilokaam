@@ -142,6 +142,14 @@ public class AuthController {
 
         // Update password if provided
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            // Verify current password if provided
+            if (request.getCurrentPassword() != null && !request.getCurrentPassword().isBlank()) {
+                boolean currentPasswordMatches = passwordEncoder.matches(request.getCurrentPassword(), u.getPassword());
+                if (!currentPasswordMatches) {
+                    return ResponseEntity.status(401).build(); // Unauthorized - wrong current password
+                }
+            }
+            
             if (request.getPassword().length() < 6) {
                 return ResponseEntity.badRequest().build();
             }
@@ -323,6 +331,33 @@ public class AuthController {
 
         Map<String, String> response = new HashMap<>();
         response.put("message", "Verification email sent successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Map<String, String>> deleteAccount(
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+        String token = authorization.substring("Bearer ".length()).trim();
+        var subjectOpt = jwtService.extractSubject(token);
+        if (subjectOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        String email = subjectOpt.get();
+        var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        User user = userOpt.get();
+        
+        // Delete user (cascade will handle related records if configured)
+        userRepository.delete(user);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Account deleted successfully");
         return ResponseEntity.ok(response);
     }
 }
