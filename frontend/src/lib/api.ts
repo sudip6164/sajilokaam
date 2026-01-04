@@ -34,6 +34,11 @@ api.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
       const data = error.response.data as any;
+      const url = error.config?.url || '';
+
+      // Don't show global toast for forgot-password endpoint - let component handle it
+      const isForgotPasswordEndpoint = url.includes('/auth/forgot-password');
+      const isResetPasswordEndpoint = url.includes('/auth/reset-password');
 
       // Handle 401 - Unauthorized
       if (status === 401) {
@@ -62,18 +67,38 @@ api.interceptors.response.use(
       } else if (status === 403) {
         toast.error("Access denied. You don't have permission.");
       } else if (status === 404) {
-        toast.error("Resource not found.");
+        // Don't show toast for forgot/reset password endpoints - component handles it
+        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+          toast.error("Resource not found.");
+        }
       } else if (status >= 500) {
-        toast.error("Server error. Please try again later.");
+        // Don't show toast for forgot/reset password endpoints - component handles it
+        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+          toast.error("Server error. Please try again later.");
+        }
       } else {
         // Show error message from server if available
-        const message = data?.message || data?.error || "An error occurred";
-        toast.error(message);
+        // Don't show toast for forgot/reset password endpoints - component handles it
+        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+          const message = data?.message || data?.error || "An error occurred";
+          toast.error(message);
+        }
       }
     } else if (error.request) {
-      toast.error("Network error. Please check your connection.");
+      // Don't show toast for forgot/reset password endpoints - component handles it
+      const url = error.config?.url || '';
+      const isForgotPasswordEndpoint = url.includes('/auth/forgot-password');
+      const isResetPasswordEndpoint = url.includes('/auth/reset-password');
+      if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+        toast.error("Network error. Please check your connection.");
+      }
     } else {
-      toast.error("An unexpected error occurred.");
+      const url = error.config?.url || '';
+      const isForgotPasswordEndpoint = url.includes('/auth/forgot-password');
+      const isResetPasswordEndpoint = url.includes('/auth/reset-password');
+      if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+        toast.error("An unexpected error occurred.");
+      }
     }
 
     return Promise.reject(error);
@@ -104,6 +129,11 @@ export const authApi = {
       fullName: string;
       roles: Array<{ id: number; name: string }>;
     }>("/auth/me");
+    return response.data;
+  },
+
+  forgotPassword: async (email: string) => {
+    const response = await api.post<{ message?: string }>("/auth/forgot-password", { email });
     return response.data;
   },
 

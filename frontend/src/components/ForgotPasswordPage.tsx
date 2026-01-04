@@ -36,17 +36,27 @@ export function ForgotPasswordPage() {
     } catch (err: any) {
       // Handle different error cases
       if (err.response?.status === 404) {
-        // Email not found - don't reveal this for security, show generic message
-        setError('If an account exists with this email, you will receive password reset instructions.');
-        // Still show success state to prevent email enumeration
-        setIsSubmitted(true);
+        // Endpoint not found (backend issue) or email not found
+        // Check if it's the endpoint that's missing (no response data) vs email not found
+        if (!err.response?.data || Object.keys(err.response.data).length === 0) {
+          // Endpoint doesn't exist - show error
+          setError('Password reset feature is not available. Please contact support.');
+        } else {
+          // Email not found - don't reveal this for security, show generic message
+          setError('If an account exists with this email, you will receive password reset instructions.');
+          // Still show success state to prevent email enumeration
+          setIsSubmitted(true);
+        }
       } else if (err.response?.status === 429) {
         // Rate limiting
         setError('Too many requests. Please try again later.');
       } else if (err.response?.status === 500) {
         setError('Server error. Please try again later.');
+      } else if (err.request && !err.response) {
+        // Network error
+        setError('Network error. Please check your connection and try again.');
       } else {
-        // Generic error
+        // Generic error - show message from server or default
         const errorMessage = err.response?.data?.message || 'Failed to send reset email. Please try again.';
         setError(errorMessage);
       }
