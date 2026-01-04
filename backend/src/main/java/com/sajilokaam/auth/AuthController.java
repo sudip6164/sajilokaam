@@ -4,6 +4,7 @@ import com.sajilokaam.role.Role;
 import com.sajilokaam.role.RoleRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
+import com.sajilokaam.util.EmailService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -25,12 +26,14 @@ public class AuthController {
     private final RoleRepository roleRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
-    public AuthController(UserRepository userRepository, RoleRepository roleRepository, JwtService jwtService, PasswordEncoder passwordEncoder) {
+    public AuthController(UserRepository userRepository, RoleRepository roleRepository, JwtService jwtService, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @PostMapping("/register")
@@ -167,11 +170,14 @@ public class AuthController {
             user.setResetTokenExpiresAt(expiresAt);
             userRepository.save(user);
             
-            // TODO: Send email with reset link
-            // For now, in development, we can log the token
-            // In production, this should be sent via email
-            System.out.println("Password reset token for " + email + ": " + resetToken);
-            System.out.println("Reset link: http://localhost:5173/reset-password?token=" + resetToken);
+            // Send email with reset link
+            try {
+                emailService.sendPasswordResetEmail(email, resetToken);
+            } catch (Exception e) {
+                System.err.println("Failed to send password reset email: " + e.getMessage());
+                // Log error but don't fail the request - user still gets success message
+                // In production, you might want to queue this for retry
+            }
         }
 
         Map<String, String> response = new HashMap<>();
