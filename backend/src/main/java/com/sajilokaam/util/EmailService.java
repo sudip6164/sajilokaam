@@ -25,10 +25,18 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+        System.out.println("EmailService initialized. SMTP configured: " + (mailSender != null));
     }
 
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
         try {
+            if (mailSender == null) {
+                System.err.println("JavaMailSender is not configured. Cannot send email.");
+                System.out.println("Password reset token for " + toEmail + ": " + resetToken);
+                System.out.println("Reset link: " + frontendUrl + "/reset-password?token=" + resetToken);
+                return;
+            }
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -41,10 +49,19 @@ public class EmailService {
 
             helper.setText(htmlContent, true);
             mailSender.send(message);
+            System.out.println("Password reset email sent successfully to: " + toEmail);
         } catch (MessagingException e) {
             System.err.println("Failed to send password reset email: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Failed to send email", e);
+            // Don't throw - just log and fallback to console output
+            System.out.println("Password reset token for " + toEmail + ": " + resetToken);
+            System.out.println("Reset link: " + frontendUrl + "/reset-password?token=" + resetToken);
+        } catch (Exception e) {
+            System.err.println("Unexpected error sending email: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to console output
+            System.out.println("Password reset token for " + toEmail + ": " + resetToken);
+            System.out.println("Reset link: " + frontendUrl + "/reset-password?token=" + resetToken);
         }
     }
 
