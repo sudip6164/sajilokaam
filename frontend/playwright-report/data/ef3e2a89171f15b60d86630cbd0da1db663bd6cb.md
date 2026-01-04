@@ -1,0 +1,86 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e3]:
+        - img [ref=e5]
+        - generic [ref=e8]: Please agree to the terms and conditions
+  - generic [ref=e9]:
+    - banner [ref=e10]:
+      - generic [ref=e12]:
+        - button "Back to Home" [ref=e13]:
+          - img [ref=e14]
+          - generic [ref=e16]: Back to Home
+        - button "S SajiloKaam" [ref=e17]:
+          - generic [ref=e19]: S
+          - generic [ref=e20]: SajiloKaam
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - heading "Join SajiloKaam" [level=1] [ref=e25]
+          - paragraph [ref=e26]: Create your account and start your journey
+        - generic [ref=e27]:
+          - generic [ref=e28]: "I want to:"
+          - generic [ref=e29]:
+            - button "Find Work" [ref=e30]:
+              - img [ref=e31]
+              - generic [ref=e34]: Find Work
+            - button "Hire Talent" [ref=e35]:
+              - img [ref=e36]
+              - generic [ref=e39]: Hire Talent
+        - generic [ref=e43]: Create account
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]: First name
+              - textbox "First name" [ref=e48]:
+                - /placeholder: John
+                - text: Test
+            - generic [ref=e49]:
+              - generic [ref=e50]: Last name
+              - textbox "Last name" [ref=e51]:
+                - /placeholder: Doe
+                - text: User
+          - generic [ref=e52]:
+            - generic [ref=e53]: Email address
+            - textbox "Email address" [ref=e54]:
+              - /placeholder: you@example.com
+              - text: new@example.com
+          - generic [ref=e55]:
+            - generic [ref=e56]: Password
+            - generic [ref=e57]:
+              - textbox "Password" [ref=e58]:
+                - /placeholder: Create a strong password
+                - text: password123
+              - button [ref=e59]:
+                - img [ref=e60]
+            - generic [ref=e63]:
+              - generic [ref=e67]: Medium
+              - paragraph [ref=e68]: Use 8+ characters with a mix of letters, numbers, and symbols
+          - generic [ref=e69]:
+            - generic [ref=e70]: Confirm password
+            - generic [ref=e71]:
+              - textbox "Confirm password" [ref=e72]:
+                - /placeholder: Confirm your password
+                - text: password123
+              - button [ref=e73]:
+                - img [ref=e74]
+            - generic [ref=e77]:
+              - img [ref=e78]
+              - generic [ref=e81]: Passwords match
+          - generic [ref=e83]:
+            - checkbox "I agree to the Terms of Service and Privacy Policy" [ref=e84]
+            - checkbox
+            - generic [ref=e85] [cursor=pointer]:
+              - text: I agree to the
+              - button "Terms of Service" [ref=e86]
+              - text: and
+              - button "Privacy Policy" [ref=e87]
+          - button "Create Account" [active] [ref=e88]
+        - paragraph [ref=e90]:
+          - text: Already have an account?
+          - button "Sign in" [ref=e91]
+      - paragraph [ref=e93]: Protected by industry-standard encryption and security measures
+```

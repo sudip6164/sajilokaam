@@ -39,6 +39,8 @@ api.interceptors.response.use(
       // Don't show global toast for forgot-password endpoint - let component handle it
       const isForgotPasswordEndpoint = url.includes('/auth/forgot-password');
       const isResetPasswordEndpoint = url.includes('/auth/reset-password');
+      const isVerifyEmailEndpoint = url.includes('/auth/verify-email');
+      const isResendVerificationEndpoint = url.includes('/auth/resend-verification');
 
       // Handle 401 - Unauthorized
       if (status === 401) {
@@ -67,36 +69,40 @@ api.interceptors.response.use(
       } else if (status === 403) {
         toast.error("Access denied. You don't have permission.");
       } else if (status === 404) {
-        // Don't show toast for forgot/reset password endpoints - component handles it
-        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+        // Don't show toast for auth endpoints - component handles it
+        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint && !isVerifyEmailEndpoint && !isResendVerificationEndpoint) {
           toast.error("Resource not found.");
         }
       } else if (status >= 500) {
-        // Don't show toast for forgot/reset password endpoints - component handles it
-        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+        // Don't show toast for auth endpoints - component handles it
+        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint && !isVerifyEmailEndpoint && !isResendVerificationEndpoint) {
           toast.error("Server error. Please try again later.");
         }
       } else {
         // Show error message from server if available
-        // Don't show toast for forgot/reset password endpoints - component handles it
-        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+        // Don't show toast for auth endpoints - component handles it
+        if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint && !isVerifyEmailEndpoint && !isResendVerificationEndpoint) {
           const message = data?.message || data?.error || "An error occurred";
           toast.error(message);
         }
       }
     } else if (error.request) {
-      // Don't show toast for forgot/reset password endpoints - component handles it
+      // Don't show toast for auth endpoints - component handles it
       const url = error.config?.url || '';
       const isForgotPasswordEndpoint = url.includes('/auth/forgot-password');
       const isResetPasswordEndpoint = url.includes('/auth/reset-password');
-      if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+      const isVerifyEmailEndpoint = url.includes('/auth/verify-email');
+      const isResendVerificationEndpoint = url.includes('/auth/resend-verification');
+      if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint && !isVerifyEmailEndpoint && !isResendVerificationEndpoint) {
         toast.error("Network error. Please check your connection.");
       }
     } else {
       const url = error.config?.url || '';
       const isForgotPasswordEndpoint = url.includes('/auth/forgot-password');
       const isResetPasswordEndpoint = url.includes('/auth/reset-password');
-      if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint) {
+      const isVerifyEmailEndpoint = url.includes('/auth/verify-email');
+      const isResendVerificationEndpoint = url.includes('/auth/resend-verification');
+      if (!isForgotPasswordEndpoint && !isResetPasswordEndpoint && !isVerifyEmailEndpoint && !isResendVerificationEndpoint) {
         toast.error("An unexpected error occurred.");
       }
     }
@@ -134,6 +140,21 @@ export const authApi = {
 
   forgotPassword: async (email: string) => {
     const response = await api.post<{ message?: string }>("/auth/forgot-password", { email });
+    return response.data;
+  },
+
+  resetPassword: async (token: string, password: string) => {
+    const response = await api.post<{ message?: string }>("/auth/reset-password", { token, password });
+    return response.data;
+  },
+
+  verifyEmail: async (token: string) => {
+    const response = await api.post<{ message?: string }>("/auth/verify-email", { token });
+    return response.data;
+  },
+
+  resendVerification: async (email: string) => {
+    const response = await api.post<{ message?: string }>("/auth/resend-verification", { email });
     return response.data;
   },
 

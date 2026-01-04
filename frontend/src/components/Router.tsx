@@ -34,8 +34,82 @@ export const RouterContext = createContext<RouterContextType>({
   pageParams: null,
 });
 
+// Map URL paths to page names
+const pathToPage: Record<string, Page> = {
+  '/': 'home',
+  '/home': 'home',
+  '/login': 'login',
+  '/signup': 'signup',
+  '/forgot-password': 'forgot-password',
+  '/reset-password': 'reset-password',
+  '/verify-email': 'verify-email',
+  '/find-work': 'find-work',
+  '/find-freelancers': 'find-freelancers',
+  '/freelancer-dashboard': 'freelancer-dashboard',
+  '/client-dashboard': 'client-dashboard',
+  '/admin-dashboard': 'admin-dashboard',
+  '/freelancer-profile': 'freelancer-profile',
+  '/job-detail': 'job-detail',
+  '/messages': 'messages',
+  '/project-detail': 'project-detail',
+  '/project-workspace': 'project-workspace',
+  '/earnings': 'earnings',
+  '/post-job': 'post-job',
+  '/features': 'features',
+  '/about': 'about',
+  '/contact': 'contact',
+  '/pricing': 'pricing',
+  '/terms': 'terms',
+  '/privacy': 'privacy',
+  '/account-settings': 'account-settings',
+  '/404': '404',
+  '/access-denied': 'access-denied',
+  '/success': 'success',
+  '/failure': 'failure',
+};
+
+// Map page names to URL paths
+const pageToPath: Record<Page, string> = {
+  'home': '/',
+  'login': '/login',
+  'signup': '/signup',
+  'forgot-password': '/forgot-password',
+  'reset-password': '/reset-password',
+  'verify-email': '/verify-email',
+  'find-work': '/find-work',
+  'find-freelancers': '/find-freelancers',
+  'freelancer-dashboard': '/freelancer-dashboard',
+  'client-dashboard': '/client-dashboard',
+  'admin-dashboard': '/admin-dashboard',
+  'freelancer-profile': '/freelancer-profile',
+  'job-detail': '/job-detail',
+  'messages': '/messages',
+  'project-detail': '/project-detail',
+  'project-workspace': '/project-workspace',
+  'earnings': '/earnings',
+  'post-job': '/post-job',
+  'features': '/features',
+  'about': '/about',
+  'contact': '/contact',
+  'pricing': '/pricing',
+  'terms': '/terms',
+  'privacy': '/privacy',
+  'account-settings': '/account-settings',
+  '404': '/404',
+  'access-denied': '/access-denied',
+  'success': '/success',
+  'failure': '/failure',
+};
+
+// Get page from current URL
+function getPageFromPath(): Page {
+  const path = window.location.pathname;
+  const page = pathToPage[path];
+  return page || 'home';
+}
+
 export function Router({ children }: { children: React.ReactNode }) {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPage] = useState<Page>(() => getPageFromPath());
   const [pageParams, setPageParams] = useState<any>(null);
   const auth = useAuth();
   
@@ -66,21 +140,59 @@ export function Router({ children }: { children: React.ReactNode }) {
   const navigate = (page: Page, params?: any) => {
     setCurrentPage(page);
     setPageParams(params || null);
+    
+    // Update browser URL
+    const path = pageToPath[page] || '/';
+    const url = params?.token ? `${path}?token=${params.token}` : path;
+    window.history.pushState({ page }, '', url);
   };
+
+  // Initialize from URL on mount and handle browser back/forward
+  useEffect(() => {
+    // Sync page from URL on mount (handles refresh and direct navigation)
+    // This only runs once on mount, so we can safely set the page
+    const page = getPageFromPath();
+    setCurrentPage(page);
+
+    // Parse query parameters (e.g., ?token=... for reset-password)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token && page === 'reset-password') {
+      setPageParams({ token });
+    }
+
+    // Handle browser back/forward buttons
+    const handlePopState = (event: PopStateEvent) => {
+      const page = getPageFromPath();
+      setCurrentPage(page);
+      
+      // Parse query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      if (token) {
+        setPageParams({ token });
+      } else {
+        setPageParams(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // Only run on mount
 
   const login = (userData: RouterUser) => {
     // This is kept for backward compatibility but AuthContext handles actual login
     // Redirect to appropriate dashboard based on user type
     if (userData.type === 'freelancer') {
-      setCurrentPage('freelancer-dashboard');
+      navigate('freelancer-dashboard');
     } else if (userData.type === 'client') {
-      setCurrentPage('client-dashboard');
+      navigate('client-dashboard');
     }
   };
 
   const logout = () => {
     auth.logout();
-    setCurrentPage('home');
+    navigate('home');
   };
 
   // Auto-redirect after login
@@ -88,17 +200,24 @@ export function Router({ children }: { children: React.ReactNode }) {
     if (auth.isAuthenticated && routerUser) {
       // Only auto-redirect if we're on login/signup pages
       if (currentPage === 'login' || currentPage === 'signup') {
+        let targetPage: Page;
         if (routerUser.type === 'freelancer') {
-          setCurrentPage('freelancer-dashboard');
+          targetPage = 'freelancer-dashboard';
         } else if (routerUser.type === 'client') {
-          setCurrentPage('client-dashboard');
+          targetPage = 'client-dashboard';
+        } else {
+          return;
         }
+        setCurrentPage(targetPage);
+        const path = pageToPath[targetPage];
+        window.history.pushState({ page: targetPage }, '', path);
       }
     } else if (!auth.isAuthenticated) {
       // If logged out and on protected page, redirect to home
       const protectedPages: Page[] = ['freelancer-dashboard', 'client-dashboard', 'admin-dashboard', 'messages', 'earnings', 'project-detail', 'project-workspace', 'account-settings'];
       if (protectedPages.includes(currentPage)) {
         setCurrentPage('home');
+        window.history.pushState({ page: 'home' }, '', '/');
       }
     }
   }, [auth.isAuthenticated, routerUser, currentPage]);

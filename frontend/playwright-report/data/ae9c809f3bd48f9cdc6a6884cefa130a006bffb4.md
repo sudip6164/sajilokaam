@@ -1,0 +1,52 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - button "Back to Home" [ref=e7]:
+          - img [ref=e8]
+          - generic [ref=e10]: Back to Home
+        - button "S SajiloKaam" [ref=e11]:
+          - generic [ref=e13]: S
+          - generic [ref=e14]: SajiloKaam
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - heading "Welcome Back" [level=1] [ref=e19]
+          - paragraph [ref=e20]: Sign in to your account to continue
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]: Email address
+            - textbox "Email address" [ref=e24]:
+              - /placeholder: you@example.com
+              - text: test@example.com
+          - generic [ref=e25]:
+            - generic [ref=e26]: Password
+            - generic [ref=e27]:
+              - textbox "Password" [ref=e28]:
+                - /placeholder: Enter your password
+                - text: password123
+              - button [ref=e29]:
+                - img [ref=e30]
+            - generic [ref=e33]:
+              - img [ref=e34]
+              - generic [ref=e36]: Invalid email or password. Please check your credentials and try again.
+          - generic [ref=e37]:
+            - generic [ref=e38]:
+              - checkbox "Remember me" [ref=e39]
+              - checkbox
+              - generic [ref=e40] [cursor=pointer]: Remember me
+            - button "Forgot password?" [ref=e41]
+          - button "Sign In" [ref=e42]
+        - paragraph [ref=e44]:
+          - text: Don't have an account?
+          - button "Sign up for free" [ref=e45]
+      - paragraph [ref=e47]:
+        - text: By signing in, you agree to our
+        - button "Terms of Service" [ref=e48]
+        - text: and
+        - button "Privacy Policy" [ref=e49]
+```

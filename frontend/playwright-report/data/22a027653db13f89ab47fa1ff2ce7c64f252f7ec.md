@@ -1,0 +1,75 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - button "Back to Home" [ref=e7]:
+          - img [ref=e8]
+          - generic [ref=e10]: Back to Home
+        - button "S SajiloKaam" [ref=e11]:
+          - generic [ref=e13]: S
+          - generic [ref=e14]: SajiloKaam
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - heading "Join SajiloKaam" [level=1] [ref=e19]
+          - paragraph [ref=e20]: Create your account and start your journey
+        - generic [ref=e21]:
+          - generic [ref=e22]: "I want to:"
+          - generic [ref=e23]:
+            - button "Find Work" [ref=e24]:
+              - img [ref=e25]
+              - generic [ref=e28]: Find Work
+            - button "Hire Talent" [ref=e29]:
+              - img [ref=e30]
+              - generic [ref=e33]: Hire Talent
+        - generic [ref=e37]: Create account
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - generic [ref=e40]:
+              - generic [ref=e41]: First name
+              - textbox "First name" [ref=e42]:
+                - /placeholder: John
+            - generic [ref=e43]:
+              - generic [ref=e44]: Last name
+              - textbox "Last name" [ref=e45]:
+                - /placeholder: Doe
+          - generic [ref=e46]:
+            - generic [ref=e47]: Email address
+            - textbox "Email address" [ref=e48]:
+              - /placeholder: you@example.com
+          - generic [ref=e49]:
+            - generic [ref=e50]: Password
+            - generic [ref=e51]:
+              - textbox "Password" [active] [ref=e52]:
+                - /placeholder: Create a strong password
+                - text: weak
+              - button [ref=e53]:
+                - img [ref=e54]
+            - generic [ref=e57]:
+              - img [ref=e58]
+              - generic [ref=e60]: Password must be at least 6 characters
+          - generic [ref=e61]:
+            - generic [ref=e62]: Confirm password
+            - generic [ref=e63]:
+              - textbox "Confirm password" [ref=e64]:
+                - /placeholder: Confirm your password
+              - button [ref=e65]:
+                - img [ref=e66]
+          - generic [ref=e70]:
+            - checkbox "I agree to the Terms of Service and Privacy Policy" [ref=e71]
+            - checkbox
+            - generic [ref=e72] [cursor=pointer]:
+              - text: I agree to the
+              - button "Terms of Service" [ref=e73]
+              - text: and
+              - button "Privacy Policy" [ref=e74]
+          - button "Create Account" [ref=e75]
+        - paragraph [ref=e77]:
+          - text: Already have an account?
+          - button "Sign in" [ref=e78]
+      - paragraph [ref=e80]: Protected by industry-standard encryption and security measures
+```
