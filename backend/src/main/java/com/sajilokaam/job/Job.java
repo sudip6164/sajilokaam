@@ -81,7 +81,8 @@ public class Job {
     @Column(name = "project_length", length = 100)
     private String projectLength; // "Less than 1 month", "1-3 months", "3-6 months", "More than 6 months"
 
-    @OneToOne(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonIgnoreProperties({"job"})
     private JobDetails jobDetails;
 
     @Column(name = "created_at", nullable = false, updatable = false)

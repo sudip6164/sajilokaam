@@ -1,5 +1,6 @@
 package com.sajilokaam.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.Instant;
 
@@ -12,6 +13,7 @@ public class JobDetails {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", nullable = false, unique = true)
+    @JsonIgnore
     private Job job;
 
     @Column(columnDefinition = "TEXT")
