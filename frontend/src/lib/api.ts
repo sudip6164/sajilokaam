@@ -230,20 +230,6 @@ export const jobsApi = {
     return response.data;
   },
 
-  update: async (id: number, data: {
-    title?: string;
-    description?: string;
-    status?: string;
-  }) => {
-    const response = await api.put<{
-      id: number;
-      title: string;
-      description: string;
-      status: string;
-    }>(`/jobs/${id}`, data);
-    return response.data;
-  },
-
   create: async (data: {
     title: string;
     description: string;
@@ -394,6 +380,43 @@ export const projectsApi = {
     return response.data;
   },
 
+  create: async (data: {
+    jobId: number;
+    title: string;
+    description?: string;
+    budget: number;
+    deadline?: string;
+  }) => {
+    const response = await api.post<{
+      id: number;
+      jobId: number;
+      clientId: number;
+      freelancerId: number;
+      title: string;
+      description: string;
+      status: string;
+      budget: number;
+      deadline?: string;
+      createdAt: string;
+    }>("/projects", data);
+    return response.data;
+  },
+
+  update: async (id: number, data: Partial<{
+    title: string;
+    description: string;
+    status: string;
+    budget: number;
+    deadline?: string;
+  }>) => {
+    const response = await api.put(`/projects/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    await api.delete(`/projects/${id}`);
+  },
+
   acceptBid: async (bidId: number, data: { title: string; description?: string }) => {
     const response = await api.post<{
       id: number;
@@ -525,6 +548,46 @@ export const invoicesApi = {
     }>(`/invoices/${id}`);
     return response.data;
   },
+
+  create: async (data: {
+    projectId: number;
+    items: Array<{
+      description: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+    dueDate?: string;
+    notes?: string;
+  }) => {
+    const response = await api.post<{
+      id: number;
+      projectId: number;
+      invoiceNumber: string;
+      totalAmount: number;
+      status: string;
+      dueDate?: string;
+      createdAt: string;
+    }>("/invoices", data);
+    return response.data;
+  },
+
+  update: async (id: number, data: Partial<{
+    items: Array<{
+      description: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+    dueDate?: string;
+    status?: string;
+    notes?: string;
+  }>) => {
+    const response = await api.put(`/invoices/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    await api.delete(`/invoices/${id}`);
+  },
 };
 
 // Payments API
@@ -611,6 +674,23 @@ export const paymentsApi = {
       paidAt?: string;
       createdAt: string;
     }>>(`/payments/invoice/${invoiceId}`);
+    return response.data;
+  },
+
+  list: async (params?: {
+    invoiceId?: number;
+    status?: string;
+    gateway?: string;
+  }) => {
+    const response = await api.get<Array<{
+      id: number;
+      invoiceId: number;
+      amount: number;
+      paymentMethod: string;
+      status: string;
+      paidAt?: string;
+      createdAt: string;
+    }>>("/payments", { params });
     return response.data;
   },
 };
@@ -788,6 +868,36 @@ export const adminApi = {
       };
       recentDisputes: Array<any>;
     }>("/admin/payments/dashboard");
+    return response.data;
+  },
+
+  // Analytics
+  getAnalytics: async () => {
+    const response = await api.get<{
+      totalUsers: number;
+      totalJobs: number;
+      totalBids: number;
+      totalProjects: number;
+      totalTasks: number;
+      totalRevenue: number;
+      activeUsers: number;
+    }>("/admin/analytics");
+    return response.data;
+  },
+
+  // System Settings
+  getSettings: async () => {
+    const response = await api.get<Array<{
+      id: number;
+      key: string;
+      value: string;
+      description?: string;
+    }>>("/admin/settings");
+    return response.data;
+  },
+
+  updateSetting: async (id: number, value: string) => {
+    const response = await api.put(`/admin/settings/${id}`, { value });
     return response.data;
   },
 };
@@ -1039,6 +1149,52 @@ export const teamsApi = {
   },
 };
 
+// Milestones API (standalone)
+export const milestonesApi = {
+  list: async (projectId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      title: string;
+      dueDate?: string;
+      status?: string;
+    }>>(`/projects/${projectId}/milestones`);
+    return response.data;
+  },
+
+  get: async (projectId: number, milestoneId: number) => {
+    const response = await api.get<{
+      id: number;
+      projectId: number;
+      title: string;
+      dueDate?: string;
+      status?: string;
+    }>(`/projects/${projectId}/milestones/${milestoneId}`);
+    return response.data;
+  },
+
+  create: async (projectId: number, data: {
+    title: string;
+    dueDate?: string;
+  }) => {
+    const response = await api.post(`/projects/${projectId}/milestones`, data);
+    return response.data;
+  },
+
+  update: async (projectId: number, milestoneId: number, data: {
+    title?: string;
+    dueDate?: string;
+    status?: string;
+  }) => {
+    const response = await api.put(`/projects/${projectId}/milestones/${milestoneId}`, data);
+    return response.data;
+  },
+
+  delete: async (projectId: number, milestoneId: number) => {
+    await api.delete(`/projects/${projectId}/milestones/${milestoneId}`);
+  },
+};
+
 // Sprints API
 export const sprintsApi = {
   list: async (projectId: number) => {
@@ -1092,6 +1248,69 @@ export const sprintsApi = {
   },
   delete: async (projectId: number, sprintId: number) => {
     await api.delete(`/projects/${projectId}/sprints/${sprintId}`);
+  },
+};
+
+// Time Logs API (standalone)
+export const timeLogsApi = {
+  list: async (params?: {
+    projectId?: number;
+    taskId?: number;
+    userId?: number;
+  }) => {
+    if (params?.taskId && params?.projectId) {
+      const response = await api.get<Array<{
+        id: number;
+        taskId: number;
+        userId: number;
+        minutes: number;
+        createdAt: string;
+      }>>(`/projects/${params.projectId}/tasks/${params.taskId}/time-logs`);
+      return response.data;
+    }
+    if (params?.projectId) {
+      const response = await api.get<Array<{
+        id: number;
+        projectId: number;
+        taskId?: number;
+        startTime: string;
+        endTime: string;
+        duration: number;
+        description?: string;
+        category?: { id: number; name: string };
+        createdAt: string;
+      }>>(`/projects/${params.projectId}/time-logs`, { params });
+      return response.data;
+    }
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      taskId?: number;
+      startTime: string;
+      endTime: string;
+      duration: number;
+      description?: string;
+      createdAt: string;
+    }>>("/time-logs", { params });
+    return response.data;
+  },
+
+  create: async (projectId: number, taskId: number, data: {
+    minutes: number;
+  }) => {
+    const response = await api.post(`/projects/${projectId}/tasks/${taskId}/time-logs`, data);
+    return response.data;
+  },
+
+  update: async (projectId: number, taskId: number, timeLogId: number, data: {
+    minutes?: number;
+  }) => {
+    const response = await api.put(`/projects/${projectId}/tasks/${taskId}/time-logs/${timeLogId}`, data);
+    return response.data;
+  },
+
+  delete: async (projectId: number, taskId: number, timeLogId: number) => {
+    await api.delete(`/projects/${projectId}/tasks/${taskId}/time-logs/${timeLogId}`);
   },
 };
 
@@ -1192,6 +1411,13 @@ export const filesApi = {
   delete: async (projectId: number, fileId: number) => {
     await api.delete(`/projects/${projectId}/files/${fileId}`);
   },
+
+  download: async (projectId: number, fileId: number) => {
+    const response = await api.get(`/projects/${projectId}/files/${fileId}/download`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
   processDocument: async (projectId: number, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -1230,6 +1456,110 @@ export const filesApi = {
     }>(`/projects/${projectId}/documents/${processingId}/create-tasks`, {
       suggestionIds,
     });
+    return response.data;
+  },
+};
+
+// ML Document API (standalone)
+export const mldocumentApi = {
+  upload: async (projectId: number, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<{
+      id: number;
+      status: string;
+      message: string;
+      tasks?: Array<{
+        id: number;
+        title: string;
+        description?: string;
+        priority?: string;
+      }>;
+    }>(`/projects/${projectId}/documents/upload`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  process: async (projectId: number, documentId: number) => {
+    const response = await api.post<{
+      id: number;
+      status: string;
+      message: string;
+    }>(`/projects/${projectId}/documents/${documentId}/process`);
+    return response.data;
+  },
+
+  getStatus: async (projectId: number, processingId: number) => {
+    const response = await api.get<{
+      id: number;
+      status: string;
+      fileName?: string;
+      ocrText?: string;
+    }>(`/projects/${projectId}/documents/${processingId}/status`);
+    return response.data;
+  },
+
+  getSuggestions: async (projectId: number, processingId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      title: string;
+      description?: string;
+      confidenceScore: number;
+      priority?: string;
+    }>>(`/projects/${projectId}/documents/${processingId}/suggestions`);
+    return response.data;
+  },
+
+  createTasks: async (projectId: number, processingId: number, suggestionIds: number[]) => {
+    const response = await api.post<{
+      message: string;
+      count: number;
+      tasks: Array<any>;
+    }>(`/projects/${projectId}/documents/${processingId}/create-tasks`, {
+      suggestionIds,
+    });
+    return response.data;
+  },
+};
+
+// Messages API (standalone)
+export const messagesApi = {
+  list: async (conversationId: number, params?: {
+    page?: number;
+    size?: number;
+  }) => {
+    const response = await api.get<{
+      content: Array<{
+        id: number;
+        sender: { id: number; fullName: string };
+        content: string;
+        richContent?: string;
+        contentType: string;
+        attachments?: Array<{ id: number; fileName: string; fileUrl: string }>;
+        createdAt: string;
+      }>;
+      totalElements: number;
+    }>(`/conversations/${conversationId}/messages`, { params });
+    return response.data;
+  },
+
+  send: async (conversationId: number, data: {
+    content?: string;
+    richContent?: string;
+    attachmentIds?: number[];
+  }) => {
+    const response = await api.post(`/conversations/${conversationId}/messages`, data);
+    return response.data;
+  },
+
+  getConversation: async (id: number) => {
+    const response = await api.get<{
+      id: number;
+      projectId?: number;
+      participants: Array<{ id: number; fullName: string }>;
+      createdAt: string;
+    }>(`/conversations/${id}`);
     return response.data;
   },
 };
@@ -1284,6 +1614,77 @@ export const conversationsApi = {
   },
   sendTyping: async (conversationId: number) => {
     await api.post(`/conversations/${conversationId}/typing`);
+  },
+};
+
+// Tasks API (standalone)
+export const tasksApi = {
+  list: async (params?: {
+    projectId?: number;
+    assigneeId?: number;
+    status?: string;
+  }) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      title: string;
+      description?: string;
+      status: string;
+      priority?: string;
+      dueDate?: string;
+      milestoneId?: number;
+      assigneeId?: number;
+      estimatedHours?: number;
+    }>>("/tasks", { params });
+    return response.data;
+  },
+
+  get: async (id: number) => {
+    const response = await api.get<{
+      id: number;
+      projectId: number;
+      title: string;
+      description?: string;
+      status: string;
+      priority?: string;
+      dueDate?: string;
+      milestoneId?: number;
+      assigneeId?: number;
+      estimatedHours?: number;
+    }>(`/tasks/${id}`);
+    return response.data;
+  },
+
+  create: async (projectId: number, data: {
+    title: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+    dueDate?: string;
+    milestoneId?: number;
+    assigneeId?: number;
+    estimatedHours?: number;
+    labelIds?: number[];
+  }) => {
+    const response = await api.post(`/projects/${projectId}/tasks`, data);
+    return response.data;
+  },
+
+  update: async (projectId: number, taskId: number, data: {
+    title?: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+    dueDate?: string;
+    assigneeId?: number;
+    labelIds?: number[];
+  }) => {
+    const response = await api.put(`/projects/${projectId}/tasks/${taskId}`, data);
+    return response.data;
+  },
+
+  delete: async (projectId: number, taskId: number) => {
+    await api.delete(`/projects/${projectId}/tasks/${taskId}`);
   },
 };
 
