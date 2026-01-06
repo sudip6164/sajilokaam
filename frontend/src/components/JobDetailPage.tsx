@@ -324,14 +324,6 @@ export function JobDetailPage() {
                     <span className="text-sm font-medium">{job.client.location}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Total Spent</span>
-                    <span className="text-sm font-medium text-success">{job.client.totalSpent}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Hire Rate</span>
-                    <span className="text-sm font-medium">{job.client.hireRate}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Member Since</span>
                     <span className="text-sm font-medium">{job.client.memberSince}</span>
                   </div>

@@ -21,8 +21,6 @@ export interface Job {
     reviews: number;
     location: string;
     verified: boolean;
-    totalSpent: number;
-    hireRate: number;
   };
   proposals: number;
   experienceLevel: 'Entry Level' | 'Intermediate' | 'Expert';
@@ -203,17 +201,6 @@ export function EnhancedJobCard({ job, onViewDetails, showSaveButton = true }: E
                   <span>{job.client.location}</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-4 text-sm">
-            <div className="text-right">
-              <p className="text-muted-foreground">Total Spent</p>
-              <p className="font-semibold">${job.client.totalSpent.toLocaleString()}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-muted-foreground">Hire Rate</p>
-              <p className="font-semibold">{job.client.hireRate}%</p>
             </div>
           </div>
         </div>

@@ -267,8 +267,6 @@ export function EnhancedFindWorkPage() {
           reviews: 0,
           location: 'Remote',
           verified: false,
-          totalSpent: 0,
-          hireRate: 0,
         },
         proposals: 0, // Would need separate API call
         experienceLevel: 'Intermediate',
