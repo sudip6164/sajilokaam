@@ -143,8 +143,13 @@ export function Router({ children }: { children: React.ReactNode }) {
     
     // Update browser URL
     const path = pageToPath[page] || '/';
-    const url = params?.token ? `${path}?token=${params.token}` : path;
-    window.history.pushState({ page }, '', url);
+    let url = path;
+    if (params?.token) {
+      url = `${path}?token=${params.token}`;
+    } else if (params?.jobId && page === 'job-detail') {
+      url = `${path}?jobId=${params.jobId}`;
+    }
+    window.history.pushState({ page, params }, '', url);
   };
 
   // Initialize from URL on mount and handle browser back/forward
@@ -154,11 +159,14 @@ export function Router({ children }: { children: React.ReactNode }) {
     const page = getPageFromPath();
     setCurrentPage(page);
 
-    // Parse query parameters (e.g., ?token=... for reset-password)
+    // Parse query parameters (e.g., ?token=... for reset-password, ?jobId=... for job-detail)
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
+    const jobId = urlParams.get('jobId');
     if (token && page === 'reset-password') {
       setPageParams({ token });
+    } else if (jobId && page === 'job-detail') {
+      setPageParams({ jobId: parseInt(jobId, 10) });
     }
 
     // Handle browser back/forward buttons
@@ -169,8 +177,11 @@ export function Router({ children }: { children: React.ReactNode }) {
       // Parse query parameters
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
-      if (token) {
+      const jobId = urlParams.get('jobId');
+      if (token && currentPage === 'reset-password') {
         setPageParams({ token });
+      } else if (jobId && currentPage === 'job-detail') {
+        setPageParams({ jobId: parseInt(jobId, 10) });
       } else {
         setPageParams(null);
       }
@@ -197,6 +208,11 @@ export function Router({ children }: { children: React.ReactNode }) {
 
   // Auto-redirect after login
   useEffect(() => {
+    // Don't redirect while AuthContext is still loading (handles page refresh)
+    if (auth.isLoading) {
+      return;
+    }
+
     if (auth.isAuthenticated && routerUser) {
       // Only auto-redirect if we're on login/signup pages
       if (currentPage === 'login' || currentPage === 'signup') {
@@ -214,13 +230,14 @@ export function Router({ children }: { children: React.ReactNode }) {
       }
     } else if (!auth.isAuthenticated) {
       // If logged out and on protected page, redirect to home
+      // Only do this after AuthContext has finished loading
       const protectedPages: Page[] = ['freelancer-dashboard', 'client-dashboard', 'admin-dashboard', 'messages', 'earnings', 'project-detail', 'project-workspace', 'account-settings'];
       if (protectedPages.includes(currentPage)) {
         setCurrentPage('home');
         window.history.pushState({ page: 'home' }, '', '/');
       }
     }
-  }, [auth.isAuthenticated, routerUser, currentPage]);
+  }, [auth.isAuthenticated, auth.isLoading, routerUser, currentPage]);
 
   return (
     <RouterContext.Provider value={{ 
