@@ -22,22 +22,56 @@ import {
 
 export function PostJobPage() {
   const { navigate } = useRouter();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [jobData, setJobData] = useState({
     title: '',
-    category: '',
+    categoryId: '',
     description: '',
-    budgetType: 'fixed',
+    budgetType: 'fixed' as 'fixed' | 'hourly',
     fixedBudget: '',
     hourlyMin: '',
     hourlyMax: '',
     duration: '',
     experienceLevel: '',
     skills: [] as string[],
+    skillIds: [] as number[],
     projectType: 'one-time',
-    requirements: ''
+    requirements: '',
+    deliverables: '',
+    location: ''
   });
   const [skillInput, setSkillInput] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast.error('Please login to post a job');
+      navigate('login');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const data = await jobCategoriesApi.list();
+      setCategories(data);
+    } catch (err: any) {
+      console.error('Error fetching categories:', err);
+      toast.error('Failed to load categories');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   const addSkill = () => {
     if (skillInput.trim() && !jobData.skills.includes(skillInput.trim())) {
@@ -62,10 +96,126 @@ export function PostJobPage() {
     }
   };
 
-  const handleSubmit = () => {
-    // In a real app, this would submit to the backend
-    console.log('Posting job:', jobData);
-    navigate('client-dashboard');
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!jobData.title.trim()) {
+      newErrors.title = 'Job title is required';
+    }
+
+    if (!jobData.categoryId) {
+      newErrors.category = 'Category is required';
+    }
+
+    if (!jobData.description.trim()) {
+      newErrors.description = 'Job description is required';
+    }
+
+    if (jobData.budgetType === 'fixed') {
+      if (!jobData.fixedBudget || parseFloat(jobData.fixedBudget) <= 0) {
+        newErrors.fixedBudget = 'Fixed budget must be greater than 0';
+      }
+    } else {
+      if (!jobData.hourlyMin || parseFloat(jobData.hourlyMin) <= 0) {
+        newErrors.hourlyMin = 'Minimum hourly rate is required';
+      }
+      if (!jobData.hourlyMax || parseFloat(jobData.hourlyMax) <= 0) {
+        newErrors.hourlyMax = 'Maximum hourly rate is required';
+      }
+      if (jobData.hourlyMin && jobData.hourlyMax && 
+          parseFloat(jobData.hourlyMin) >= parseFloat(jobData.hourlyMax)) {
+        newErrors.hourlyMax = 'Maximum must be greater than minimum';
+      }
+    }
+
+    if (!jobData.duration) {
+      newErrors.duration = 'Project duration is required';
+    }
+
+    if (!jobData.experienceLevel) {
+      newErrors.experienceLevel = 'Experience level is required';
+    }
+
+    if (jobData.skills.length === 0) {
+      newErrors.skills = 'At least one skill is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Map experience level
+      const experienceLevelMap: Record<string, string> = {
+        'entry': 'ENTRY',
+        'intermediate': 'MID',
+        'expert': 'SENIOR',
+      };
+
+      // Map project length
+      const projectLengthMap: Record<string, string> = {
+        'less-1-month': 'Less than 1 month',
+        '1-3-months': '1-3 months',
+        '3-6-months': '3-6 months',
+        'more-6-months': 'More than 6 months',
+        'ongoing': 'More than 6 months',
+      };
+
+      // Prepare API payload
+      const payload: any = {
+        title: jobData.title.trim(),
+        description: jobData.description.trim(),
+        categoryId: parseInt(jobData.categoryId, 10),
+        jobType: jobData.budgetType === 'fixed' ? 'FIXED_PRICE' : 'HOURLY',
+        experienceLevel: experienceLevelMap[jobData.experienceLevel] || 'MID',
+        projectLength: projectLengthMap[jobData.duration] || jobData.duration,
+        status: 'OPEN',
+      };
+
+      // Set budget
+      if (jobData.budgetType === 'fixed') {
+        payload.budgetMin = parseFloat(jobData.fixedBudget);
+        payload.budgetMax = parseFloat(jobData.fixedBudget);
+      } else {
+        payload.budgetMin = parseFloat(jobData.hourlyMin);
+        payload.budgetMax = parseFloat(jobData.hourlyMax);
+      }
+
+      // Set requirements and deliverables
+      if (jobData.requirements.trim()) {
+        payload.requirements = jobData.requirements.trim();
+      }
+      if (jobData.deliverables.trim()) {
+        payload.deliverables = jobData.deliverables.trim();
+      }
+
+      // Set location if provided
+      if (jobData.location.trim()) {
+        payload.location = jobData.location.trim();
+      }
+
+      // Note: Skills are handled separately - we need to find skill IDs by name
+      // For now, we'll skip skillIds and let the backend handle it
+      // TODO: Implement skill lookup by name
+
+      const createdJob = await jobsApi.create(payload);
+
+      toast.success('Job posted successfully!');
+      navigate('job-detail', { jobId: createdJob.id });
+    } catch (err: any) {
+      console.error('Error posting job:', err);
+      toast.error(err.response?.data?.message || 'Failed to post job. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const steps = [
@@ -146,27 +296,50 @@ export function PostJobPage() {
                         id="title"
                         placeholder="e.g., React Developer for E-commerce Platform"
                         value={jobData.title}
-                        onChange={(e) => setJobData({ ...jobData, title: e.target.value })}
+                        onChange={(e) => {
+                          setJobData({ ...jobData, title: e.target.value });
+                          setErrors({ ...errors, title: '' });
+                        }}
                         className="mt-2"
                       />
+                      {errors.title && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.title}
+                        </p>
+                      )}
                     </div>
 
                     <div>
                       <Label htmlFor="category" className="text-base">Category *</Label>
-                      <Select value={jobData.category} onValueChange={(value) => setJobData({ ...jobData, category: value })}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="web-dev">Web Development</SelectItem>
-                          <SelectItem value="mobile-dev">Mobile Development</SelectItem>
-                          <SelectItem value="design">Design & Creative</SelectItem>
-                          <SelectItem value="writing">Writing & Content</SelectItem>
-                          <SelectItem value="marketing">Digital Marketing</SelectItem>
-                          <SelectItem value="data-science">Data Science</SelectItem>
-                          <SelectItem value="devops">DevOps & Cloud</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {loadingCategories ? (
+                        <Skeleton className="h-10 w-full mt-2" />
+                      ) : (
+                        <Select 
+                          value={jobData.categoryId} 
+                          onValueChange={(value) => {
+                            setJobData({ ...jobData, categoryId: value });
+                            setErrors({ ...errors, category: '' });
+                          }}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id.toString()}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {errors.category && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.category}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -175,12 +348,23 @@ export function PostJobPage() {
                         id="description"
                         placeholder="Describe your project in detail. Include what you're looking for, project goals, and any specific requirements..."
                         value={jobData.description}
-                        onChange={(e) => setJobData({ ...jobData, description: e.target.value })}
+                        onChange={(e) => {
+                          setJobData({ ...jobData, description: e.target.value });
+                          setErrors({ ...errors, description: '' });
+                        }}
                         className="mt-2 min-h-[200px]"
                       />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {jobData.description.length} characters
-                      </p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          {jobData.description.length} characters
+                        </p>
+                        {errors.description && (
+                          <p className="text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div>
@@ -260,10 +444,19 @@ export function PostJobPage() {
                             type="number"
                             placeholder="5000"
                             value={jobData.fixedBudget}
-                            onChange={(e) => setJobData({ ...jobData, fixedBudget: e.target.value })}
+                            onChange={(e) => {
+                              setJobData({ ...jobData, fixedBudget: e.target.value });
+                              setErrors({ ...errors, fixedBudget: '' });
+                            }}
                             className="pl-9"
                           />
                         </div>
+                        {errors.fixedBudget && (
+                          <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.fixedBudget}
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
@@ -276,10 +469,19 @@ export function PostJobPage() {
                               type="number"
                               placeholder="50"
                               value={jobData.hourlyMin}
-                              onChange={(e) => setJobData({ ...jobData, hourlyMin: e.target.value })}
+                              onChange={(e) => {
+                                setJobData({ ...jobData, hourlyMin: e.target.value });
+                                setErrors({ ...errors, hourlyMin: '', hourlyMax: '' });
+                              }}
                               className="pl-9"
                             />
                           </div>
+                          {errors.hourlyMin && (
+                            <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              {errors.hourlyMin}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="hourlyMax" className="text-base">Max Hourly Rate (USD) *</Label>
@@ -290,17 +492,32 @@ export function PostJobPage() {
                               type="number"
                               placeholder="80"
                               value={jobData.hourlyMax}
-                              onChange={(e) => setJobData({ ...jobData, hourlyMax: e.target.value })}
+                              onChange={(e) => {
+                                setJobData({ ...jobData, hourlyMax: e.target.value });
+                                setErrors({ ...errors, hourlyMax: '' });
+                              }}
                               className="pl-9"
                             />
                           </div>
+                          {errors.hourlyMax && (
+                            <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              {errors.hourlyMax}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
 
                     <div>
                       <Label htmlFor="duration" className="text-base">Project Duration *</Label>
-                      <Select value={jobData.duration} onValueChange={(value) => setJobData({ ...jobData, duration: value })}>
+                      <Select 
+                        value={jobData.duration} 
+                        onValueChange={(value) => {
+                          setJobData({ ...jobData, duration: value });
+                          setErrors({ ...errors, duration: '' });
+                        }}
+                      >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="Select duration" />
                         </SelectTrigger>
@@ -312,11 +529,23 @@ export function PostJobPage() {
                           <SelectItem value="ongoing">Ongoing</SelectItem>
                         </SelectContent>
                       </Select>
+                      {errors.duration && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.duration}
+                        </p>
+                      )}
                     </div>
 
                     <div>
                       <Label htmlFor="experienceLevel" className="text-base">Required Experience Level *</Label>
-                      <Select value={jobData.experienceLevel} onValueChange={(value) => setJobData({ ...jobData, experienceLevel: value })}>
+                      <Select 
+                        value={jobData.experienceLevel} 
+                        onValueChange={(value) => {
+                          setJobData({ ...jobData, experienceLevel: value });
+                          setErrors({ ...errors, experienceLevel: '' });
+                        }}
+                      >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="Select experience level" />
                         </SelectTrigger>
@@ -326,6 +555,12 @@ export function PostJobPage() {
                           <SelectItem value="expert">Expert</SelectItem>
                         </SelectContent>
                       </Select>
+                      {errors.experienceLevel && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.experienceLevel}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -346,16 +581,27 @@ export function PostJobPage() {
                           id="skills"
                           placeholder="e.g., React, Node.js, TypeScript"
                           value={skillInput}
-                          onChange={(e) => setSkillInput(e.target.value)}
+                          onChange={(e) => {
+                            setSkillInput(e.target.value);
+                            setErrors({ ...errors, skills: '' });
+                          }}
                           onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
                         />
                         <Button type="button" onClick={addSkill}>
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Press Enter or click + to add skills
-                      </p>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          Press Enter or click + to add skills
+                        </p>
+                        {errors.skills && (
+                          <p className="text-sm text-destructive flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            {errors.skills}
+                          </p>
+                        )}
+                      </div>
                       
                       {jobData.skills.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-4">
@@ -375,13 +621,24 @@ export function PostJobPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="requirements" className="text-base">Additional Requirements</Label>
+                      <Label htmlFor="requirements" className="text-base">Requirements</Label>
                       <Textarea
                         id="requirements"
-                        placeholder="List any specific requirements, qualifications, or deliverables..."
+                        placeholder="List specific requirements and qualifications (one per line)..."
                         value={jobData.requirements}
                         onChange={(e) => setJobData({ ...jobData, requirements: e.target.value })}
-                        className="mt-2 min-h-[150px]"
+                        className="mt-2 min-h-[120px]"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="deliverables" className="text-base">Deliverables</Label>
+                      <Textarea
+                        id="deliverables"
+                        placeholder="List expected deliverables (one per line)..."
+                        value={jobData.deliverables}
+                        onChange={(e) => setJobData({ ...jobData, deliverables: e.target.value })}
+                        className="mt-2 min-h-[120px]"
                       />
                     </div>
                   </div>
@@ -400,8 +657,10 @@ export function PostJobPage() {
                     <Card className="border-2">
                       <CardHeader>
                         <CardTitle className="text-xl">{jobData.title || 'Job Title'}</CardTitle>
-                        {jobData.category && (
-                          <Badge className="w-fit mt-2">{jobData.category}</Badge>
+                        {jobData.categoryId && (
+                          <Badge className="w-fit mt-2">
+                            {categories.find(c => c.id.toString() === jobData.categoryId)?.name || 'Category'}
+                          </Badge>
                         )}
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -496,15 +755,16 @@ export function PostJobPage() {
                 </Button>
 
                 {currentStep < 4 ? (
-                  <Button onClick={handleNext}>
+                  <Button onClick={handleNext} disabled={loading}>
                     Next
                   </Button>
                 ) : (
                   <Button 
                     onClick={handleSubmit}
                     className="bg-gradient-to-r from-primary to-secondary"
+                    disabled={loading}
                   >
-                    Post Job
+                    {loading ? 'Posting...' : 'Post Job'}
                   </Button>
                 )}
               </div>
