@@ -178,9 +178,9 @@ export function Router({ children }: { children: React.ReactNode }) {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
       const jobId = urlParams.get('jobId');
-      if (token && currentPage === 'reset-password') {
+      if (token && page === 'reset-password') {
         setPageParams({ token });
-      } else if (jobId && currentPage === 'job-detail') {
+      } else if (jobId && page === 'job-detail') {
         setPageParams({ jobId: parseInt(jobId, 10) });
       } else {
         setPageParams(null);
