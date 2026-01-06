@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'job-detail' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'job-detail' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -49,6 +49,7 @@ const pathToPage: Record<string, Page> = {
   '/client-dashboard': 'client-dashboard',
   '/admin-dashboard': 'admin-dashboard',
   '/freelancer-profile': 'freelancer-profile',
+  '/client-profile': 'client-profile',
   '/job-detail': 'job-detail',
   '/messages': 'messages',
   '/project-detail': 'project-detail',
@@ -82,6 +83,7 @@ const pageToPath: Record<Page, string> = {
   'client-dashboard': '/client-dashboard',
   'admin-dashboard': '/admin-dashboard',
   'freelancer-profile': '/freelancer-profile',
+  'client-profile': '/client-profile',
   'job-detail': '/job-detail',
   'messages': '/messages',
   'project-detail': '/project-detail',

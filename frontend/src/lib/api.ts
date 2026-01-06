@@ -1122,10 +1122,21 @@ export const profileApi = {
       id: number;
       userId: number;
       companyName?: string;
-      companyDescription?: string;
-      location?: string;
-      phone?: string;
-      website?: string;
+      companyWebsite?: string;
+      companySize?: string;
+      industry?: string;
+      description?: string;
+      locationCountry?: string;
+      locationCity?: string;
+      timezone?: string;
+      hiringNeeds?: string;
+      averageBudgetMin?: number;
+      averageBudgetMax?: number;
+      preferredContractType?: string;
+      languages?: string;
+      status?: string;
+      createdAt?: string;
+      updatedAt?: string;
       verificationStatus: string;
     }>("/profile/client/me");
     return response.data;
@@ -1133,10 +1144,18 @@ export const profileApi = {
 
   updateClientProfile: async (data: {
     companyName?: string;
-    companyDescription?: string;
-    location?: string;
-    phone?: string;
-    website?: string;
+    companyWebsite?: string;
+    companySize?: string;
+    industry?: string;
+    description?: string;
+    locationCountry?: string;
+    locationCity?: string;
+    timezone?: string;
+    hiringNeeds?: string;
+    averageBudgetMin?: number;
+    averageBudgetMax?: number;
+    preferredContractType?: string;
+    languages?: string;
   }) => {
     const response = await api.put<{
       id: number;

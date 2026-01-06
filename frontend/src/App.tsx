@@ -26,6 +26,7 @@ import { FindFreelancersPage } from "./components/FindFreelancersPage";
 import { FreelancerDashboard } from "./components/FreelancerDashboard";
 import { ClientDashboard } from "./components/ClientDashboard";
 import { FreelancerProfilePage } from "./components/FreelancerProfilePage";
+import { ClientProfilePage } from "./components/ClientProfilePage";
 import { JobDetailPage } from "./components/JobDetailPage";
 import { MessagesPage } from "./components/MessagesPage";
 import { ProjectDetailPage } from "./components/ProjectDetailPage";
@@ -89,6 +90,8 @@ function AppContent() {
       return <ClientDashboard />;
     case 'freelancer-profile':
       return <FreelancerProfilePage />;
+    case 'client-profile':
+      return <ClientProfilePage />;
     case 'job-detail':
       return <JobDetailPage />;
     case 'messages':
