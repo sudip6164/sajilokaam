@@ -4,6 +4,7 @@ import { toast } from "sonner";
 // Create axios instance
 // Frontend runs in browser, so always use localhost (Docker maps ports)
 // Can override with VITE_API_URL environment variable
+// @ts-ignore - Vite provides import.meta.env
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 const api: AxiosInstance = axios.create({
