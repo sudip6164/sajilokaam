@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, X, SlidersHorizontal, Plus } from 'lucide-react';
 import { Button } from './ui/button';
 import { Header } from './Header';
@@ -9,7 +9,11 @@ import { SortOptions, SortOption, ViewMode } from './filters/SortOptions';
 import { EnhancedJobCard, Job } from './EnhancedJobCard';
 import { SavedSearches } from './SavedSearches';
 import { useRouter } from './Router';
+import { jobsApi, jobCategoriesApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from './ui/skeleton';
 
+// Keep mockJobs as fallback/type reference, but we'll fetch real data
 const mockJobs: Job[] = [
   {
     id: 1,
@@ -201,12 +205,99 @@ const defaultFilters: JobFiltersState = {
 
 export function EnhancedFindWorkPage() {
   const { navigate } = useRouter();
+  const { isAuthenticated } = useAuth();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<JobFiltersState>(defaultFilters);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showSaveSearch, setShowSaveSearch] = useState(false);
+
+  // Fetch jobs on mount and when filters change
+  useEffect(() => {
+    fetchJobs();
+  }, [filters]);
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: any = {
+        status: 'OPEN',
+      };
+
+      // Map filters to API params
+      if (filters.categories.length > 0) {
+        // Use first category for now (backend supports single categoryId)
+        params.categoryId = filters.categories[0];
+      }
+
+      if (filters.fixedPrice.min > 0 || filters.fixedPrice.max > 0) {
+        params.jobType = 'FIXED_PRICE';
+        if (filters.fixedPrice.min > 0) params.budgetMin = filters.fixedPrice.min;
+        if (filters.fixedPrice.max > 0) params.budgetMax = filters.fixedPrice.max;
+      }
+
+      if (filters.hourlyRate.min > 0 || filters.hourlyRate.max > 0) {
+        params.jobType = 'HOURLY';
+        if (filters.hourlyRate.min > 0) params.budgetMin = filters.hourlyRate.min;
+        if (filters.hourlyRate.max > 0) params.budgetMax = filters.hourlyRate.max;
+      }
+
+      const data = await jobsApi.list(params);
+      
+      // Transform backend data to match EnhancedJobCard format
+      const transformedJobs: Job[] = (data as any).map((job: any) => ({
+        id: job.id,
+        title: job.title,
+        description: job.description || '',
+        category: job.category?.name || 'Uncategorized',
+        budget: job.jobType === 'HOURLY' 
+          ? { type: 'hourly' as const, amount: job.budgetMin || 0, max: job.budgetMax || 0 }
+          : { type: 'fixed' as const, amount: job.budgetMax || 0 },
+        skills: job.requiredSkills?.map((s: any) => s.name) || [],
+        postedTime: formatDate(job.createdAt),
+        client: {
+          name: 'Client', // Backend doesn't expose client name in public endpoint
+          rating: 4.5,
+          reviews: 0,
+          location: 'Remote',
+          verified: false,
+          totalSpent: 0,
+          hireRate: 0,
+        },
+        proposals: 0, // Would need separate API call
+        experienceLevel: 'Intermediate',
+        projectLength: '1-3 months',
+        isFeatured: false,
+      }));
+      
+      setJobs(transformedJobs);
+    } catch (err: any) {
+      console.error('Error fetching jobs:', err);
+      setError('Failed to load jobs. Please try again later.');
+      setJobs([]); // Fallback to empty array
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -249,8 +340,8 @@ export function EnhancedFindWorkPage() {
     setFilters(newFilters);
   };
 
-  // Filter and sort jobs
-  let filteredJobs = [...mockJobs];
+  // Filter and sort jobs (use real jobs from API)
+  let filteredJobs = [...jobs];
 
   // Apply search
   if (searchQuery) {
@@ -284,13 +375,18 @@ export function EnhancedFindWorkPage() {
   filteredJobs.sort((a, b) => {
     switch (sortBy) {
       case 'newest':
-        return a.id - b.id; // Mock: lower ID = newer
-      case 'oldest':
+        // Sort by ID descending (higher ID = newer, assuming auto-increment)
         return b.id - a.id;
+      case 'oldest':
+        return a.id - b.id;
       case 'budget-high':
-        return (b.budget.amount || 0) - (a.budget.amount || 0);
+        const budgetA = a.budget.type === 'hourly' ? (a.budget.max || a.budget.amount) : a.budget.amount;
+        const budgetB = b.budget.type === 'hourly' ? (b.budget.max || b.budget.amount) : b.budget.amount;
+        return budgetB - budgetA;
       case 'budget-low':
-        return (a.budget.amount || 0) - (b.budget.amount || 0);
+        const budgetALow = a.budget.type === 'hourly' ? (a.budget.amount || 0) : a.budget.amount;
+        const budgetBLow = b.budget.type === 'hourly' ? (b.budget.amount || 0) : b.budget.amount;
+        return budgetALow - budgetBLow;
       case 'proposals':
         return a.proposals - b.proposals;
       case 'relevance':
@@ -380,7 +476,24 @@ export function EnhancedFindWorkPage() {
             />
 
             {/* Jobs Grid/List */}
-            {filteredJobs.length === 0 ? (
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-card rounded-xl border border-border p-6">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-4" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-12 bg-card rounded-xl border border-border">
+                <p className="text-destructive mb-4">{error}</p>
+                <Button onClick={fetchJobs} variant="outline">
+                  Try Again
+                </Button>
+              </div>
+            ) : filteredJobs.length === 0 ? (
               <div className="text-center py-12 bg-card rounded-xl border border-border">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No jobs found</h3>

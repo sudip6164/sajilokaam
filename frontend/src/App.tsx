@@ -21,7 +21,7 @@ import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { ResetPasswordPage } from "./components/ResetPasswordPage";
 import { EmailVerificationPage } from "./components/EmailVerificationPage";
 import { AccountSettingsPage } from "./components/AccountSettingsPage";
-import { FindWorkPage } from "./components/FindWorkPage";
+import { EnhancedFindWorkPage } from "./components/EnhancedFindWorkPage";
 import { FindFreelancersPage } from "./components/FindFreelancersPage";
 import { FreelancerDashboard } from "./components/FreelancerDashboard";
 import { ClientDashboard } from "./components/ClientDashboard";
@@ -80,7 +80,7 @@ function AppContent() {
     case 'account-settings':
       return <AccountSettingsPage />;
     case 'find-work':
-      return <FindWorkPage />;
+      return <EnhancedFindWorkPage />;
     case 'find-freelancers':
       return <FindFreelancersPage />;
     case 'freelancer-dashboard':
