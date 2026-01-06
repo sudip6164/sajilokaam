@@ -43,8 +43,6 @@ const mockJobData = {
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
     rating: 4.8,
     reviews: 45,
-    totalSpent: "$50K+",
-    hireRate: "95%",
     location: "San Francisco, CA",
     memberSince: "2020"
   },
