@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
+import { jobsApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   DollarSign, 
   MapPin, 
@@ -21,97 +24,223 @@ import {
   Star
 } from 'lucide-react';
 
-// Mock job data - in real app, this would come from the router params
-const mockJobData = {
-  id: 1,
-  title: "Full-Stack Developer Needed for SaaS Platform",
-  category: "Web Development",
-  posted: "3 days ago",
+interface JobData {
+  id: number;
+  title: string;
+  category: string;
+  posted: string;
   budget: {
-    type: "Fixed Price",
-    amount: 5000,
-    range: "$3000 - $5000"
-  },
-  duration: "3-6 months",
-  experienceLevel: "Expert",
-  projectType: "Long-term collaboration",
-  location: "Remote",
-  proposals: 12,
-  hires: 3,
+    type: string;
+    amount: number;
+    range: string;
+  };
+  duration: string;
+  experienceLevel: string;
+  projectType: string;
+  location: string;
+  proposals: number;
+  hires: number;
   client: {
-    name: "TechCorp Solutions",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-    rating: 4.8,
-    reviews: 45,
-    location: "San Francisco, CA",
-    memberSince: "2020"
-  },
-  description: `We are seeking an experienced full-stack developer to join our team and help build a cutting-edge SaaS platform for the healthcare industry. 
-
-The ideal candidate should have:
-- 5+ years of experience with React and Node.js
-- Strong understanding of cloud architecture (AWS/Azure)
-- Experience with microservices and API design
-- Knowledge of healthcare compliance (HIPAA) is a plus
-
-This is a long-term project with potential for ongoing work. We value communication, attention to detail, and the ability to work independently.`,
-  
-  requirements: [
-    "Proficient in React, Node.js, and TypeScript",
-    "Experience with PostgreSQL and MongoDB",
-    "Strong understanding of RESTful APIs and GraphQL",
-    "Familiarity with Docker and Kubernetes",
-    "Experience with CI/CD pipelines",
-    "Excellent communication skills"
-  ],
-  
-  skills: [
-    "React",
-    "Node.js",
-    "TypeScript",
-    "PostgreSQL",
-    "AWS",
-    "Docker",
-    "GraphQL",
-    "REST API"
-  ],
-  
-  deliverables: [
-    "Fully functional SaaS platform",
-    "Clean, documented code",
-    "Unit and integration tests",
-    "Deployment pipeline setup",
-    "Technical documentation"
-  ],
-  
-  similarJobs: [
-    {
-      id: 2,
-      title: "React Developer for E-commerce Site",
-      budget: "$3000 - $4000",
-      proposals: 8
-    },
-    {
-      id: 3,
-      title: "Node.js Backend Developer",
-      budget: "$2500 - $3500",
-      proposals: 15
-    },
-    {
-      id: 4,
-      title: "Full-Stack Developer for Mobile App",
-      budget: "$4000 - $6000",
-      proposals: 6
-    }
-  ]
-};
+    name: string;
+    avatar?: string;
+    rating: number;
+    reviews: number;
+    location: string;
+    memberSince: string;
+  };
+  description: string;
+  requirements: string[];
+  skills: string[];
+  deliverables: string[];
+  similarJobs: Array<{
+    id: number;
+    title: string;
+    budget: string;
+    proposals: number;
+  }>;
+}
 
 export function JobDetailPage() {
   const { navigate, pageParams } = useRouter();
+  const { isAuthenticated } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
-  
-  // In real app, fetch job data based on pageParams.jobId
-  const job = mockJobData;
+  const [job, setJob] = useState<JobData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const jobId = pageParams?.jobId;
+    if (!jobId) {
+      setError('Job ID not provided');
+      setLoading(false);
+      return;
+    }
+
+    fetchJob(jobId);
+  }, [pageParams?.jobId]);
+
+  const fetchJob = async (jobId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const jobData = await jobsApi.get(jobId);
+      
+      // Format posted date
+      const postedDate = new Date(jobData.createdAt);
+      const now = new Date();
+      const diffMs = now.getTime() - postedDate.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      let posted = 'Just now';
+      if (diffDays === 0) posted = 'Today';
+      else if (diffDays === 1) posted = '1 day ago';
+      else if (diffDays < 7) posted = `${diffDays} days ago`;
+      else if (diffDays < 30) posted = `${Math.floor(diffDays / 7)} weeks ago`;
+      else posted = `${Math.floor(diffDays / 30)} months ago`;
+
+      // Format budget
+      const budgetRange = jobData.budgetMin && jobData.budgetMax
+        ? `$${jobData.budgetMin.toLocaleString()} - $${jobData.budgetMax.toLocaleString()}`
+        : jobData.budgetMax
+        ? `$${jobData.budgetMax.toLocaleString()}`
+        : jobData.budgetMin
+        ? `$${jobData.budgetMin.toLocaleString()}+`
+        : 'Not specified';
+
+      // Parse requirements and deliverables (split by newlines or bullets)
+      const parseTextToList = (text: string | undefined): string[] => {
+        if (!text) return [];
+        // Split by newlines and filter empty lines
+        return text.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .map(line => line.replace(/^[-•*]\s*/, '')); // Remove bullet points
+      };
+
+      const requirements = parseTextToList(jobData.jobDetails?.requirements);
+      const deliverables = parseTextToList(jobData.jobDetails?.deliverables);
+
+      // Format experience level
+      const experienceLevelMap: Record<string, string> = {
+        'ENTRY': 'Entry Level',
+        'MID': 'Intermediate',
+        'SENIOR': 'Expert',
+      };
+
+      const transformedJob: JobData = {
+        id: jobData.id,
+        title: jobData.title,
+        category: jobData.category?.name || 'Uncategorized',
+        posted,
+        budget: {
+          type: jobData.jobType === 'HOURLY' ? 'Hourly' : 'Fixed Price',
+          amount: jobData.budgetMax || jobData.budgetMin || 0,
+          range: budgetRange,
+        },
+        duration: jobData.projectLength || 'Not specified',
+        experienceLevel: experienceLevelMap[jobData.experienceLevel || ''] || jobData.experienceLevel || 'Not specified',
+        projectType: jobData.jobType === 'HOURLY' ? 'Hourly rate' : 'Fixed price project',
+        location: jobData.location || 'Remote',
+        proposals: 0, // Would need separate API call
+        hires: 0, // Would need separate API call
+        client: {
+          name: 'Client', // Backend doesn't expose client name in public endpoint
+          rating: 4.5, // Would need client profile API
+          reviews: 0,
+          location: jobData.location || 'Remote',
+          memberSince: new Date(jobData.createdAt).getFullYear().toString(),
+        },
+        description: jobData.description || 'No description provided.',
+        requirements: requirements.length > 0 ? requirements : ['No specific requirements listed.'],
+        skills: jobData.requiredSkills?.map(s => s.name) || [],
+        deliverables: deliverables.length > 0 ? deliverables : ['Deliverables will be discussed with selected freelancer.'],
+        similarJobs: [], // Will fetch separately
+      };
+
+      setJob(transformedJob);
+
+      // Fetch similar jobs (same category)
+      if (jobData.category?.id) {
+        try {
+          const similarJobsData = await jobsApi.list({
+            categoryId: jobData.category.id,
+            status: 'OPEN',
+          });
+          const similar = (similarJobsData as any[])
+            .filter(j => j.id !== jobData.id)
+            .slice(0, 3)
+            .map(j => ({
+              id: j.id,
+              title: j.title,
+              budget: j.budgetMin && j.budgetMax
+                ? `$${j.budgetMin.toLocaleString()} - $${j.budgetMax.toLocaleString()}`
+                : j.budgetMax
+                ? `$${j.budgetMax.toLocaleString()}`
+                : 'Not specified',
+              proposals: 0,
+            }));
+          setJob(prev => prev ? { ...prev, similarJobs: similar } : null);
+        } catch (err) {
+          // Ignore error for similar jobs
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching job:', err);
+      setError('Failed to load job details. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+        <Header />
+        <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="border-2 shadow-lg">
+                <CardContent className="p-8">
+                  <Skeleton className="h-8 w-3/4 mb-4" />
+                  <Skeleton className="h-4 w-1/2 mb-6" />
+                  <Skeleton className="h-32 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="space-y-6">
+              <Card className="border-2">
+                <CardContent className="p-6">
+                  <Skeleton className="h-12 w-full mb-4" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+      <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+        <Header />
+        <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
+          <Card className="border-2">
+            <CardContent className="p-8 text-center">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Job Not Found</h2>
+              <p className="text-muted-foreground mb-6">{error || 'The job you are looking for does not exist.'}</p>
+              <Button onClick={() => navigate('find-work')}>
+                Browse Jobs
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
@@ -265,12 +394,24 @@ export function JobDetailPage() {
                   <p className="text-3xl font-bold text-primary mb-1">{job.budget.range}</p>
                   <p className="text-sm text-muted-foreground">{job.budget.type}</p>
                 </div>
-                <Button 
-                  className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                  onClick={() => navigate('login')}
-                >
-                  Submit Proposal
-                </Button>
+                {isAuthenticated ? (
+                  <Button 
+                    className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                    onClick={() => {
+                      // TODO: Navigate to proposal form
+                      navigate('messages');
+                    }}
+                  >
+                    Submit Proposal
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                    onClick={() => navigate('login')}
+                  >
+                    Login to Apply
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -330,26 +471,28 @@ export function JobDetailPage() {
             </Card>
 
             {/* Similar Jobs */}
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle>Similar Jobs</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {job.similarJobs.map((similar) => (
-                  <button
-                    key={similar.id}
-                    className="w-full text-left p-3 rounded-lg border-2 hover:border-primary/50 hover:bg-primary/5 transition-all"
-                    onClick={() => navigate('job-detail', { jobId: similar.id })}
-                  >
-                    <h4 className="font-semibold text-sm mb-1">{similar.title}</h4>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="text-primary font-medium">{similar.budget}</span>
-                      <span>{similar.proposals} proposals</span>
-                    </div>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
+            {job.similarJobs.length > 0 && (
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle>Similar Jobs</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {job.similarJobs.map((similar) => (
+                    <button
+                      key={similar.id}
+                      className="w-full text-left p-3 rounded-lg border-2 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                      onClick={() => navigate('job-detail', { jobId: similar.id })}
+                    >
+                      <h4 className="font-semibold text-sm mb-1">{similar.title}</h4>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="text-primary font-medium">{similar.budget}</span>
+                        <span>{similar.proposals} proposals</span>
+                      </div>
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>

@@ -248,13 +248,28 @@ export const jobsApi = {
       id: number;
       title: string;
       description: string;
-      budget?: number;
-      budgetType?: string;
-      deadline?: string;
+      budgetMin?: number;
+      budgetMax?: number;
+      jobType?: string;
       status: string;
       clientId: number;
-      categoryId?: number;
+      category?: {
+        id: number;
+        name: string;
+      };
+      requiredSkills?: Array<{
+        id: number;
+        name: string;
+      }>;
+      location?: string;
+      projectLength?: string;
+      experienceLevel?: string;
+      jobDetails?: {
+        requirements?: string;
+        deliverables?: string;
+      };
       createdAt: string;
+      expiresAt?: string;
     }>(`/jobs/${id}`);
     return response.data;
   },
