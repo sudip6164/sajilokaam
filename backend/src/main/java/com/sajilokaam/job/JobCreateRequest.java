@@ -17,6 +17,10 @@ public class JobCreateRequest {
     private LocalDateTime expiresAt;
     private Boolean isFeatured;
     private List<Long> skillIds; // Required skills
+    private String location;
+    private String projectLength; // "Less than 1 month", "1-3 months", "3-6 months", "More than 6 months"
+    private String requirements; // Long text field
+    private String deliverables; // Long text field
 
     public String getTitle() {
         return title;
@@ -112,6 +116,38 @@ public class JobCreateRequest {
 
     public void setSkillIds(List<Long> skillIds) {
         this.skillIds = skillIds;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getProjectLength() {
+        return projectLength;
+    }
+
+    public void setProjectLength(String projectLength) {
+        this.projectLength = projectLength;
+    }
+
+    public String getRequirements() {
+        return requirements;
+    }
+
+    public void setRequirements(String requirements) {
+        this.requirements = requirements;
+    }
+
+    public String getDeliverables() {
+        return deliverables;
+    }
+
+    public void setDeliverables(String deliverables) {
+        this.deliverables = deliverables;
     }
 }
 

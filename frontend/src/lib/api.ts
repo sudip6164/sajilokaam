@@ -186,6 +186,8 @@ export const jobsApi = {
     budgetMin?: number;
     budgetMax?: number;
     skillId?: number;
+    location?: string;
+    projectLength?: string;
   }) => {
     // If clientId is provided, use the my-jobs endpoint which filters by authenticated user
     if (params?.clientId) {
@@ -229,6 +231,12 @@ export const jobsApi = {
         id: number;
         name: string;
       }>;
+      location?: string;
+      projectLength?: string;
+      jobDetails?: {
+        requirements?: string;
+        deliverables?: string;
+      };
       createdAt: string;
       expiresAt?: string;
     }>>("/jobs", { params });
@@ -259,6 +267,14 @@ export const jobsApi = {
     deadline?: string;
     categoryId?: number;
     skillIds?: number[];
+    location?: string;
+    projectLength?: string;
+    requirements?: string;
+    deliverables?: string;
+    experienceLevel?: string;
+    budgetMin?: number;
+    budgetMax?: number;
+    jobType?: "FIXED_PRICE" | "HOURLY";
   }) => {
     const response = await api.post<{
       id: number;
@@ -281,6 +297,10 @@ export const jobsApi = {
     budgetType?: "FIXED" | "HOURLY";
     deadline?: string;
     status?: string;
+    location?: string;
+    projectLength?: string;
+    requirements?: string;
+    deliverables?: string;
   }>) => {
     const response = await api.put(`/jobs/${id}`, data);
     return response.data;

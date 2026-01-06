@@ -75,6 +75,15 @@ public class Job {
     @JsonIgnore
     private Set<JobSkill> requiredSkills = new HashSet<>();
 
+    @Column(name = "location", length = 255)
+    private String location;
+
+    @Column(name = "project_length", length = 100)
+    private String projectLength; // "Less than 1 month", "1-3 months", "3-6 months", "More than 6 months"
+
+    @OneToOne(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private JobDetails jobDetails;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -196,6 +205,30 @@ public class Job {
 
     public void setRequiredSkills(Set<JobSkill> requiredSkills) {
         this.requiredSkills = requiredSkills;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getProjectLength() {
+        return projectLength;
+    }
+
+    public void setProjectLength(String projectLength) {
+        this.projectLength = projectLength;
+    }
+
+    public JobDetails getJobDetails() {
+        return jobDetails;
+    }
+
+    public void setJobDetails(JobDetails jobDetails) {
+        this.jobDetails = jobDetails;
     }
 }
 

@@ -35,16 +35,18 @@ public class JobController {
     private final JobCategoryRepository categoryRepository;
     private final JobSkillRepository skillRepository;
     private final FreelancerProfileRepository freelancerProfileRepository;
+    private final JobDetailsRepository jobDetailsRepository;
 
     public JobController(JobRepository jobRepository, UserRepository userRepository, JwtService jwtService,
                          JobCategoryRepository categoryRepository, JobSkillRepository skillRepository,
-                         FreelancerProfileRepository freelancerProfileRepository) {
+                         FreelancerProfileRepository freelancerProfileRepository, JobDetailsRepository jobDetailsRepository) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.categoryRepository = categoryRepository;
         this.skillRepository = skillRepository;
         this.freelancerProfileRepository = freelancerProfileRepository;
+        this.jobDetailsRepository = jobDetailsRepository;
     }
 
     @GetMapping
@@ -58,6 +60,8 @@ public class JobController {
             @RequestParam(required = false) Long skillId,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean featured,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String projectLength,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         
         Specification<Job> spec = (root, query, cb) -> {
@@ -89,6 +93,12 @@ public class JobController {
                     skillRepository.findById(skillId).orElse(null),
                     root.get("requiredSkills")
                 ));
+            }
+            if (location != null && !location.isBlank()) {
+                predicates.add(cb.equal(root.get("location"), location));
+            }
+            if (projectLength != null && !projectLength.isBlank()) {
+                predicates.add(cb.equal(root.get("projectLength"), projectLength));
             }
             
             // Filter out expired jobs
@@ -199,6 +209,10 @@ public class JobController {
         if (job.getRequiredSkills() != null) {
             job.getRequiredSkills().size(); // Trigger lazy load
         }
+        // Load job details if exists
+        if (job.getJobDetails() != null) {
+            job.getJobDetails().getRequirements(); // Trigger lazy load
+        }
         return ResponseEntity.ok(job);
     }
 
@@ -255,7 +269,22 @@ public class JobController {
             job.setRequiredSkills(skills);
         }
 
+        // Set location and project length
+        job.setLocation(request.getLocation());
+        job.setProjectLength(request.getProjectLength());
+
         Job created = jobRepository.save(job);
+
+        // Create job details if requirements or deliverables are provided
+        if ((request.getRequirements() != null && !request.getRequirements().isBlank()) ||
+            (request.getDeliverables() != null && !request.getDeliverables().isBlank())) {
+            JobDetails jobDetails = new JobDetails();
+            jobDetails.setJob(created);
+            jobDetails.setRequirements(request.getRequirements());
+            jobDetails.setDeliverables(request.getDeliverables());
+            jobDetailsRepository.save(jobDetails);
+        }
+
         URI location = URI.create("/api/jobs/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
@@ -300,8 +329,34 @@ public class JobController {
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
             job.setStatus(request.getStatus());
         }
+        if (request.getLocation() != null) {
+            job.setLocation(request.getLocation());
+        }
+        if (request.getProjectLength() != null) {
+            job.setProjectLength(request.getProjectLength());
+        }
 
         Job updated = jobRepository.save(job);
+
+        // Update or create job details
+        if (request.getRequirements() != null || request.getDeliverables() != null) {
+            Optional<JobDetails> detailsOpt = jobDetailsRepository.findByJobId(updated.getId());
+            JobDetails jobDetails;
+            if (detailsOpt.isPresent()) {
+                jobDetails = detailsOpt.get();
+            } else {
+                jobDetails = new JobDetails();
+                jobDetails.setJob(updated);
+            }
+            if (request.getRequirements() != null) {
+                jobDetails.setRequirements(request.getRequirements());
+            }
+            if (request.getDeliverables() != null) {
+                jobDetails.setDeliverables(request.getDeliverables());
+            }
+            jobDetailsRepository.save(jobDetails);
+        }
+
         return ResponseEntity.ok(updated);
     }
 
