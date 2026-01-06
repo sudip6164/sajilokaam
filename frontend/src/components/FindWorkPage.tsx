@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Clock, DollarSign, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,131 +6,111 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { useRouter } from './Router';
+import { jobsApi, jobCategoriesApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from './ui/skeleton';
 
-const jobs = [
-  {
-    id: 1,
-    title: "React Developer for E-commerce Platform",
-    description: "Looking for an experienced React developer to build a modern e-commerce platform with Redux, TypeScript, and integration with payment gateways.",
-    budget: { type: "fixed", amount: 5000 },
-    duration: "2-3 months",
-    skills: ["React", "TypeScript", "Redux", "Payment Integration"],
-    client: {
-      name: "TechCorp Solutions",
-      rating: 4.8,
-      reviews: 47,
-      location: "San Francisco, CA"
-    },
-    postedAt: "2 hours ago",
-    proposals: 12,
-    verified: true
-  },
-  {
-    id: 2,
-    title: "Mobile App UI/UX Design",
-    description: "Need a talented designer to create modern, user-friendly interfaces for our fitness tracking mobile app. Experience with health/fitness apps preferred.",
-    budget: { type: "hourly", min: 40, max: 80 },
-    duration: "1-2 months",
-    skills: ["UI/UX Design", "Figma", "Mobile Design", "Prototyping"],
-    client: {
-      name: "FitLife Startup",
-      rating: 4.9,
-      reviews: 23,
-      location: "New York, NY"
-    },
-    postedAt: "4 hours ago",
-    proposals: 8,
-    verified: true
-  },
-  {
-    id: 3,
-    title: "Content Writer for Tech Blog",
-    description: "Seeking a skilled content writer to create engaging articles about emerging technologies, AI, and software development trends.",
-    budget: { type: "hourly", min: 25, max: 45 },
-    duration: "Ongoing",
-    skills: ["Content Writing", "Technical Writing", "SEO", "Research"],
-    client: {
-      name: "Digital Insights",
-      rating: 4.7,
-      reviews: 156,
-      location: "Remote"
-    },
-    postedAt: "1 day ago",
-    proposals: 23,
-    verified: false
-  },
-  {
-    id: 4,
-    title: "Python Data Analysis & Visualization",
-    description: "Need a data scientist to analyze customer behavior data and create interactive dashboards using Python, Pandas, and visualization libraries.",
-    budget: { type: "fixed", amount: 3500 },
-    duration: "1 month",
-    skills: ["Python", "Data Analysis", "Pandas", "Matplotlib", "Tableau"],
-    client: {
-      name: "RetailMetrics Co",
-      rating: 4.6,
-      reviews: 34,
-      location: "Chicago, IL"
-    },
-    postedAt: "2 days ago",
-    proposals: 15,
-    verified: true
-  },
-  {
-    id: 5,
-    title: "WordPress Website Development",
-    description: "Looking for a WordPress developer to create a custom business website with booking functionality and payment integration.",
-    budget: { type: "fixed", amount: 2000 },
-    duration: "3-4 weeks",
-    skills: ["WordPress", "PHP", "Custom Themes", "WooCommerce"],
-    client: {
-      name: "Local Services Hub",
-      rating: 4.5,
-      reviews: 89,
-      location: "Austin, TX"
-    },
-    postedAt: "3 days ago",
-    proposals: 31,
-    verified: true
-  },
-  {
-    id: 6,
-    title: "Digital Marketing Campaign Management",
-    description: "Experienced digital marketer needed to manage Google Ads, Facebook campaigns, and SEO strategy for growing SaaS company.",
-    budget: { type: "hourly", min: 50, max: 100 },
-    duration: "3-6 months",
-    skills: ["Google Ads", "Facebook Ads", "SEO", "Analytics", "SaaS Marketing"],
-    client: {
-      name: "CloudTech Solutions",
-      rating: 4.9,
-      reviews: 67,
-      location: "Seattle, WA"
-    },
-    postedAt: "1 week ago",
-    proposals: 19,
-    verified: true
-  }
-];
+interface Job {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  jobType?: string;
+  budgetMin?: number;
+  budgetMax?: number;
+  category?: {
+    id: number;
+    name: string;
+  };
+  createdAt: string;
+  expiresAt?: string;
+  requiredSkills?: Array<{
+    id: number;
+    name: string;
+  }>;
+}
 
-const categories = [
-  "All Categories",
-  "Web Development",
-  "Mobile Development", 
-  "Design & Creative",
-  "Writing & Content",
-  "Digital Marketing",
-  "Data Science",
-  "DevOps & Cloud"
-];
+interface JobCategory {
+  id: number;
+  name: string;
+  description?: string;
+}
 
 export function FindWorkPage() {
   const { navigate } = useRouter();
+  const { isAuthenticated } = useAuth();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [categories, setCategories] = useState<JobCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [budgetRange, setBudgetRange] = useState('All Budgets');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [budgetRange, setBudgetRange] = useState<string>('all');
+  const [jobTypeFilter, setJobTypeFilter] = useState<string>('all');
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
 
+  // Fetch jobs and categories on mount
+  useEffect(() => {
+    fetchJobs();
+    fetchCategories();
+  }, [selectedCategory, budgetRange, jobTypeFilter]);
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: any = {
+        status: 'OPEN', // Only show open jobs
+      };
+
+      if (selectedCategory !== 'all') {
+        params.categoryId = parseInt(selectedCategory);
+      }
+
+      if (jobTypeFilter !== 'all') {
+        params.jobType = jobTypeFilter === 'fixed' ? 'FIXED_PRICE' : 'HOURLY';
+      }
+
+      // Parse budget range
+      if (budgetRange !== 'all') {
+        if (budgetRange === 'under-1000') {
+          params.budgetMax = 1000;
+        } else if (budgetRange === '1000-5000') {
+          params.budgetMin = 1000;
+          params.budgetMax = 5000;
+        } else if (budgetRange === '5000-10000') {
+          params.budgetMin = 5000;
+          params.budgetMax = 10000;
+        } else if (budgetRange === 'over-10000') {
+          params.budgetMin = 10000;
+        }
+      }
+
+      const data = await jobsApi.list(params);
+      setJobs(data as any);
+    } catch (err: any) {
+      console.error('Error fetching jobs:', err);
+      setError('Failed to load jobs. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await jobCategoriesApi.list();
+      setCategories(data);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
   const toggleSaveJob = (jobId: number) => {
+    if (!isAuthenticated) {
+      navigate('login');
+      return;
+    }
     setSavedJobs(prev => 
       prev.includes(jobId) 
         ? prev.filter(id => id !== jobId)
@@ -138,25 +118,41 @@ export function FindWorkPage() {
     );
   };
 
+  // Client-side search filtering
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (!searchQuery) return true;
     
-    const matchesCategory = selectedCategory === 'All Categories' || 
-                           job.skills.some(skill => {
-                             switch(selectedCategory) {
-                               case 'Web Development': return ['React', 'WordPress', 'PHP', 'TypeScript'].includes(skill);
-                               case 'Design & Creative': return ['UI/UX Design', 'Figma', 'Mobile Design'].includes(skill);
-                               case 'Writing & Content': return ['Content Writing', 'Technical Writing', 'SEO'].includes(skill);
-                               case 'Digital Marketing': return ['Google Ads', 'Facebook Ads', 'SEO', 'Analytics'].includes(skill);
-                               case 'Data Science': return ['Python', 'Data Analysis', 'Pandas', 'Matplotlib'].includes(skill);
-                               default: return true;
-                             }
-                           });
-    
-    return matchesSearch && matchesCategory;
+    const query = searchQuery.toLowerCase();
+    return (
+      job.title.toLowerCase().includes(query) ||
+      job.description.toLowerCase().includes(query) ||
+      job.requiredSkills?.some(skill => skill.name.toLowerCase().includes(query))
+    );
   });
+
+  const formatBudget = (job: Job) => {
+    if (job.jobType === 'HOURLY' && job.budgetMin && job.budgetMax) {
+      return `$${job.budgetMin}-$${job.budgetMax}/hr`;
+    } else if (job.jobType === 'FIXED_PRICE' && job.budgetMax) {
+      return `$${job.budgetMax.toLocaleString()} fixed`;
+    } else if (job.budgetMax) {
+      return `$${job.budgetMax.toLocaleString()}`;
+    }
+    return 'Budget not specified';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
 
   return (
     <div className="min-h-screen bg-muted/20 pt-16">
@@ -212,11 +208,23 @@ export function FindWorkPage() {
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={jobTypeFilter} onValueChange={setJobTypeFilter}>
+              <SelectTrigger className="w-[200px] h-11 border-2">
+                <SelectValue placeholder="Job Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="fixed">Fixed Price</SelectItem>
+                <SelectItem value="hourly">Hourly</SelectItem>
               </SelectContent>
             </Select>
 
@@ -225,150 +233,181 @@ export function FindWorkPage() {
                 <SelectValue placeholder="Budget Range" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="All Budgets">All Budgets</SelectItem>
-                <SelectItem value="Under $1000">Under $1,000</SelectItem>
-                <SelectItem value="$1000-$5000">$1,000 - $5,000</SelectItem>
-                <SelectItem value="$5000-$10000">$5,000 - $10,000</SelectItem>
-                <SelectItem value="Over $10000">Over $10,000</SelectItem>
+                <SelectItem value="all">All Budgets</SelectItem>
+                <SelectItem value="under-1000">Under $1,000</SelectItem>
+                <SelectItem value="1000-5000">$1,000 - $5,000</SelectItem>
+                <SelectItem value="5000-10000">$5,000 - $10,000</SelectItem>
+                <SelectItem value="over-10000">Over $10,000</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-destructive">{error}</p>
+          </div>
+        )}
+
         {/* Results Header */}
         <div className="mb-6 flex items-center justify-between">
           <p className="text-muted-foreground font-medium">
-            <span className="text-foreground font-semibold">{filteredJobs.length}</span> project{filteredJobs.length !== 1 ? 's' : ''} found
+            {loading ? (
+              <Skeleton className="h-5 w-32" />
+            ) : (
+              <>
+                <span className="text-foreground font-semibold">{filteredJobs.length}</span> project{filteredJobs.length !== 1 ? 's' : ''} found
+              </>
+            )}
           </p>
-          <Select defaultValue="newest">
-            <SelectTrigger className="w-[150px] h-10 border-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="budget-high">Highest Budget</SelectItem>
-              <SelectItem value="budget-low">Lowest Budget</SelectItem>
-              <SelectItem value="proposals">Fewest Proposals</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="border-2">
+                <CardHeader>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full mt-2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Job Listings */}
-        <div className="space-y-4">
-          {filteredJobs.map((job) => (
-            <Card key={job.id} className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 bg-card">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors">
-                        {job.title}
-                      </h3>
-                      {job.verified && (
-                        <Badge className="text-xs bg-success/10 text-success border-success/20 hover:bg-success/20">
-                          Verified Client
-                        </Badge>
-                      )}
+        {!loading && (
+          <div className="space-y-4">
+            {filteredJobs.length === 0 ? (
+              <Card className="border-2 p-8 text-center">
+                <p className="text-muted-foreground">No jobs found. Try adjusting your filters.</p>
+              </Card>
+            ) : (
+              filteredJobs.map((job) => (
+                <Card key={job.id} className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 bg-card">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors">
+                            {job.title}
+                          </h3>
+                          {job.status === 'OPEN' && (
+                            <Badge className="text-xs bg-success/10 text-success border-success/20 hover:bg-success/20">
+                              Open
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground text-sm line-clamp-2">
+                          {job.description}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleSaveJob(job.id)}
+                        className="ml-4 hover:bg-primary/10"
+                      >
+                        <Bookmark 
+                          className={`h-5 w-5 ${savedJobs.includes(job.id) ? 'fill-primary text-primary' : 'text-muted-foreground'}`} 
+                        />
+                      </Button>
                     </div>
-                    <p className="text-muted-foreground text-sm line-clamp-2">
-                      {job.description}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleSaveJob(job.id)}
-                    className="ml-4 hover:bg-primary/10"
-                  >
-                    <Bookmark 
-                      className={`h-5 w-5 ${savedJobs.includes(job.id) ? 'fill-primary text-primary' : 'text-muted-foreground'}`} 
-                    />
-                  </Button>
-                </div>
-              </CardHeader>
+                  </CardHeader>
 
-              <CardContent className="pt-0">
-                <div className="space-y-4">
-                  {/* Budget and Duration */}
-                  <div className="flex flex-wrap items-center gap-6 text-sm">
-                    <div className="flex items-center gap-1.5">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      <span className="font-semibold text-foreground">
-                        {job.budget.type === 'fixed' 
-                          ? `$${job.budget.amount.toLocaleString()} fixed`
-                          : `$${job.budget.min}-$${job.budget.max}/hr`
-                        }
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{job.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{job.client.location}</span>
-                    </div>
-                  </div>
-
-                  {/* Skills */}
-                  <div className="flex flex-wrap gap-2">
-                    {job.skills.map((skill) => (
-                      <Badge key={skill} variant="outline" className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary transition-colors">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  {/* Client Info and Stats */}
-                  <div className="flex items-center justify-between pt-3 border-t-2 border-border">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="font-semibold text-sm">{job.client.name}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {job.client.rating} ({job.client.reviews} reviews)
+                  <CardContent className="pt-0">
+                    <div className="space-y-4">
+                      {/* Budget and Duration */}
+                      <div className="flex flex-wrap items-center gap-6 text-sm">
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="h-4 w-4 text-primary" />
+                          <span className="font-semibold text-foreground">
+                            {formatBudget(job)}
                           </span>
                         </div>
+                        {job.category && (
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="text-xs">
+                              {job.category.name}
+                            </Badge>
+                          </div>
+                        )}
+                        {job.createdAt && (
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">{formatDate(job.createdAt)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Skills */}
+                      {job.requiredSkills && job.requiredSkills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {job.requiredSkills.slice(0, 5).map((skill) => (
+                            <Badge key={skill.id} variant="outline" className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary transition-colors">
+                              {skill.name}
+                            </Badge>
+                          ))}
+                          {job.requiredSkills.length > 5 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{job.requiredSkills.length - 5} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex gap-3 pt-2 border-t-2 border-border">
+                        {isAuthenticated ? (
+                          <>
+                            <Button 
+                              size="sm" 
+                              className="flex-1 md:flex-none bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
+                              onClick={() => navigate('job-detail', { jobId: job.id })}
+                            >
+                              Apply Now
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-2 hover:border-primary hover:bg-primary/5"
+                              onClick={() => navigate('job-detail', { jobId: job.id })}
+                            >
+                              View Details
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button 
+                              size="sm" 
+                              className="flex-1 md:flex-none bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
+                              onClick={() => navigate('login')}
+                            >
+                              Login to Bid
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-2 hover:border-primary hover:bg-primary/5"
+                              onClick={() => navigate('job-detail', { jobId: job.id })}
+                            >
+                              View Details
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
-                      <span className="bg-muted px-2 py-1 rounded">{job.proposals} proposals</span>
-                      <span>{job.postedAt}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-2">
-                    <Button 
-                      size="sm" 
-                      className="flex-1 md:flex-none bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
-                      onClick={() => navigate('job-detail', { jobId: job.id })}
-                    >
-                      Apply Now
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-2 hover:border-primary hover:bg-primary/5"
-                      onClick={() => navigate('job-detail', { jobId: job.id })}
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Load More */}
-        <div className="mt-10 text-center">
-          <Button variant="outline" size="lg" className="border-2 hover:border-primary hover:bg-primary/5">
-            Load More Projects
-          </Button>
-        </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
       </main>
     </div>
   );

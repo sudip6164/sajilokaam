@@ -182,6 +182,10 @@ export const jobsApi = {
     status?: string;
     categoryId?: number;
     featured?: boolean;
+    jobType?: string;
+    budgetMin?: number;
+    budgetMax?: number;
+    skillId?: number;
   }) => {
     // If clientId is provided, use the my-jobs endpoint which filters by authenticated user
     if (params?.clientId) {
@@ -189,13 +193,21 @@ export const jobsApi = {
         id: number;
         title: string;
         description: string;
-        budget?: number;
-        budgetType?: string;
-        deadline?: string;
+        budgetMin?: number;
+        budgetMax?: number;
+        jobType?: string;
         status: string;
         clientId: number;
-        categoryId?: number;
+        category?: {
+          id: number;
+          name: string;
+        };
+        requiredSkills?: Array<{
+          id: number;
+          name: string;
+        }>;
         createdAt: string;
+        expiresAt?: string;
       }>>("/jobs/my-jobs");
       return response.data;
     }
@@ -204,13 +216,21 @@ export const jobsApi = {
       id: number;
       title: string;
       description: string;
-      budget?: number;
-      budgetType?: string;
-      deadline?: string;
+      budgetMin?: number;
+      budgetMax?: number;
+      jobType?: string;
       status: string;
       clientId: number;
-      categoryId?: number;
+      category?: {
+        id: number;
+        name: string;
+      };
+      requiredSkills?: Array<{
+        id: number;
+        name: string;
+      }>;
       createdAt: string;
+      expiresAt?: string;
     }>>("/jobs", { params });
     return response.data;
   },
@@ -268,6 +288,27 @@ export const jobsApi = {
 
   delete: async (id: number) => {
     await api.delete(`/jobs/${id}`);
+  },
+};
+
+// Job Categories API
+export const jobCategoriesApi = {
+  list: async () => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      description?: string;
+    }>>("/job-categories");
+    return response.data;
+  },
+
+  get: async (id: number) => {
+    const response = await api.get<{
+      id: number;
+      name: string;
+      description?: string;
+    }>(`/job-categories/${id}`);
+    return response.data;
   },
 };
 
