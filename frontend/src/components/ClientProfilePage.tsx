@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Progress } from './ui/progress';
 import { useRouter } from './Router';
 import { useAuth } from '@/contexts/AuthContext';
-import { profilesApi } from '@/lib/api';
+import { profileApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { 
   Building2,
@@ -129,7 +129,7 @@ export function ClientProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const profile = await profilesApi.getClientProfile();
+      const profile = await profileApi.getClientProfile();
       if (profile) {
         setProfileData({
           companyName: profile.companyName || '',
@@ -266,7 +266,7 @@ export function ClientProfilePage() {
         payload.languages = profileData.languages.trim();
       }
 
-      await profilesApi.updateClientProfile(payload);
+      await profileApi.updateClientProfile(payload);
       toast.success('Profile saved successfully!');
       
       // If on last step, redirect to dashboard
