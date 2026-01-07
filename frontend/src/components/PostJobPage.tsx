@@ -679,8 +679,8 @@ export function PostJobPage() {
                             </h4>
                             <p className="text-muted-foreground">
                               {jobData.budgetType === 'fixed' 
-                                ? `$${jobData.fixedBudget || '0'} (Fixed)`
-                                : `$${jobData.hourlyMin || '0'} - $${jobData.hourlyMax || '0'}/hr`
+                                ? `Rs. ${jobData.fixedBudget || '0'} (Fixed)`
+                                : `Rs. ${jobData.hourlyMin || '0'} - Rs. ${jobData.hourlyMax || '0'}/hr`
                               }
                             </p>
                           </div>

@@ -132,11 +132,11 @@ export function FindWorkPage() {
 
   const formatBudget = (job: Job) => {
     if (job.jobType === 'HOURLY' && job.budgetMin && job.budgetMax) {
-      return `$${job.budgetMin}-$${job.budgetMax}/hr`;
+      return `Rs. ${job.budgetMin}-Rs. ${job.budgetMax}/hr`;
     } else if (job.jobType === 'FIXED_PRICE' && job.budgetMax) {
-      return `$${job.budgetMax.toLocaleString()} fixed`;
+      return `Rs. ${job.budgetMax.toLocaleString()} fixed`;
     } else if (job.budgetMax) {
-      return `$${job.budgetMax.toLocaleString()}`;
+      return `Rs. ${job.budgetMax.toLocaleString()}`;
     }
     return 'Budget not specified';
   };

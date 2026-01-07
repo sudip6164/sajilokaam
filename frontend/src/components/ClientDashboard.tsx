@@ -357,7 +357,7 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">${stats.totalSpent.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-500">Rs. {stats.totalSpent.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Across {stats.completedProjects} completed projects
             </p>
@@ -394,7 +394,7 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
                   <div className="flex items-center gap-4 text-sm mb-3">
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-primary" />
-                      <span className="font-medium">${project.spent.toLocaleString()} / ${project.budget.toLocaleString()}</span>
+                      <span className="font-medium">Rs. {project.spent.toLocaleString()} / Rs. {project.budget.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />

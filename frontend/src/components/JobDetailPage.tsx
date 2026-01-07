@@ -99,11 +99,11 @@ export function JobDetailPage() {
 
       // Format budget
       const budgetRange = jobData.budgetMin && jobData.budgetMax
-        ? `$${jobData.budgetMin.toLocaleString()} - $${jobData.budgetMax.toLocaleString()}`
+        ? `Rs. ${jobData.budgetMin.toLocaleString()} - Rs. ${jobData.budgetMax.toLocaleString()}`
         : jobData.budgetMax
-        ? `$${jobData.budgetMax.toLocaleString()}`
+        ? `Rs. ${jobData.budgetMax.toLocaleString()}`
         : jobData.budgetMin
-        ? `$${jobData.budgetMin.toLocaleString()}+`
+        ? `Rs. ${jobData.budgetMin.toLocaleString()}+`
         : 'Not specified';
 
       // Parse requirements and deliverables (split by newlines or bullets)
@@ -172,9 +172,9 @@ export function JobDetailPage() {
               id: j.id,
               title: j.title,
               budget: j.budgetMin && j.budgetMax
-                ? `$${j.budgetMin.toLocaleString()} - $${j.budgetMax.toLocaleString()}`
+                ? `Rs. ${j.budgetMin.toLocaleString()} - Rs. ${j.budgetMax.toLocaleString()}`
                 : j.budgetMax
-                ? `$${j.budgetMax.toLocaleString()}`
+                ? `Rs. ${j.budgetMax.toLocaleString()}`
                 : 'Not specified',
               proposals: 0,
             }));

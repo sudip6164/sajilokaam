@@ -727,7 +727,7 @@ export function ClientProfilePage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="averageBudgetMin" className="text-base">Average Budget Min (USD)</Label>
+                        <Label htmlFor="averageBudgetMin" className="text-base">Average Budget Min (NPR)</Label>
                         <div className="relative mt-2">
                           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
@@ -751,7 +751,7 @@ export function ClientProfilePage() {
                       </div>
 
                       <div>
-                        <Label htmlFor="averageBudgetMax" className="text-base">Average Budget Max (USD)</Label>
+                        <Label htmlFor="averageBudgetMax" className="text-base">Average Budget Max (NPR)</Label>
                         <div className="relative mt-2">
                           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
@@ -923,9 +923,9 @@ export function ClientProfilePage() {
                             <p className="text-sm text-muted-foreground">Budget Range</p>
                             <p className="font-medium">
                               {profileData.averageBudgetMin && profileData.averageBudgetMax
-                                ? `$${parseFloat(profileData.averageBudgetMin).toLocaleString()} - $${parseFloat(profileData.averageBudgetMax).toLocaleString()}`
+                                ? `Rs. ${parseFloat(profileData.averageBudgetMin).toLocaleString()} - Rs. ${parseFloat(profileData.averageBudgetMax).toLocaleString()}`
                                 : profileData.averageBudgetMin
-                                ? `$${parseFloat(profileData.averageBudgetMin).toLocaleString()}+`
+                                ? `Rs. ${parseFloat(profileData.averageBudgetMin).toLocaleString()}+`
                                 : 'Not specified'}
                             </p>
                           </div>

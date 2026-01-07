@@ -118,8 +118,8 @@ export function EnhancedJobCard({ job, onViewDetails, showSaveButton = true }: E
               <p className="text-xs text-muted-foreground">Budget</p>
               <p className="font-semibold">
                 {job.budget.type === 'fixed' 
-                  ? `$${job.budget.amount.toLocaleString()}`
-                  : `$${job.budget.amount}-${job.budget.max || job.budget.amount * 2}/hr`
+                  ? `Rs. ${job.budget.amount.toLocaleString()}`
+                  : `Rs. ${job.budget.amount}-${job.budget.max || job.budget.amount * 2}/hr`
                 }
               </p>
             </div>
