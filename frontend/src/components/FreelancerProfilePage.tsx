@@ -193,7 +193,7 @@ export function FreelancerProfilePage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t">
                   <div>
                     <p className="text-sm text-muted-foreground">Hourly Rate</p>
-                    <p className="text-xl font-bold text-primary">${freelancer.hourlyRate}/hr</p>
+                    <p className="text-xl font-bold text-primary">Rs. {freelancer.hourlyRate}/hr</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Completed Jobs</p>

@@ -147,7 +147,7 @@ export function FeaturedFreelancers() {
               {/* Hourly Rate and CTA */}
               <div className="mt-4 space-y-3">
                 <div className="text-center">
-                  <span className="text-lg font-bold text-primary">${freelancer.hourlyRate}</span>
+                  <span className="text-lg font-bold text-primary">Rs. {freelancer.hourlyRate}</span>
                   <span className="text-sm text-muted-foreground">/hour</span>
                 </div>
                 <Button 

@@ -8,28 +8,23 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from './ui/sidebar';
 import { useRouter } from './Router';
 import { 
-  Home, 
+  Home,
   Briefcase, 
   FileText, 
-  MessageSquare, 
   DollarSign, 
-  User, 
   Clock, 
   Star,
   TrendingUp,
   Calendar,
   Eye,
-  ArrowUpRight,
-  LogOut
+  ArrowUpRight
 } from 'lucide-react';
 
 const sidebarItems = [
   { title: "Dashboard", icon: Home, id: "overview" },
   { title: "Active Projects", icon: Briefcase, id: "projects" },
   { title: "Proposals", icon: FileText, id: "proposals" },
-  { title: "Messages", icon: MessageSquare, id: "messages", badge: "5" },
   { title: "Earnings", icon: DollarSign, id: "earnings" },
-  { title: "Profile", icon: User, id: "profile" },
 ];
 
 const mockData = {
@@ -104,7 +99,7 @@ const mockData = {
 };
 
 export function FreelancerDashboard() {
-  const { navigate, user, logout } = useRouter();
+  const { navigate, user } = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
 
   const renderContent = () => {
@@ -115,12 +110,8 @@ export function FreelancerDashboard() {
         return <ProjectsContent navigate={navigate} />;
       case 'proposals':
         return <ProposalsContent navigate={navigate} />;
-      case 'messages':
-        return <MessagesContent navigate={navigate} />;
       case 'earnings':
         return <EarningsContent navigate={navigate} />;
-      case 'profile':
-        return <ProfileContent navigate={navigate} />;
       default:
         return <OverviewContent navigate={navigate} />;
     }
@@ -164,25 +155,6 @@ export function FreelancerDashboard() {
                 </SidebarGroupContent>
               </SidebarGroup>
 
-              {/* Bottom Actions */}
-              <div className="border-t p-4 space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('home')}
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Go to Homepage
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => logout()}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
             </SidebarContent>
           </Sidebar>
 
@@ -219,9 +191,9 @@ function OverviewContent({ navigate }: { navigate: any }) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">${mockData.stats.totalEarnings.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-primary">Rs. {mockData.stats.totalEarnings.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600 font-medium">+${mockData.stats.monthlyEarnings}</span> this month
+              <span className="text-green-600 font-medium">+Rs. {mockData.stats.monthlyEarnings}</span> this month
             </p>
           </CardContent>
         </Card>
@@ -299,7 +271,7 @@ function OverviewContent({ navigate }: { navigate: any }) {
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-primary" />
-                      <span className="font-medium">${project.budget.toLocaleString()}</span>
+                      <span className="font-medium">Rs. {project.budget.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -334,7 +306,7 @@ function OverviewContent({ navigate }: { navigate: any }) {
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span>{proposal.submittedAt}</span>
                     <span>•</span>
-                    <span>${proposal.budget}</span>
+                    <span>Rs. {proposal.budget}</span>
                     <span>•</span>
                     <span>{proposal.competition} applicants</span>
                   </div>
@@ -432,7 +404,7 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4" />
-                      ${proposal.budget}
+                      Rs. {proposal.budget}
                     </span>
                     <span>{proposal.competition} competing proposals</span>
                   </div>

@@ -341,7 +341,7 @@ export function FindFreelancersPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <DollarSign className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-primary">${freelancer.hourlyRate}/hr</span>
+                    <span className="font-semibold text-primary">Rs. {freelancer.hourlyRate}/hr</span>
                   </div>
                 </div>
 
