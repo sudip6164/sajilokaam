@@ -119,7 +119,7 @@ export function EarningsDashboard() {
             )}
           </div>
           <p className="text-sm opacity-90 mb-1">Total Earnings</p>
-          <p className="text-3xl font-bold">${earningsData.totalEarnings.toLocaleString()}</p>
+          <p className="text-3xl font-bold">Rs. {earningsData.totalEarnings.toLocaleString()}</p>
         </div>
 
         {/* Available Balance */}
@@ -131,7 +131,7 @@ export function EarningsDashboard() {
           </div>
           <p className="text-sm text-muted-foreground mb-1">Available Balance</p>
           <p className="text-3xl font-bold text-success">
-            ${earningsData.availableBalance.toLocaleString()}
+            Rs. {earningsData.availableBalance.toLocaleString()}
           </p>
         </div>
 
@@ -144,7 +144,7 @@ export function EarningsDashboard() {
           </div>
           <p className="text-sm text-muted-foreground mb-1">Pending Clearance</p>
           <p className="text-3xl font-bold text-yellow-500">
-            ${earningsData.pendingClearance.toLocaleString()}
+            Rs. {earningsData.pendingClearance.toLocaleString()}
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export function EarningsDashboard() {
           </div>
           <p className="text-sm text-muted-foreground mb-1">Total Withdrawn</p>
           <p className="text-3xl font-bold">
-            ${earningsData.withdrawn.toLocaleString()}
+            Rs. {earningsData.withdrawn.toLocaleString()}
           </p>
         </div>
       </div>
@@ -203,7 +203,7 @@ export function EarningsDashboard() {
                       style={{ width: `${heightPercentage}%` }}
                     >
                       <span className="text-white text-sm font-semibold">
-                        ${item.amount.toLocaleString()}
+                        Rs. {item.amount.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -318,7 +318,7 @@ export function EarningsDashboard() {
                   <td className={`p-4 text-right font-semibold ${
                     transaction.amount > 0 ? 'text-success' : 'text-destructive'
                   }`}>
-                    {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
+                    {transaction.amount > 0 ? '+' : ''}Rs. {Math.abs(transaction.amount).toLocaleString()}
                   </td>
                 </tr>
               ))}

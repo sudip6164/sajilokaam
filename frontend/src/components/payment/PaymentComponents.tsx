@@ -312,7 +312,7 @@ export function PaymentConfirmation({ amount, recipient, description, onConfirm,
           <div className="p-4 rounded-lg bg-muted">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-muted-foreground">Amount</span>
-              <span className="text-3xl font-bold">${amount.toLocaleString()}</span>
+              <span className="text-3xl font-bold">Rs. {amount.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between py-2 border-t border-border">
               <span className="text-sm text-muted-foreground">To</span>

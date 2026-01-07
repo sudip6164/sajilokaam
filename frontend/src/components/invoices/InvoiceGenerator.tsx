@@ -310,8 +310,8 @@ export function InvoiceGenerator({ projectTitle, clientName, clientEmail, onGene
                           <tr key={index} className="border-b border-border">
                             <td className="py-2">{item.description}</td>
                             <td className="text-right py-2">{item.quantity}</td>
-                            <td className="text-right py-2">${item.rate.toFixed(2)}</td>
-                            <td className="text-right py-2">${item.amount.toFixed(2)}</td>
+                            <td className="text-right py-2">Rs. {item.rate.toFixed(2)}</td>
+                            <td className="text-right py-2">Rs. {item.amount.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -321,17 +321,17 @@ export function InvoiceGenerator({ projectTitle, clientName, clientEmail, onGene
                   <div className="space-y-2 text-sm mb-6">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal:</span>
-                      <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                      <span className="font-semibold">Rs. {subtotal.toFixed(2)}</span>
                     </div>
                     {taxRate > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Tax ({taxRate}%):</span>
-                        <span className="font-semibold">${tax.toFixed(2)}</span>
+                        <span className="font-semibold">Rs. {tax.toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between pt-2 border-t border-border">
                       <span className="font-bold">Total:</span>
-                      <span className="font-bold text-xl text-primary">${total.toFixed(2)}</span>
+                      <span className="font-bold text-xl text-primary">Rs. {total.toFixed(2)}</span>
                     </div>
                   </div>
 
