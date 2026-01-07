@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Progress } from './ui/progress';
 import { useRouter } from './Router';
 import { useAuth } from '@/contexts/AuthContext';
-import { profileApi } from '@/lib/api';
+import { profileApi, authApi } from '@/lib/api';
+import { validateName } from '@/lib/validation';
 import { toast } from 'sonner';
 import { 
   Building2,
@@ -24,10 +25,15 @@ import {
   Users,
   DollarSign,
   FileText,
-  Clock
+  Clock,
+  User
 } from 'lucide-react';
 
 interface ClientProfileData {
+  // Personal Account Info
+  fullName: string;
+  email: string;
+  // Company Profile Info
   companyName: string;
   companyWebsite: string;
   companySize: string;
@@ -91,11 +97,13 @@ const contractTypes = [
 
 export function ClientProfilePage() {
   const { navigate } = useRouter();
-  const { isAuthenticated, hasRole, refreshUser } = useAuth();
+  const { isAuthenticated, hasRole, refreshUser, user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileData, setProfileData] = useState<ClientProfileData>({
+    fullName: '',
+    email: '',
     companyName: '',
     companyWebsite: '',
     companySize: '',
@@ -113,10 +121,11 @@ export function ClientProfilePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const steps = [
-    { number: 1, title: 'Company Info', icon: Building2 },
-    { number: 2, title: 'Location', icon: MapPin },
-    { number: 3, title: 'Hiring Preferences', icon: Briefcase },
-    { number: 4, title: 'Review', icon: CheckCircle2 },
+    { number: 1, title: 'Personal Info', icon: User },
+    { number: 2, title: 'Company Info', icon: Building2 },
+    { number: 3, title: 'Location', icon: MapPin },
+    { number: 4, title: 'Hiring Preferences', icon: Briefcase },
+    { number: 5, title: 'Review', icon: CheckCircle2 },
   ];
 
   useEffect(() => {
@@ -131,9 +140,17 @@ export function ClientProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      // Get personal account info from auth context
+      const personalInfo = {
+        fullName: user?.fullName || '',
+        email: user?.email || '',
+      };
+      
+      // Get company profile info
       const profile = await profileApi.getClientProfile();
       if (profile) {
         setProfileData({
+          ...personalInfo,
           companyName: profile.companyName || '',
           companyWebsite: profile.companyWebsite || '',
           companySize: profile.companySize || '',
@@ -148,10 +165,45 @@ export function ClientProfilePage() {
           preferredContractType: profile.preferredContractType || '',
           languages: profile.languages || '',
         });
+      } else {
+        // If no company profile yet, just set personal info
+        setProfileData({
+          ...personalInfo,
+          companyName: '',
+          companyWebsite: '',
+          companySize: '',
+          industry: '',
+          description: '',
+          locationCountry: '',
+          locationCity: '',
+          timezone: '',
+          hiringNeeds: '',
+          averageBudgetMin: '',
+          averageBudgetMax: '',
+          preferredContractType: '',
+          languages: '',
+        });
       }
     } catch (err: any) {
       console.error('Error fetching profile:', err);
-      // Profile might not exist yet, that's okay
+      // Profile might not exist yet, that's okay - set personal info at least
+      setProfileData({
+        fullName: user?.fullName || '',
+        email: user?.email || '',
+        companyName: '',
+        companyWebsite: '',
+        companySize: '',
+        industry: '',
+        description: '',
+        locationCountry: '',
+        locationCity: '',
+        timezone: '',
+        hiringNeeds: '',
+        averageBudgetMin: '',
+        averageBudgetMax: '',
+        preferredContractType: '',
+        languages: '',
+      });
     } finally {
       setLoading(false);
     }
@@ -161,6 +213,13 @@ export function ClientProfilePage() {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
+      // Personal Info validation
+      const nameValidation = validateName(profileData.fullName);
+      if (!nameValidation.valid) {
+        newErrors.fullName = nameValidation.error || 'Name is required';
+      }
+    } else if (step === 2) {
+      // Company Info validation
       if (!profileData.companyName.trim()) {
         newErrors.companyName = 'Company name is required';
       }
@@ -176,7 +235,7 @@ export function ClientProfilePage() {
       if (!profileData.description.trim()) {
         newErrors.description = 'Company description is required';
       }
-    } else if (step === 2) {
+    } else if (step === 3) {
       if (!profileData.locationCountry.trim()) {
         newErrors.locationCountry = 'Country is required';
       }
@@ -186,7 +245,7 @@ export function ClientProfilePage() {
       if (!profileData.timezone) {
         newErrors.timezone = 'Timezone is required';
       }
-    } else if (step === 3) {
+    } else if (step === 4) {
       if (!profileData.hiringNeeds.trim()) {
         newErrors.hiringNeeds = 'Hiring needs description is required';
       }
@@ -239,38 +298,47 @@ export function ClientProfilePage() {
 
     try {
       setSaving(true);
-      const payload: any = {
-        companyName: profileData.companyName.trim(),
-        companySize: profileData.companySize,
-        industry: profileData.industry,
-        description: profileData.description.trim(),
-        locationCountry: profileData.locationCountry.trim(),
-        locationCity: profileData.locationCity.trim(),
-        timezone: profileData.timezone,
-        hiringNeeds: profileData.hiringNeeds.trim(),
-        preferredContractType: profileData.preferredContractType,
-      };
-
-      if (profileData.companyWebsite.trim()) {
-        payload.companyWebsite = profileData.companyWebsite.trim().startsWith('http')
-          ? profileData.companyWebsite.trim()
-          : `https://${profileData.companyWebsite.trim()}`;
+      
+      // Save personal account info (fullName) if on step 1 or if it changed
+      if (currentStep === 1 || profileData.fullName !== user?.fullName) {
+        await authApi.updateProfile({ fullName: profileData.fullName.trim() });
+        await refreshUser(); // Refresh to update header
       }
+      
+      // Save company profile info (skip if on step 1)
+      if (currentStep !== 1) {
+        const payload: any = {
+          companyName: profileData.companyName.trim(),
+          companySize: profileData.companySize,
+          industry: profileData.industry,
+          description: profileData.description.trim(),
+          locationCountry: profileData.locationCountry.trim(),
+          locationCity: profileData.locationCity.trim(),
+          timezone: profileData.timezone,
+          hiringNeeds: profileData.hiringNeeds.trim(),
+          preferredContractType: profileData.preferredContractType,
+        };
 
-      if (profileData.averageBudgetMin) {
-        payload.averageBudgetMin = parseFloat(profileData.averageBudgetMin);
-      }
-      if (profileData.averageBudgetMax) {
-        payload.averageBudgetMax = parseFloat(profileData.averageBudgetMax);
-      }
+        if (profileData.companyWebsite.trim()) {
+          payload.companyWebsite = profileData.companyWebsite.trim().startsWith('http')
+            ? profileData.companyWebsite.trim()
+            : `https://${profileData.companyWebsite.trim()}`;
+        }
 
-      if (profileData.languages.trim()) {
-        payload.languages = profileData.languages.trim();
-      }
+        if (profileData.averageBudgetMin) {
+          payload.averageBudgetMin = parseFloat(profileData.averageBudgetMin);
+        }
+        if (profileData.averageBudgetMax) {
+          payload.averageBudgetMax = parseFloat(profileData.averageBudgetMax);
+        }
 
-      await profileApi.updateClientProfile(payload);
-      // Refresh user data to update name in header
-      await refreshUser();
+        if (profileData.languages.trim()) {
+          payload.languages = profileData.languages.trim();
+        }
+
+        await profileApi.updateClientProfile(payload);
+      }
+      
       toast.success('Profile saved successfully!');
       
       // If on last step, redirect to dashboard
@@ -288,7 +356,7 @@ export function ClientProfilePage() {
   };
 
   const calculateProgress = () => {
-    const totalFields = 13;
+    const totalFields = 15; // fullName, email, and 13 company fields
     const filledFields = Object.values(profileData).filter(v => v && v.toString().trim()).length;
     return (filledFields / totalFields) * 100;
   };
@@ -370,8 +438,54 @@ export function ClientProfilePage() {
           {/* Form Steps */}
           <Card className="border-2">
             <CardContent className="p-8">
-              {/* Step 1: Company Info */}
+              {/* Step 1: Personal Info */}
               {currentStep === 1 && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
+                    <p className="text-muted-foreground">Update your account information</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="fullName" className="text-base">Full Name *</Label>
+                      <Input
+                        id="fullName"
+                        placeholder="e.g., John Doe"
+                        value={profileData.fullName}
+                        onChange={(e) => {
+                          setProfileData({ ...profileData, fullName: e.target.value });
+                          setErrors({ ...errors, fullName: '' });
+                        }}
+                        className="mt-2"
+                      />
+                      {errors.fullName && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.fullName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="email" className="text-base">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={profileData.email}
+                        disabled
+                        className="mt-2 bg-muted cursor-not-allowed"
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Email cannot be changed. Contact support if you need to update your email.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Company Info */}
+              {currentStep === 2 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Company Information</h2>
@@ -502,8 +616,8 @@ export function ClientProfilePage() {
                 </div>
               )}
 
-              {/* Step 2: Location */}
-              {currentStep === 2 && (
+              {/* Step 3: Location */}
+              {currentStep === 3 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Location & Timezone</h2>
@@ -582,8 +696,8 @@ export function ClientProfilePage() {
                 </div>
               )}
 
-              {/* Step 3: Hiring Preferences */}
-              {currentStep === 3 && (
+              {/* Step 4: Hiring Preferences */}
+              {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Hiring Preferences</h2>
@@ -704,8 +818,8 @@ export function ClientProfilePage() {
                 </div>
               )}
 
-              {/* Step 4: Review */}
-              {currentStep === 4 && (
+              {/* Step 5: Review */}
+              {currentStep === 5 && (
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Review Your Profile</h2>
@@ -713,6 +827,27 @@ export function ClientProfilePage() {
                   </div>
 
                   <div className="space-y-6">
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Personal Information
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Full Name</p>
+                            <p className="font-medium">{profileData.fullName || 'Not provided'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p className="font-medium">{profileData.email || 'Not provided'}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     <Card className="border-2">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
