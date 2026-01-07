@@ -233,7 +233,7 @@ export function Router({ children }: { children: React.ReactNode }) {
     } else if (!auth.isAuthenticated) {
       // If logged out and on protected page, redirect to home
       // Only do this after AuthContext has finished loading
-      const protectedPages: Page[] = ['freelancer-dashboard', 'client-dashboard', 'admin-dashboard', 'messages', 'earnings', 'project-detail', 'project-workspace', 'account-settings'];
+      const protectedPages: Page[] = ['freelancer-dashboard', 'client-dashboard', 'admin-dashboard', 'messages', 'earnings', 'project-detail', 'project-workspace', 'account-settings', 'freelancer-profile', 'client-profile'];
       if (protectedPages.includes(currentPage)) {
         setCurrentPage('home');
         window.history.pushState({ page: 'home' }, '', '/');

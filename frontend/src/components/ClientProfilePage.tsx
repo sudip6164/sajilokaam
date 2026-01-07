@@ -91,7 +91,7 @@ const contractTypes = [
 
 export function ClientProfilePage() {
   const { navigate } = useRouter();
-  const { isAuthenticated, hasRole } = useAuth();
+  const { isAuthenticated, hasRole, refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -269,6 +269,8 @@ export function ClientProfilePage() {
       }
 
       await profileApi.updateClientProfile(payload);
+      // Refresh user data to update name in header
+      await refreshUser();
       toast.success('Profile saved successfully!');
       
       // If on last step, redirect to dashboard
