@@ -217,6 +217,7 @@ export function Router({ children }: { children: React.ReactNode }) {
 
     if (auth.isAuthenticated && routerUser) {
       // Only auto-redirect if we're on login/signup pages
+      // Don't redirect from profile pages
       if (currentPage === 'login' || currentPage === 'signup') {
         let targetPage: Page;
         if (routerUser.type === 'freelancer') {
@@ -229,6 +230,14 @@ export function Router({ children }: { children: React.ReactNode }) {
         setCurrentPage(targetPage);
         const path = pageToPath[targetPage];
         window.history.pushState({ page: targetPage }, '', path);
+      }
+      // Ensure profile pages stay on profile pages (don't redirect away)
+      if (currentPage === 'client-profile' || currentPage === 'freelancer-profile') {
+        // Page is already correct, just ensure URL matches
+        const path = pageToPath[currentPage];
+        if (window.location.pathname !== path) {
+          window.history.replaceState({ page: currentPage }, '', path);
+        }
       }
     } else if (!auth.isAuthenticated) {
       // If logged out and on protected page, redirect to home
