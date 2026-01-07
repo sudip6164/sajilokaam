@@ -293,12 +293,16 @@ export function ClientProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center">
-        <Card className="w-full max-w-2xl">
-          <CardContent className="p-8 text-center">
-            <p>Loading profile...</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-muted/20 flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center pt-24">
+          <Card className="w-full max-w-2xl">
+            <CardContent className="p-8 text-center">
+              <p>Loading profile...</p>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -835,6 +839,7 @@ export function ClientProfilePage() {
           </Card>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
