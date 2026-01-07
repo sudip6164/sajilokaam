@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Header } from './Header';
+import { Footer } from './Footer';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
