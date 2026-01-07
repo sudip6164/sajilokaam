@@ -304,8 +304,9 @@ export function ClientProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <div className="w-full px-4 md:px-8 lg:px-12 py-8">
+    <div className="min-h-screen bg-muted/20 flex flex-col">
+      <Header />
+      <div className="flex-1 w-full px-4 md:px-8 lg:px-12 py-8 pt-24">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8">
