@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './Header';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,11 +7,12 @@ import { Progress } from './ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from './ui/sidebar';
 import { useRouter } from './Router';
+import { useAuth } from '@/contexts/AuthContext';
+import { jobsApi, projectsApi, bidsApi } from '@/lib/api';
 import { 
-  Home, 
+  Home,
   Briefcase, 
   Users, 
-  MessageSquare, 
   DollarSign, 
   FileText, 
   Plus,
@@ -19,8 +20,7 @@ import {
   Clock,
   Calendar,
   ArrowUpRight,
-  TrendingUp,
-  LogOut
+  TrendingUp
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -28,7 +28,6 @@ const sidebarItems = [
   { title: "Active Projects", icon: Briefcase, id: "projects" },
   { title: "Posted Jobs", icon: FileText, id: "jobs" },
   { title: "Freelancers", icon: Users, id: "freelancers" },
-  { title: "Messages", icon: MessageSquare, id: "messages", badge: "3" },
   { title: "Payments", icon: DollarSign, id: "payments" },
 ];
 
@@ -122,21 +121,19 @@ const mockData = {
 };
 
 export function ClientDashboard() {
-  const { navigate, user, logout } = useRouter();
+  const { navigate } = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
 
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
-        return <OverviewContent navigate={navigate} />;
+        return <OverviewContent navigate={navigate} setActiveSection={setActiveSection} />;
       case 'projects':
         return <ProjectsContent navigate={navigate} />;
       case 'jobs':
         return <JobsContent navigate={navigate} />;
       case 'freelancers':
         return <FreelancersContent navigate={navigate} />;
-      case 'messages':
-        return <MessagesContent navigate={navigate} />;
       case 'payments':
         return <PaymentsContent navigate={navigate} />;
       default:
@@ -192,22 +189,6 @@ export function ClientDashboard() {
                   <Plus className="h-4 w-4 mr-2" />
                   Post a Job
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('home')}
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Go to Homepage
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => logout()}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
               </div>
             </SidebarContent>
           </Sidebar>
@@ -226,7 +207,87 @@ export function ClientDashboard() {
   );
 }
 
-function OverviewContent({ navigate }: { navigate: any }) {
+function OverviewContent({ navigate, setActiveSection }: { navigate: any; setActiveSection: (section: string) => void }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [pendingBids, setPendingBids] = useState(0);
+  const [stats, setStats] = useState({
+    totalJobs: 0,
+    activeProjects: 0,
+    completedProjects: 0,
+    totalSpent: 0,
+    openJobs: 0,
+  });
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const userId = user?.id;
+
+      // Fetch jobs
+      const jobsData = await jobsApi.list({ clientId: userId });
+      setJobs(jobsData || []);
+
+      // Fetch projects
+      const projectsData = await projectsApi.list({ clientId: userId });
+      setProjects(projectsData || []);
+
+      // Calculate stats
+      const openJobs = jobsData?.filter(j => j.status === 'OPEN') || [];
+      const activeProjs = projectsData?.filter(p => p.status === 'IN_PROGRESS' || p.status === 'ACTIVE') || [];
+      const completedProjs = projectsData?.filter(p => p.status === 'COMPLETED') || [];
+      const totalSpent = completedProjs.reduce((sum, p) => sum + (p.budget || 0), 0);
+
+      // Count pending bids (bids on open jobs)
+      let pendingCount = 0;
+      for (const job of openJobs) {
+        try {
+          const bids = await bidsApi.list({ jobId: job.id, status: 'PENDING' });
+          pendingCount += bids?.length || 0;
+        } catch (err) {
+          // Ignore errors for individual bid fetches
+        }
+      }
+      setPendingBids(pendingCount);
+
+      setStats({
+        totalJobs: jobsData?.length || 0,
+        activeProjects: activeProjs.length,
+        completedProjects: completedProjs.length,
+        totalSpent,
+        openJobs: openJobs.length,
+      });
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const recentJobs = jobs.slice(0, 5);
+  const recentProjects = projects.slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -235,7 +296,7 @@ function OverviewContent({ navigate }: { navigate: any }) {
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Dashboard</h1>
           <p className="text-muted-foreground">Manage your projects and freelancers</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-secondary" onClick={() => navigate('find-freelancers')}>
+        <Button className="bg-gradient-to-r from-primary to-secondary" onClick={() => navigate('post-job')}>
           <Plus className="h-4 w-4 mr-2" />
           Post New Job
         </Button>
@@ -245,15 +306,15 @@ function OverviewContent({ navigate }: { navigate: any }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-primary" />
+              <FileText className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">${mockData.stats.totalSpent.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-primary">{stats.totalJobs}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Across {mockData.stats.completedProjects} completed projects
+              {stats.openJobs} currently open
             </p>
           </CardContent>
         </Card>
@@ -266,39 +327,39 @@ function OverviewContent({ navigate }: { navigate: any }) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.stats.activeProjects}</div>
+            <div className="text-2xl font-bold">{stats.activeProjects}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mockData.stats.ongoingJobs} jobs currently hiring
+              {stats.completedProjects} completed
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hired Freelancers</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Bids</CardTitle>
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Users className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.stats.hiredFreelancers}</div>
+            <div className="text-2xl font-bold">{pendingBids}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Avg rating: {mockData.stats.avgProjectRating} ⭐
+              Awaiting your review
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
             <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-green-500" />
+              <DollarSign className="h-4 w-4 text-green-500" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94%</div>
+            <div className="text-2xl font-bold text-green-500">${stats.totalSpent.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Projects completed on time
+              Across {stats.completedProjects} completed projects
             </p>
           </CardContent>
         </Card>
