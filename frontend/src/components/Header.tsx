@@ -1,16 +1,32 @@
 import { Button } from "./ui/button";
-import { Menu, Bell } from "lucide-react";
+import { Menu, Bell, User, LayoutDashboard, MessageSquare, LogOut, Home } from "lucide-react";
 import { useRouter } from "./Router";
+import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { NotificationsDropdown } from "./notifications/NotificationsDropdown";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 export function Header() {
-  const { navigate, isAuthenticated, user } = useRouter();
+  const { navigate, isAuthenticated, user: routerUser } = useRouter();
+  const { user: authUser, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Use authUser for profile info, routerUser for type
+  const user = authUser || routerUser;
+  const isFreelancer = authUser?.roles.some(r => r.name === 'FREELANCER');
+  const isClient = authUser?.roles.some(r => r.name === 'CLIENT');
+  const isAdmin = authUser?.roles.some(r => r.name === 'ADMIN');
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 w-full items-center justify-between px-4 md:px-6">
+        <div className="flex h-16 w-full items-center justify-between px-4 md:px-6">
         {/* Logo */}
         <button 
           onClick={() => navigate('home')}
@@ -24,6 +40,12 @@ export function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
+          <button 
+            onClick={() => navigate('home')}
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            Home
+          </button>
           <button 
             onClick={() => navigate('find-work')}
             className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
@@ -64,7 +86,7 @@ export function Header() {
 
         {/* Desktop Auth & CTA */}
         <div className="hidden md:flex items-center space-x-3">
-          {isAuthenticated ? (
+          {isAuthenticated && user ? (
             <>
               {/* Notifications */}
               <div className="relative">
@@ -81,34 +103,63 @@ export function Header() {
                 />
               </div>
 
-              {/* Messages */}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('messages')}
-              >
-                Messages
-              </Button>
-
-              {/* Admin Access (for development/demo) */}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('admin-dashboard')}
-                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                title="Admin Dashboard"
-              >
-                ⚙️
-              </Button>
-
-              {/* Dashboard */}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate(user?.type === 'freelancer' ? 'freelancer-dashboard' : 'client-dashboard')}
-              >
-                Dashboard
-              </Button>
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={undefined} alt={user.fullName || 'User'} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground">
+                        {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium hidden lg:block max-w-[120px] truncate">
+                      {user.fullName || 'User'}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      if (isFreelancer) {
+                        navigate('freelancer-profile');
+                      } else if (isClient) {
+                        navigate('client-profile');
+                      } else {
+                        navigate('account-settings');
+                      }
+                    }}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => navigate(
+                      isAdmin ? 'admin-dashboard' : 
+                      isFreelancer ? 'freelancer-dashboard' : 
+                      'client-dashboard'
+                    )}
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('messages')}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      logout();
+                      navigate('home');
+                    }}
+                    variant="destructive"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -126,15 +177,15 @@ export function Header() {
               >
                 Sign Up
               </Button>
+              <Button 
+                size="sm" 
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
+                onClick={() => navigate('post-job')}
+              >
+                Post a Job
+              </Button>
             </>
           )}
-          <Button 
-            size="sm" 
-            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity"
-            onClick={() => navigate('post-job')}
-          >
-            Post a Job
-          </Button>
         </div>
 
         {/* Mobile Menu */}

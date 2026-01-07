@@ -249,7 +249,7 @@ function AccountTab({ user, onUpdate, isFreelancer, isClient, isAdmin, navigate 
           )}
           {isClient && (
             <Button
-              onClick={() => navigate('client-dashboard')}
+              onClick={() => navigate('client-profile')}
               variant="outline"
               className="w-full sm:w-auto"
             >
