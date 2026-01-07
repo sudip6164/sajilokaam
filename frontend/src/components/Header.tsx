@@ -108,13 +108,13 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={undefined} alt={user.fullName || 'User'} />
+                      <AvatarImage src={undefined} alt={authUser?.fullName || routerUser?.name || 'User'} />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground">
-                        {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                        {(authUser?.fullName || routerUser?.name || 'U').charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium hidden lg:block max-w-[120px] truncate">
-                      {user.fullName || 'User'}
+                      {authUser?.fullName || routerUser?.name || 'User'}
                     </span>
                   </button>
                 </DropdownMenuTrigger>
