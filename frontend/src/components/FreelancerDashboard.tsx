@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './Header';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,6 +7,8 @@ import { Progress } from './ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from './ui/sidebar';
 import { useRouter } from './Router';
+import { useAuth } from './AuthContext';
+import { bidsApi, projectsApi, invoicesApi } from '@/lib/api';
 import { 
   Home,
   Briefcase, 
@@ -17,7 +19,8 @@ import {
   TrendingUp,
   Calendar,
   Eye,
-  ArrowUpRight
+  ArrowUpRight,
+  Plus
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -173,6 +176,90 @@ export function FreelancerDashboard() {
 }
 
 function OverviewContent({ navigate }: { navigate: any }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalEarnings: 0,
+    monthlyEarnings: 0,
+    activeProjects: 0,
+    completedJobs: 0,
+    activeBids: 0,
+    profileViews: 0,
+  });
+  const [projects, setProjects] = useState<any[]>([]);
+  const [bids, setBids] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      // Fetch projects
+      const projectsData = await projectsApi.list({ freelancerId: user?.id });
+      setProjects(projectsData || []);
+
+      // Fetch bids
+      const bidsData = await bidsApi.list({ freelancerId: user?.id });
+      setBids(bidsData || []);
+
+      // Calculate earnings from completed projects
+      const completedProjects = projectsData?.filter((p: any) => p.status === 'COMPLETED') || [];
+      const totalEarnings = completedProjects.reduce((sum: number, p: any) => sum + (p.budget || 0), 0);
+
+      // Calculate monthly earnings (projects completed this month)
+      const now = new Date();
+      const thisMonth = projectsData?.filter((p: any) => {
+        if (!p.completedAt) return false;
+        const completedDate = new Date(p.completedAt);
+        return completedDate.getMonth() === now.getMonth() && 
+               completedDate.getFullYear() === now.getFullYear();
+      }) || [];
+      const monthlyEarnings = thisMonth.reduce((sum: number, p: any) => sum + (p.budget || 0), 0);
+
+      const activeProjects = projectsData?.filter((p: any) => 
+        p.status === 'IN_PROGRESS' || p.status === 'ACTIVE'
+      ).length || 0;
+
+      const activeBids = bidsData?.filter((b: any) => 
+        b.status === 'PENDING' || b.status === 'UNDER_REVIEW'
+      ).length || 0;
+
+      setStats({
+        totalEarnings,
+        monthlyEarnings,
+        activeProjects,
+        completedJobs: completedProjects.length,
+        activeBids,
+        profileViews: 0, // TODO: Implement profile views tracking
+      });
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back! Here's your freelancing overview.</p>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -191,9 +278,9 @@ function OverviewContent({ navigate }: { navigate: any }) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">Rs. {mockData.stats.totalEarnings.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-primary">Rs. {stats.totalEarnings.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600 font-medium">+Rs. {mockData.stats.monthlyEarnings}</span> this month
+              <span className="text-green-600 font-medium">+Rs. {stats.monthlyEarnings.toLocaleString()}</span> this month
             </p>
           </CardContent>
         </Card>
@@ -206,24 +293,24 @@ function OverviewContent({ navigate }: { navigate: any }) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.stats.activeProjects}</div>
+            <div className="text-2xl font-bold">{stats.activeProjects}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mockData.stats.completedJobs} completed total
+              {stats.completedJobs} completed total
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Client Rating</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Proposals</CardTitle>
             <div className="h-8 w-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-              <Star className="h-4 w-4 text-yellow-500" />
+              <FileText className="h-4 w-4 text-yellow-500" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.stats.clientRating}</div>
+            <div className="text-2xl font-bold">{stats.activeBids}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {mockData.stats.successRate} success rate
+              Awaiting response
             </p>
           </CardContent>
         </Card>
@@ -236,9 +323,9 @@ function OverviewContent({ navigate }: { navigate: any }) {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.stats.profileViews}</div>
+            <div className="text-2xl font-bold">{stats.profileViews}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Avg response: {mockData.stats.responseTime}
+              Last 30 days
             </p>
           </CardContent>
         </Card>
@@ -328,102 +415,226 @@ function OverviewContent({ navigate }: { navigate: any }) {
 }
 
 function ProjectsContent({ navigate }: { navigate: any }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchProjects();
+    }
+  }, [user]);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const projectsData = await projectsApi.list({ freelancerId: user?.id });
+      setProjects(projectsData || []);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Active Projects</h1>
+          <p className="text-muted-foreground">Manage your ongoing projects</p>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading projects...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Active Projects</h1>
         <p className="text-muted-foreground">Manage your ongoing projects</p>
       </div>
-      <div className="grid gap-6">
-        {mockData.activeProjects.map((project) => (
-          <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('project-detail', { project })}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={project.avatar} />
-                    <AvatarFallback>{project.client[0]}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="mb-1">{project.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{project.client}</p>
+      {projects.length === 0 ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="font-semibold mb-2">No projects yet</h3>
+              <p className="text-muted-foreground mb-4">Start bidding on jobs to get your first project</p>
+              <Button onClick={() => navigate('find-work')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Browse Jobs
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6">
+          {projects.map((project: any) => {
+            const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline';
+            return (
+              <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('project-detail', { projectId: project.id })}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback>{project.title[0]}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="mb-1">{project.title}</CardTitle>
+                        <p className="text-sm text-muted-foreground">Project #{project.id}</p>
+                      </div>
+                    </div>
+                    <Badge variant={project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : "secondary"}>
+                      {project.status}
+                    </Badge>
                   </div>
-                </div>
-                <Badge>{project.status}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">${project.budget.toLocaleString()}</span>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        <span className="font-semibold">Rs. {project.budget?.toLocaleString() || '0'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>Due: {deadline}</span>
+                      </div>
+                    </div>
+                    <Button className="w-full" onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('project-detail', { projectId: project.id });
+                    }}>
+                      View Project Details
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>Due: {project.deadline}</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Progress</span>
-                    <span className="text-sm font-medium">{project.progress}%</span>
-                  </div>
-                  <Progress value={project.progress} className="h-2" />
-                </div>
-                <Button className="w-full">
-                  View Project Details
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 function ProposalsContent({ navigate }: { navigate: any }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [bids, setBids] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchBids();
+    }
+  }, [user]);
+
+  const fetchBids = async () => {
+    try {
+      setLoading(true);
+      const bidsData = await bidsApi.list({ freelancerId: user?.id });
+      setBids(bidsData || []);
+    } catch (err) {
+      console.error('Error fetching bids:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">My Proposals</h1>
+          <p className="text-muted-foreground">Track your submitted proposals</p>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading proposals...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">My Proposals</h1>
-        <p className="text-muted-foreground">Track your submitted proposals</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">My Proposals</h1>
+          <p className="text-muted-foreground">Track your submitted proposals</p>
+        </div>
+        <Button onClick={() => navigate('find-work')}>
+          <Plus className="h-4 w-4 mr-2" />
+          Submit New Proposal
+        </Button>
       </div>
-      <div className="grid gap-4">
-        {mockData.recentProposals.map((proposal) => (
-          <Card key={proposal.id}>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-2">{proposal.title}</h3>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {proposal.submittedAt}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" />
-                      Rs. {proposal.budget}
-                    </span>
-                    <span>{proposal.competition} competing proposals</span>
-                  </div>
-                </div>
-                <Badge variant={
-                  proposal.status === "Under Review" ? "secondary" :
-                  proposal.status === "Rejected" ? "destructive" :
-                  "default"
-                }>
-                  {proposal.status}
-                </Badge>
-              </div>
-              <Button variant="outline" className="w-full">
-                View Proposal
+      {bids.length === 0 ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="font-semibold mb-2">No proposals yet</h3>
+              <p className="text-muted-foreground mb-4">Start applying to jobs to submit your first proposal</p>
+              <Button onClick={() => navigate('find-work')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Browse Jobs
               </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {bids.map((bid: any) => {
+            const submittedAt = bid.createdAt ? new Date(bid.createdAt).toLocaleDateString() : 'Recently';
+            return (
+              <Card key={bid.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('job-detail', { jobId: bid.jobId })}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-2">Proposal for Job #{bid.jobId}</h3>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          Submitted {submittedAt}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4" />
+                          Rs. {bid.amount?.toLocaleString() || '0'}
+                        </span>
+                      </div>
+                      {bid.proposal && (
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{bid.proposal}</p>
+                      )}
+                    </div>
+                    <Badge variant={
+                      bid.status === "PENDING" || bid.status === "UNDER_REVIEW" ? "default" :
+                      bid.status === "ACCEPTED" ? "secondary" :
+                      "destructive"
+                    }>
+                      {bid.status}
+                    </Badge>
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={(e) => {
+                    e.stopPropagation();
+                    navigate('job-detail', { jobId: bid.jobId });
+                  }}>
+                    View Job Details
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
