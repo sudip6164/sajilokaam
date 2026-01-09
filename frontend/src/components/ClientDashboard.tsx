@@ -370,46 +370,50 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Active Projects</CardTitle>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => setActiveSection('projects')}>
             View All <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {mockData.activeProjects.map((project) => (
-              <div key={project.id} className="flex items-start space-x-4 p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('project-detail', { project })}>
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={project.avatar} />
-                  <AvatarFallback>{project.freelancer[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold truncate">{project.title}</h4>
-                    <Badge variant={project.status === "In Progress" ? "default" : "secondary"}>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Freelancer: {project.freelancer} • ⭐ {project.rating}
-                  </p>
-                  <div className="flex items-center gap-4 text-sm mb-3">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      <span className="font-medium">Rs. {project.spent.toLocaleString()} / Rs. {project.budget.toLocaleString()}</span>
+          {recentProjects.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Briefcase className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No active projects yet</p>
+              <Button variant="link" onClick={() => navigate('post-job')}>Post a job</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentProjects.map((project: any) => {
+                const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline';
+                return (
+                  <div key={project.id} className="flex items-start space-x-4 p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('project-detail', { projectId: project.id })}>
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback>{project.title?.[0] || 'P'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold truncate">{project.title}</h4>
+                        <Badge variant={project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : "secondary"}>
+                          {project.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">Project #{project.id}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-4 w-4 text-primary" />
+                          <span className="font-medium">Rs. {project.budget?.toLocaleString() || '0'}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">{deadline}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{project.deadline}</span>
-                    </div>
                   </div>
-                  <div>
-                    <Progress value={project.progress} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1">{project.progress}% complete</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -417,30 +421,44 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Job Postings</CardTitle>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => setActiveSection('jobs')}>
             View All <ArrowUpRight className="ml-2 h-4 w-4" />
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {mockData.postedJobs.map((job) => (
-              <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('job-detail')}>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate mb-1">{job.title}</h4>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>{job.posted}</span>
-                    <span>•</span>
-                    <span>{job.budget}</span>
-                    <span>•</span>
-                    <span className="font-medium text-primary">{job.proposals} proposals</span>
+          {recentJobs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No jobs posted yet</p>
+              <Button variant="link" onClick={() => navigate('post-job')}>Post your first job</Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentJobs.map((job) => {
+                const posted = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : 'Recently';
+                const budget = job.jobType === 'HOURLY' 
+                  ? `Rs. ${job.budgetMin || '0'} - Rs. ${job.budgetMax || '0'}/hr`
+                  : `Rs. ${job.budgetMax?.toLocaleString() || '0'} fixed`;
+                return (
+                  <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('job-detail', { jobId: job.id })}>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate mb-1">{job.title}</h4>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span>{posted}</span>
+                        <span>•</span>
+                        <span>{budget}</span>
+                        <span>•</span>
+                        <span className="font-medium text-primary">{job.category?.name || 'Uncategorized'}</span>
+                      </div>
+                    </div>
+                    <Badge variant={job.status === "OPEN" ? "default" : "secondary"}>
+                      {job.status}
+                    </Badge>
                   </div>
-                </div>
-                <Badge variant={job.status === "Active" ? "default" : "secondary"}>
-                  {job.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
