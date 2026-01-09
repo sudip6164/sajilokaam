@@ -663,22 +663,156 @@ function MessagesContent({ navigate }: { navigate: any }) {
 }
 
 function EarningsContent({ navigate }: { navigate: any }) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [earnings, setEarnings] = useState({
+    total: 0,
+    thisMonth: 0,
+    pending: 0,
+    completed: 0,
+  });
+  const [invoices, setInvoices] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchEarnings();
+    }
+  }, [user]);
+
+  const fetchEarnings = async () => {
+    try {
+      setLoading(true);
+      const invoicesData = await invoicesApi.list({ freelancerId: user?.id });
+      setInvoices(invoicesData || []);
+
+      const paidInvoices = invoicesData?.filter((i: any) => i.status === 'PAID') || [];
+      const pendingInvoices = invoicesData?.filter((i: any) => i.status === 'PENDING' || i.status === 'UNPAID') || [];
+      
+      const totalEarnings = paidInvoices.reduce((sum: number, i: any) => sum + (i.totalAmount || 0), 0);
+      const pendingAmount = pendingInvoices.reduce((sum: number, i: any) => sum + (i.totalAmount || 0), 0);
+
+      const now = new Date();
+      const thisMonthInvoices = paidInvoices.filter((i: any) => {
+        if (!i.paidAt) return false;
+        const paidDate = new Date(i.paidAt);
+        return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
+      });
+      const monthlyEarnings = thisMonthInvoices.reduce((sum: number, i: any) => sum + (i.totalAmount || 0), 0);
+
+      setEarnings({
+        total: totalEarnings,
+        thisMonth: monthlyEarnings,
+        pending: pendingAmount,
+        completed: paidInvoices.length,
+      });
+    } catch (err) {
+      console.error('Error fetching earnings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Earnings</h1>
+          <p className="text-muted-foreground">Track your income and payments</p>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading earnings...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Earnings</h1>
-        <p className="text-muted-foreground">Financial overview and history</p>
+        <p className="text-muted-foreground">Track your income and payments</p>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
+            <DollarSign className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">Rs. {earnings.total.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">All time</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">Rs. {earnings.thisMonth.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Current month</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-500">Rs. {earnings.pending.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Awaiting payment</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <Star className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{earnings.completed}</div>
+            <p className="text-xs text-muted-foreground mt-1">Paid invoices</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
-        <CardContent className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <DollarSign className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold mb-2">Earnings Dashboard</h3>
-            <p className="text-muted-foreground mb-4">View detailed earnings analytics</p>
-            <Button onClick={() => navigate('earnings')}>
-              View Earnings Dashboard
-            </Button>
-          </div>
+        <CardHeader>
+          <CardTitle>Recent Invoices</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invoices.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No invoices yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {invoices.slice(0, 10).map((invoice: any) => (
+                <div key={invoice.id} className="flex items-center justify-between p-4 rounded-lg border">
+                  <div className="flex-1">
+                    <h4 className="font-medium">Invoice #{invoice.invoiceNumber || invoice.id}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : 'Recently'}
+                      {invoice.dueDate && ` • Due: ${new Date(invoice.dueDate).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">Rs. {invoice.totalAmount?.toLocaleString() || '0'}</p>
+                    <Badge variant={invoice.status === 'PAID' ? 'default' : 'secondary'}>
+                      {invoice.status || 'PENDING'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
