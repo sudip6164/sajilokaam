@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from './ui/badge';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { useRouter } from './Router';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Briefcase, 
   DollarSign, 
