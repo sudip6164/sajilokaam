@@ -445,7 +445,7 @@ export function PostJobPage() {
 
                     {jobData.budgetType === 'fixed' ? (
                       <div>
-                        <Label htmlFor="fixedBudget" className="text-base">Fixed Budget (USD) *</Label>
+                        <Label htmlFor="fixedBudget" className="text-base">Fixed Budget (NPR) *</Label>
                         <div className="relative mt-2">
                           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
@@ -470,7 +470,7 @@ export function PostJobPage() {
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="hourlyMin" className="text-base">Min Hourly Rate (USD) *</Label>
+                          <Label htmlFor="hourlyMin" className="text-base">Min Hourly Rate (NPR) *</Label>
                           <div className="relative mt-2">
                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -493,7 +493,7 @@ export function PostJobPage() {
                           )}
                         </div>
                         <div>
-                          <Label htmlFor="hourlyMax" className="text-base">Max Hourly Rate (USD) *</Label>
+                          <Label htmlFor="hourlyMax" className="text-base">Max Hourly Rate (NPR) *</Label>
                           <div className="relative mt-2">
                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -544,6 +544,24 @@ export function PostJobPage() {
                           {errors.duration}
                         </p>
                       )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="location" className="text-base">Project Location</Label>
+                      <div className="relative mt-2">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="location"
+                          type="text"
+                          placeholder="e.g., Remote, Kathmandu, Nepal, or Worldwide"
+                          value={jobData.location}
+                          onChange={(e) => setJobData({ ...jobData, location: e.target.value })}
+                          className="pl-9"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Specify if the work is remote, requires on-site presence, or any location preference
+                      </p>
                     </div>
 
                     <div>

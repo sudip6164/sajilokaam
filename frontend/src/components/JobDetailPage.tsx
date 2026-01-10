@@ -153,7 +153,7 @@ export function JobDetailPage() {
           name: 'Client', // Backend doesn't expose client name in public endpoint
           rating: 4.5, // Would need client profile API
           reviews: 0,
-          location: jobData.location || 'Not specified',
+          location: jobData.location || 'Not specified', // Use job location as client location
           memberSince: new Date(jobData.createdAt).getFullYear().toString(),
         },
         description: jobData.description || 'No description provided.',
