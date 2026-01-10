@@ -23,7 +23,8 @@ import {
   X,
   Plus,
   ChevronLeft,
-  Check
+  Check,
+  MapPin
 } from 'lucide-react';
 
 export function PostJobPage() {
