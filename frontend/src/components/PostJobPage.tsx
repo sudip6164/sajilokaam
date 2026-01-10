@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
 import { useAuth } from '@/contexts/AuthContext';
+import { jobCategoriesApi, jobsApi } from '@/lib/api';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { 
