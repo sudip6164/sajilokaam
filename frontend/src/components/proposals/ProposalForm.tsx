@@ -160,19 +160,19 @@ export function ProposalForm({ jobTitle, jobBudget, onSubmit, onCancel }: Propos
                     </button>
                   </div>
                   <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">Rs.</span>
                     <input
                       type="number"
                       value={bidAmount || ''}
                       onChange={(e) => setBidAmount(Number(e.target.value))}
                       placeholder="0.00"
-                      className="w-full pl-12 pr-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full pl-14 pr-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   {jobBudget && (
                     <p className="text-sm text-muted-foreground">
-                      Client's budget: ${jobBudget.amount}
-                      {jobBudget.max ? `-$${jobBudget.max}` : ''}
+                      Client's budget: Rs. {jobBudget.amount.toLocaleString()}
+                      {jobBudget.max ? ` - Rs. ${jobBudget.max.toLocaleString()}` : ''}
                       {jobBudget.type === 'hourly' ? '/hr' : ''}
                     </p>
                   )}
@@ -211,15 +211,15 @@ export function ProposalForm({ jobTitle, jobBudget, onSubmit, onCancel }: Propos
             <div className="p-4 rounded-lg bg-muted space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Your bid</span>
-                <span className="font-semibold">${bidAmount.toFixed(2)}</span>
+                <span className="font-semibold">Rs. {bidAmount.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Platform fee (10%)</span>
-                <span>-${platformFee.toFixed(2)}</span>
+                <span>-Rs. {platformFee.toLocaleString()}</span>
               </div>
               <div className="pt-2 border-t border-border flex items-center justify-between">
                 <span className="font-semibold">You'll receive</span>
-                <span className="text-xl font-bold text-success">${youllReceive.toFixed(2)}</span>
+                <span className="text-xl font-bold text-success">Rs. {youllReceive.toLocaleString()}</span>
               </div>
             </div>
 

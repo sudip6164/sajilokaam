@@ -22,11 +22,14 @@ import {
 
 interface Proposal {
   id: number;
+  jobId?: number;
+  jobTitle?: string;
   freelancerId: number;
   freelancerName: string;
   freelancerEmail: string;
   amount: number;
-  proposal: string;
+  message?: string;
+  proposal?: string;
   status: string;
   createdAt: string;
 }
@@ -38,6 +41,7 @@ export function ProposalsListPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [jobTitle, setJobTitle] = useState<string>('');
 
   useEffect(() => {
     const jobId = pageParams?.jobId;
@@ -56,6 +60,11 @@ export function ProposalsListPage() {
       setError(null);
       const data = await bidsApi.listByJob(jobId);
       setProposals(data as any[]);
+      
+      // Get job title from first proposal if available
+      if (data && data.length > 0 && (data[0] as any).jobTitle) {
+        setJobTitle((data[0] as any).jobTitle);
+      }
     } catch (err: any) {
       console.error('Error fetching proposals:', err);
       setError('Failed to load proposals');
@@ -65,10 +74,16 @@ export function ProposalsListPage() {
     }
   };
 
-  const handleAcceptProposal = async (proposalId: number) => {
+  const handleAcceptProposal = async (proposalId: number, jobTitle?: string) => {
     try {
       setAccepting(true);
-      await bidsApi.accept(proposalId);
+      
+      // Create project from accepted bid
+      await bidsApi.accept(proposalId, {
+        title: jobTitle || 'New Project',
+        description: 'Project created from accepted proposal'
+      });
+      
       toast.success('Proposal accepted! Project has been created.');
       
       // Refresh proposals
@@ -218,7 +233,7 @@ export function ProposalsListPage() {
                     <div className="mb-4 p-4 bg-muted rounded-lg">
                       <p className="text-sm font-semibold mb-2">Cover Letter:</p>
                       <p className="text-sm text-muted-foreground whitespace-pre-line">
-                        {proposal.proposal || 'No cover letter provided'}
+                        {proposal.message || proposal.proposal || 'No cover letter provided'}
                       </p>
                     </div>
 
@@ -227,7 +242,7 @@ export function ProposalsListPage() {
                       <div className="flex gap-3">
                         <Button
                           className="flex-1 bg-gradient-to-r from-primary to-secondary"
-                          onClick={() => handleAcceptProposal(proposal.id)}
+                          onClick={() => handleAcceptProposal(proposal.id, jobTitle)}
                           disabled={accepting}
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />

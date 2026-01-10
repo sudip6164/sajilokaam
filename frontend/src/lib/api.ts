@@ -413,8 +413,12 @@ export const bidsApi = {
     return response.data;
   },
 
-  accept: async (id: number) => {
-    const response = await api.put(`/bids/${id}/accept`);
+  accept: async (id: number, projectData?: { title: string; description?: string }) => {
+    // Backend expects POST to /projects/accept-bid/{bidId}
+    const response = await api.post(`/projects/accept-bid/${id}`, projectData || { 
+      title: 'Project from accepted bid', 
+      description: '' 
+    });
     return response.data;
   },
 };

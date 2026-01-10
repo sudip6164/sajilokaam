@@ -21,7 +21,8 @@ import {
   Calendar,
   ArrowUpRight,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  Eye
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -439,9 +440,26 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
                 const budget = job.jobType === 'HOURLY' 
                   ? `Rs. ${job.budgetMin || '0'} - Rs. ${job.budgetMax || '0'}/hr`
                   : `Rs. ${job.budgetMax?.toLocaleString() || '0'} fixed`;
+                
+                // Get proposal count for this job
+                const [proposalCount, setProposalCount] = useState<number>(0);
+                useEffect(() => {
+                  const fetchProposalCount = async () => {
+                    try {
+                      const bids = await bidsApi.listByJob(job.id);
+                      setProposalCount(bids?.length || 0);
+                    } catch (err) {
+                      console.error('Error fetching proposal count:', err);
+                    }
+                  };
+                  if (job.status === 'OPEN') {
+                    fetchProposalCount();
+                  }
+                }, [job.id]);
+                
                 return (
-                  <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('job-detail', { jobId: job.id })}>
-                    <div className="flex-1 min-w-0">
+                  <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate('job-detail', { jobId: job.id })}>
                       <h4 className="font-medium truncate mb-1">{job.title}</h4>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <span>{posted}</span>
@@ -451,9 +469,21 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
                         <span className="font-medium text-primary">{job.category?.name || 'Uncategorized'}</span>
                       </div>
                     </div>
-                    <Badge variant={job.status === "OPEN" ? "default" : "secondary"}>
-                      {job.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {job.status === 'OPEN' && proposalCount > 0 && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate('proposals-list', { jobId: job.id })}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          {proposalCount} Proposal{proposalCount !== 1 ? 's' : ''}
+                        </Button>
+                      )}
+                      <Badge variant={job.status === "OPEN" ? "default" : "secondary"}>
+                        {job.status}
+                      </Badge>
+                    </div>
                   </div>
                 );
               })}
