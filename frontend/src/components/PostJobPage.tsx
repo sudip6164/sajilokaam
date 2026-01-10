@@ -235,7 +235,7 @@ export function PostJobPage() {
       <Header />
       <div className="min-h-screen bg-muted/20">
         <div className="w-full px-4 md:px-8 lg:px-12 py-8">
-        <div className="max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8">
             <Button
@@ -777,6 +777,7 @@ export function PostJobPage() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
       <Footer />
