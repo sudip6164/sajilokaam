@@ -234,7 +234,7 @@ export function PostJobPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-muted/20">
+      <div className="min-h-screen bg-muted/20 pt-16">
         <div className="w-full px-4 md:px-8 lg:px-12 py-8">
           <div className="max-w-5xl mx-auto">
           {/* Header */}
