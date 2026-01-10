@@ -64,9 +64,10 @@ interface JobData {
 
 export function JobDetailPage() {
   const { navigate, pageParams, user } = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: authUser } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [job, setJob] = useState<JobData | null>(null);
+  const [jobClientId, setJobClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showProposalForm, setShowProposalForm] = useState(false);
@@ -368,7 +369,7 @@ export function JobDetailPage() {
 
                 {/* CTA */}
                 <div className="mt-6 flex gap-3">
-                  {isAuthenticated && user?.type === 'freelancer' ? (
+                  {isAuthenticated && user?.type === 'freelancer' && jobClientId !== authUser?.id ? (
                     <>
                       <Button 
                         size="lg" 
@@ -385,6 +386,15 @@ export function JobDetailPage() {
                         <Heart className={`h-5 w-5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
                       </Button>
                     </>
+                  ) : isAuthenticated && jobClientId === authUser?.id ? (
+                    <Button 
+                      size="lg" 
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => navigate('proposals-list', { jobId: job?.id })}
+                    >
+                      View Proposals ({job?.proposals || 0})
+                    </Button>
                   ) : !isAuthenticated ? (
                     <Button 
                       size="lg" 
