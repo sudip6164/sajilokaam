@@ -98,13 +98,20 @@ export function JobDetailPage() {
       else posted = `${Math.floor(diffDays / 30)} months ago`;
 
       // Format budget
-      const budgetRange = jobData.budgetMin && jobData.budgetMax
-        ? `Rs. ${jobData.budgetMin.toLocaleString()} - Rs. ${jobData.budgetMax.toLocaleString()}`
-        : jobData.budgetMax
-        ? `Rs. ${jobData.budgetMax.toLocaleString()}`
-        : jobData.budgetMin
-        ? `Rs. ${jobData.budgetMin.toLocaleString()}+`
-        : 'Not specified';
+      let budgetRange = 'Not specified';
+      if (jobData.budgetMin && jobData.budgetMax) {
+        if (jobData.budgetMin === jobData.budgetMax) {
+          // Fixed price - show single value
+          budgetRange = `Rs. ${jobData.budgetMax.toLocaleString()}`;
+        } else {
+          // Hourly rate - show range
+          budgetRange = `Rs. ${jobData.budgetMin.toLocaleString()} - Rs. ${jobData.budgetMax.toLocaleString()}`;
+        }
+      } else if (jobData.budgetMax) {
+        budgetRange = `Rs. ${jobData.budgetMax.toLocaleString()}`;
+      } else if (jobData.budgetMin) {
+        budgetRange = `Rs. ${jobData.budgetMin.toLocaleString()}+`;
+      }
 
       // Parse requirements and deliverables (split by newlines or bullets)
       const parseTextToList = (text: string | undefined): string[] => {
@@ -139,14 +146,14 @@ export function JobDetailPage() {
         duration: jobData.projectLength || 'Not specified',
         experienceLevel: experienceLevelMap[jobData.experienceLevel || ''] || jobData.experienceLevel || 'Not specified',
         projectType: jobData.jobType === 'HOURLY' ? 'Hourly rate' : 'Fixed price project',
-        location: jobData.location || 'Remote',
+        location: jobData.location || 'Not specified',
         proposals: 0, // Would need separate API call
         hires: 0, // Would need separate API call
         client: {
           name: 'Client', // Backend doesn't expose client name in public endpoint
           rating: 4.5, // Would need client profile API
           reviews: 0,
-          location: jobData.location || 'Remote',
+          location: jobData.location || 'Not specified',
           memberSince: new Date(jobData.createdAt).getFullYear().toString(),
         },
         description: jobData.description || 'No description provided.',

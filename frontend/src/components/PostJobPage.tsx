@@ -208,9 +208,10 @@ export function PostJobPage() {
         payload.location = jobData.location.trim();
       }
 
-      // Note: Skills are handled separately - we need to find skill IDs by name
-      // For now, we'll skip skillIds and let the backend handle it
-      // TODO: Implement skill lookup by name
+      // Add skill IDs if any skills were selected
+      if (jobData.skillIds.length > 0) {
+        payload.skillIds = jobData.skillIds;
+      }
 
       const createdJob = await jobsApi.create(payload);
 
