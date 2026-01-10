@@ -342,7 +342,7 @@ function OverviewContent({ navigate }: { navigate: any }) {
         <CardContent>
           <div className="space-y-4">
             {mockData.activeProjects.map((project) => (
-              <div key={project.id} className="flex items-start space-x-4 p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('project-detail', { project })}>
+              <div key={project.id} className="flex items-start space-x-4 p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('project-detail', { projectId: project.id })}>
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={project.avatar} />
                   <AvatarFallback>{project.client[0]}</AvatarFallback>

@@ -119,10 +119,14 @@ const freelancerData = {
 };
 
 export function FreelancerProfilePage() {
-  const { navigate, pageParams } = useRouter();
+  const { navigate, pageParams, user } = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   
-  // In a real app, you'd fetch freelancer data based on pageParams.freelancerId
+  // Get profile user ID from params or use logged-in user
+  const profileUserId = pageParams?.userId || pageParams?.freelancerId || user?.id;
+  
+  // TODO: Fetch freelancer data based on profileUserId
+  // For now, using mock data
   const freelancer = freelancerData;
 
   return (
