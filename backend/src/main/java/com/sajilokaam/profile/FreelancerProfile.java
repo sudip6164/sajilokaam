@@ -102,6 +102,36 @@ public class FreelancerProfile {
     @Enumerated(EnumType.STRING)
     private ProfileStatus status = ProfileStatus.DRAFT;
 
+    // Upwork-style features
+    @Column(name = "connects_available")
+    private Integer connectsAvailable = 0;
+
+    @Column(name = "connects_total_purchased")
+    private Integer connectsTotalPurchased = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "profile_strength")
+    private ProfileStrength profileStrength = ProfileStrength.BASIC;
+
+    // Bid statistics
+    @Column(name = "total_bids_submitted")
+    private Integer totalBidsSubmitted = 0;
+
+    @Column(name = "total_bids_won")
+    private Integer totalBidsWon = 0;
+
+    @Column(name = "success_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal successRate = java.math.BigDecimal.ZERO;
+
+    @Column(name = "avg_response_time_hours")
+    private Integer avgResponseTimeHours;
+
+    @Column(name = "total_earnings", precision = 15, scale = 2)
+    private java.math.BigDecimal totalEarnings = java.math.BigDecimal.ZERO;
+
+    @Column(name = "on_time_delivery_rate", precision = 5, scale = 2)
+    private java.math.BigDecimal onTimeDeliveryRate = new java.math.BigDecimal("100.00");
+
     @Column(name = "verification_notes", columnDefinition = "TEXT")
     private String verificationNotes;
 
@@ -405,6 +435,79 @@ public class FreelancerProfile {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    // Upwork-style getters and setters
+    public Integer getConnectsAvailable() {
+        return connectsAvailable;
+    }
+
+    public void setConnectsAvailable(Integer connectsAvailable) {
+        this.connectsAvailable = connectsAvailable;
+    }
+
+    public Integer getConnectsTotalPurchased() {
+        return connectsTotalPurchased;
+    }
+
+    public void setConnectsTotalPurchased(Integer connectsTotalPurchased) {
+        this.connectsTotalPurchased = connectsTotalPurchased;
+    }
+
+    public ProfileStrength getProfileStrength() {
+        return profileStrength;
+    }
+
+    public void setProfileStrength(ProfileStrength profileStrength) {
+        this.profileStrength = profileStrength;
+    }
+
+    public Integer getTotalBidsSubmitted() {
+        return totalBidsSubmitted;
+    }
+
+    public void setTotalBidsSubmitted(Integer totalBidsSubmitted) {
+        this.totalBidsSubmitted = totalBidsSubmitted;
+    }
+
+    public Integer getTotalBidsWon() {
+        return totalBidsWon;
+    }
+
+    public void setTotalBidsWon(Integer totalBidsWon) {
+        this.totalBidsWon = totalBidsWon;
+    }
+
+    public java.math.BigDecimal getSuccessRate() {
+        return successRate;
+    }
+
+    public void setSuccessRate(java.math.BigDecimal successRate) {
+        this.successRate = successRate;
+    }
+
+    public Integer getAvgResponseTimeHours() {
+        return avgResponseTimeHours;
+    }
+
+    public void setAvgResponseTimeHours(Integer avgResponseTimeHours) {
+        this.avgResponseTimeHours = avgResponseTimeHours;
+    }
+
+    public java.math.BigDecimal getTotalEarnings() {
+        return totalEarnings;
+    }
+
+    public void setTotalEarnings(java.math.BigDecimal totalEarnings) {
+        this.totalEarnings = totalEarnings;
+    }
+
+    public java.math.BigDecimal getOnTimeDeliveryRate() {
+        return onTimeDeliveryRate;
+    }
+
+    public void setOnTimeDeliveryRate(java.math.BigDecimal onTimeDeliveryRate) {
+        this.onTimeDeliveryRate = onTimeDeliveryRate;
     }
 }
 
