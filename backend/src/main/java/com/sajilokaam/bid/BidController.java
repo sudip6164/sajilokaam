@@ -100,13 +100,28 @@ public class BidController {
             return ResponseEntity.notFound().build();
         }
 
+        Job job = jobOpt.get();
+        User currentUser = userOpt.get();
+
+        // Prevent job owner from bidding on their own job
+        if (job.getClient() != null && job.getClient().getId().equals(currentUser.getId())) {
+            return ResponseEntity.status(403).build(); // Forbidden
+        }
+
+        // Prevent clients from bidding (only freelancers can bid)
+        boolean isClient = currentUser.getRoles().stream()
+                .anyMatch(role -> "CLIENT".equalsIgnoreCase(role.getName()));
+        if (isClient) {
+            return ResponseEntity.status(403).build(); // Forbidden
+        }
+
         if (request.getAmount() == null || request.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
             return ResponseEntity.badRequest().build();
         }
 
         Bid bid = new Bid();
-        bid.setJob(jobOpt.get());
-        bid.setFreelancer(userOpt.get());
+        bid.setJob(job);
+        bid.setFreelancer(currentUser);
         bid.setAmount(request.getAmount());
         bid.setMessage(request.getMessage());
         bid.setStatus(request.getStatus() != null ? request.getStatus() : "PENDING");
