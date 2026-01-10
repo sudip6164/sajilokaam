@@ -1,8 +1,9 @@
 import { Button } from "./ui/button";
-import { Menu, Bell, User, LayoutDashboard, MessageSquare, LogOut, Home } from "lucide-react";
+import { Menu, Bell, User, LayoutDashboard, MessageSquare, LogOut, Home, Zap } from "lucide-react";
 import { useRouter } from "./Router";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { connectsApi } from "@/lib/api";
 import { NotificationsDropdown } from "./notifications/NotificationsDropdown";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
@@ -17,12 +18,29 @@ export function Header() {
   const { navigate, isAuthenticated, user: routerUser } = useRouter();
   const { user: authUser, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [connectsBalance, setConnectsBalance] = useState<number | null>(null);
   
   // Use authUser for profile info, routerUser for type
   const user = authUser || routerUser;
   const isFreelancer = authUser?.roles.some(r => r.name === 'FREELANCER');
   const isClient = authUser?.roles.some(r => r.name === 'CLIENT');
   const isAdmin = authUser?.roles.some(r => r.name === 'ADMIN');
+
+  // Fetch connects balance for freelancers
+  useEffect(() => {
+    if (isAuthenticated && isFreelancer) {
+      fetchConnectsBalance();
+    }
+  }, [isAuthenticated, isFreelancer]);
+
+  const fetchConnectsBalance = async () => {
+    try {
+      const balance = await connectsApi.getBalance();
+      setConnectsBalance(balance);
+    } catch (error) {
+      console.error('Error fetching connects:', error);
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -88,6 +106,16 @@ export function Header() {
         <div className="hidden md:flex items-center space-x-3">
           {isAuthenticated && user ? (
             <>
+              {/* Connects Badge for Freelancers */}
+              {isFreelancer && connectsBalance !== null && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20">
+                  <Zap className="h-4 w-4 text-primary fill-primary" />
+                  <span className="text-sm font-semibold text-primary">
+                    {connectsBalance}
+                  </span>
+                </div>
+              )}
+
               {/* Notifications */}
               <div className="relative">
                 <button
