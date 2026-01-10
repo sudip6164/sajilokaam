@@ -708,6 +708,16 @@ export const paymentsApi = {
 
   // New eSewa v2 form-based payment
   initiateESewa: async (amount: number, invoiceId?: number) => {
+    const payload: any = {
+      total_amount: amount,
+      amount: amount,
+    };
+    
+    // Include invoice ID if provided
+    if (invoiceId) {
+      payload.invoice_id = invoiceId;
+    }
+    
     const response = await api.post<{
       amount: string;
       tax_amount: number;
@@ -721,10 +731,7 @@ export const paymentsApi = {
       signed_field_names: string;
       signature: string;
       action: string;
-    }>("/payments/esewa", {
-      total_amount: amount,
-      amount: amount,
-    });
+    }>("/payments/esewa", payload);
     return response.data;
   },
 
