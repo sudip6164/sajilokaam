@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Button } from './ui/button';
@@ -7,8 +7,10 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
-import { jobsApi } from '@/lib/api';
+import { jobsApi, bidsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProposalForm, ProposalData } from './proposals/ProposalForm';
+import { toast } from 'sonner';
 import { 
   DollarSign, 
   MapPin, 
@@ -61,12 +63,14 @@ interface JobData {
 }
 
 export function JobDetailPage() {
-  const { navigate, pageParams } = useRouter();
+  const { navigate, pageParams, user } = useRouter();
   const { isAuthenticated } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [job, setJob] = useState<JobData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showProposalForm, setShowProposalForm] = useState(false);
+  const [submittingProposal, setSubmittingProposal] = useState(false);
 
   useEffect(() => {
     const jobId = pageParams?.jobId;
@@ -78,6 +82,42 @@ export function JobDetailPage() {
 
     fetchJob(jobId);
   }, [pageParams?.jobId]);
+
+  const handleSubmitProposal = async (proposalData: ProposalData) => {
+    if (!job) return;
+    
+    try {
+      setSubmittingProposal(true);
+      
+      // Convert delivery time to estimated completion date
+      const deliveryDays = proposalData.deliveryUnit === 'days' 
+        ? proposalData.deliveryTime 
+        : proposalData.deliveryUnit === 'weeks' 
+        ? proposalData.deliveryTime * 7 
+        : proposalData.deliveryTime * 30;
+      
+      const estimatedDate = new Date();
+      estimatedDate.setDate(estimatedDate.getDate() + deliveryDays);
+      
+      await bidsApi.create({
+        jobId: job.id,
+        amount: proposalData.bidAmount,
+        proposal: proposalData.coverLetter,
+        estimatedCompletionDate: estimatedDate.toISOString(),
+      });
+      
+      toast.success('Proposal submitted successfully!');
+      setShowProposalForm(false);
+      
+      // Navigate to freelancer dashboard to see submitted proposals
+      navigate('freelancer-dashboard');
+    } catch (err: any) {
+      console.error('Error submitting proposal:', err);
+      toast.error(err.response?.data?.message || 'Failed to submit proposal. Please try again.');
+    } finally {
+      setSubmittingProposal(false);
+    }
+  };
 
   const fetchJob = async (jobId: number) => {
     try {
@@ -245,6 +285,19 @@ export function JobDetailPage() {
           </Card>
         </main>
         <Footer />
+        
+        {/* Proposal Form Modal */}
+        {showProposalForm && job && (
+          <ProposalForm
+            jobTitle={job.title}
+            jobBudget={{
+              type: job.budget.type === 'Hourly' ? 'hourly' : 'fixed',
+              amount: job.budget.amount,
+            }}
+            onSubmit={handleSubmitProposal}
+            onCancel={() => setShowProposalForm(false)}
+          />
+        )}
       </div>
     );
   }
@@ -315,20 +368,41 @@ export function JobDetailPage() {
 
                 {/* CTA */}
                 <div className="mt-6 flex gap-3">
-                  <Button 
-                    size="lg" 
-                    className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                    onClick={() => navigate('login')}
-                  >
-                    Apply Now
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    onClick={() => navigate('login')}
-                  >
-                    Send Proposal
-                  </Button>
+                  {isAuthenticated && user?.type === 'freelancer' ? (
+                    <>
+                      <Button 
+                        size="lg" 
+                        className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                        onClick={() => setShowProposalForm(true)}
+                      >
+                        Submit Proposal
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="lg"
+                        onClick={() => setIsSaved(!isSaved)}
+                      >
+                        <Heart className={`h-5 w-5 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
+                      </Button>
+                    </>
+                  ) : !isAuthenticated ? (
+                    <Button 
+                      size="lg" 
+                      className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                      onClick={() => navigate('login')}
+                    >
+                      Login to Apply
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="lg" 
+                      className="flex-1"
+                      variant="outline"
+                      disabled
+                    >
+                      Client View Only
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
