@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DashboardHeader } from './DashboardHeader';
+import { Header } from './Header';
 import { Footer } from './Footer';
 import { ConversationsList, Conversation } from './messaging/ConversationsList';
 import { MessageThread, Message } from './messaging/MessageThread';
@@ -213,9 +213,9 @@ export function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
+      <Header />
 
-      <main className="w-full px-4 md:px-8 lg:px-12 py-8">
+      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Messages</h1>

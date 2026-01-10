@@ -213,7 +213,7 @@ export function FeaturesPage() {
               {[
                 { value: '15K+', label: 'Active Users', icon: Users },
                 { value: '5K+', label: 'Projects Completed', icon: Briefcase },
-                { value: '$2.4M+', label: 'Total Earnings', icon: DollarSign },
+                { value: 'Rs. 2.4M+', label: 'Total Earnings', icon: DollarSign },
                 { value: '4.8/5', label: 'Average Rating', icon: Star },
               ].map((stat, index) => (
                 <div key={index} className="text-center">

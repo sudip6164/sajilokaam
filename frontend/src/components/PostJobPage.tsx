@@ -11,6 +11,8 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
 import { useAuth } from '@/contexts/AuthContext';
+import { Header } from './Header';
+import { Footer } from './Footer';
 import { 
   Briefcase, 
   DollarSign, 
@@ -229,8 +231,10 @@ export function PostJobPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <div className="w-full px-4 md:px-8 lg:px-12 py-8">
+    <>
+      <Header />
+      <div className="min-h-screen bg-muted/20">
+        <div className="w-full px-4 md:px-8 lg:px-12 py-8">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -775,6 +779,7 @@ export function PostJobPage() {
           </Card>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

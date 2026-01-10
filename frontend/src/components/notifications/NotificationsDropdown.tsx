@@ -37,7 +37,7 @@ export function NotificationsDropdown({ isOpen, onClose }: NotificationsDropdown
       id: 2,
       type: 'payment',
       title: 'Payment received',
-      description: 'You received $1,500 for milestone completion',
+      description: 'You received Rs. 1,500 for milestone completion',
       timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
       isRead: false,
       priority: 'high',

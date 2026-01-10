@@ -41,7 +41,7 @@ const freelancerData = {
   responseTime: "1 hour",
   memberSince: "March 2019",
   successRate: "98%",
-  totalEarnings: "$250K+",
+  totalEarnings: "Rs. 250K+",
   availability: "Available 30 hrs/week",
   portfolio: [
     {

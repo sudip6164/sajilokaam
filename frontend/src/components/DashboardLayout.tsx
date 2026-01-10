@@ -1,10 +1,10 @@
-import { DashboardHeader } from './DashboardHeader';
+import { Header } from './Header';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
-      <main className="w-full px-4 md:px-8 lg:px-12 py-8">
+      <Header />
+      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
         {children}
       </main>
     </div>

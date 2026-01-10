@@ -25,7 +25,7 @@ export function SavedSearches() {
       query: 'React developer',
       filters: {
         categories: ['Web Development'],
-        budgetRange: '$50-100/hr',
+        budgetRange: 'Rs. 50-100/hr',
         experienceLevel: ['Expert'],
       },
       alertsEnabled: true,
@@ -50,7 +50,7 @@ export function SavedSearches() {
       query: 'mobile app',
       filters: {
         categories: ['Mobile Development'],
-        budgetRange: '$5000+',
+        budgetRange: 'Rs. 5000+',
       },
       alertsEnabled: true,
       newResults: 5,

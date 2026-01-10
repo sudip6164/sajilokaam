@@ -84,7 +84,7 @@ const mockData = {
       id: 1,
       title: "React Developer for Dashboard",
       posted: "3 days ago",
-      budget: "$3000-$5000",
+      budget: "Rs. 3000-5000",
       proposals: 15,
       status: "Active",
       deadline: "2024-02-15"
@@ -93,7 +93,7 @@ const mockData = {
       id: 2,
       title: "Logo Design for Startup",
       posted: "1 week ago",
-      budget: "$500-$1000",
+      budget: "Rs. 500-1000",
       proposals: 28,
       status: "Interviewing",
       deadline: "2024-02-10"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DashboardHeader } from './DashboardHeader';
+import { Header } from './Header';
 import { ProjectWorkspace } from './projects/ProjectWorkspace';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from './ui/button';
@@ -22,9 +22,9 @@ export function ProjectDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
+      <Header />
 
-      <main className="w-full px-4 md:px-8 lg:px-12 py-8">
+      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
         {/* Back Button */}
         <Button
           variant="ghost"

@@ -234,10 +234,10 @@ export function FindWorkPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Budgets</SelectItem>
-                <SelectItem value="under-1000">Under $1,000</SelectItem>
-                <SelectItem value="1000-5000">$1,000 - $5,000</SelectItem>
-                <SelectItem value="5000-10000">$5,000 - $10,000</SelectItem>
-                <SelectItem value="over-10000">Over $10,000</SelectItem>
+                <SelectItem value="under-1000">Under Rs. 1,000</SelectItem>
+                <SelectItem value="1000-5000">Rs. 1,000 - 5,000</SelectItem>
+                <SelectItem value="5000-10000">Rs. 5,000 - 10,000</SelectItem>
+                <SelectItem value="over-10000">Over Rs. 10,000</SelectItem>
               </SelectContent>
             </Select>
           </div>

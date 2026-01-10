@@ -8,7 +8,7 @@ const plans = [
   {
     name: 'Free',
     icon: Zap,
-    price: '$0',
+    price: 'Rs. 0',
     period: 'forever',
     description: 'Perfect for getting started',
     features: [
@@ -24,7 +24,7 @@ const plans = [
   {
     name: 'Professional',
     icon: Crown,
-    price: '$19',
+    price: 'Rs. 19',
     period: 'per month',
     description: 'For serious freelancers',
     features: [

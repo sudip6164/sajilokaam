@@ -17,7 +17,7 @@ const stats = [
   },
   {
     icon: DollarSign,
-    value: '$5M+',
+    value: 'Rs. 5M+',
     label: 'Total Earnings Paid',
     color: 'text-success',
     bgColor: 'bg-success/10',
