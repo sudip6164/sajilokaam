@@ -9,4 +9,5 @@ INSERT IGNORE INTO job_categories (name, description, created_at) VALUES
 ('DevOps & Cloud', 'Cloud infrastructure, CI/CD, and system administration', NOW()),
 ('Video & Animation', 'Video editing, motion graphics, and animation', NOW()),
 ('Business Consulting', 'Business strategy, project management, and consulting', NOW()),
-('Customer Support', 'Customer service, technical support, and community management', NOW());
+('Customer Support', 'Customer service, technical support, and community management', NOW()),
+('Others', 'Miscellaneous projects and opportunities', NOW());
