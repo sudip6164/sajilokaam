@@ -215,6 +215,7 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
   const [jobs, setJobs] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [pendingBids, setPendingBids] = useState(0);
+  const [proposalCounts, setProposalCounts] = useState<Record<number, number>>({});
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeProjects: 0,
@@ -248,17 +249,25 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
       const completedProjs = projectsData?.filter(p => p.status === 'COMPLETED') || [];
       const totalSpent = completedProjs.reduce((sum, p) => sum + (p.budget || 0), 0);
 
-      // Count pending bids (bids on open jobs)
+      // Count pending bids and fetch proposal counts for all jobs
       let pendingCount = 0;
+      const counts: Record<number, number> = {};
+      
       for (const job of openJobs) {
         try {
-          const bids = await bidsApi.list({ jobId: job.id, status: 'PENDING' });
-          pendingCount += bids?.length || 0;
+          const bids = await bidsApi.listByJob(job.id);
+          const bidCount = bids?.length || 0;
+          counts[job.id] = bidCount;
+          
+          const pendingBids = bids?.filter(b => b.status === 'PENDING') || [];
+          pendingCount += pendingBids.length;
         } catch (err) {
-          // Ignore errors for individual bid fetches
+          console.error(`Error fetching bids for job ${job.id}:`, err);
         }
       }
+      
       setPendingBids(pendingCount);
+      setProposalCounts(counts);
 
       setStats({
         totalJobs: jobsData?.length || 0,
@@ -441,21 +450,8 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
                   ? `Rs. ${job.budgetMin || '0'} - Rs. ${job.budgetMax || '0'}/hr`
                   : `Rs. ${job.budgetMax?.toLocaleString() || '0'} fixed`;
                 
-                // Get proposal count for this job
-                const [proposalCount, setProposalCount] = useState<number>(0);
-                useEffect(() => {
-                  const fetchProposalCount = async () => {
-                    try {
-                      const bids = await bidsApi.listByJob(job.id);
-                      setProposalCount(bids?.length || 0);
-                    } catch (err) {
-                      console.error('Error fetching proposal count:', err);
-                    }
-                  };
-                  if (job.status === 'OPEN') {
-                    fetchProposalCount();
-                  }
-                }, [job.id]);
+                // Get proposal count from state (fetched in fetchDashboardData)
+                const proposalCount = proposalCounts[job.id] || 0;
                 
                 return (
                   <div key={job.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors">
