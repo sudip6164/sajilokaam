@@ -1024,6 +1024,16 @@ export const profileApi = {
       submittedAt?: string;
       reviewedAt?: string;
       profilePictureUrl?: string;
+      // Upwork-style fields
+      connectsAvailable?: number;
+      connectsTotalPurchased?: number;
+      profileStrength?: string;
+      totalBidsSubmitted?: number;
+      totalBidsWon?: number;
+      successRate?: number;
+      avgResponseTimeHours?: number;
+      totalEarnings?: number;
+      onTimeDeliveryRate?: number;
     }>("/profile/freelancer/me");
     return response.data;
   },
@@ -1185,6 +1195,36 @@ export const profileApi = {
       languages?: string;
       status?: string;
     }>("/profile/client", data);
+    return response.data;
+  },
+};
+
+// Connects API
+export const connectsApi = {
+  getBalance: async () => {
+    const response = await api.get<{ connects: number }>("/connects/balance");
+    return response.data.connects;
+  },
+
+  getTransactions: async () => {
+    const response = await api.get<Array<{
+      id: number;
+      amount: number;
+      type: 'PURCHASE' | 'REFUND' | 'SPENT' | 'BONUS';
+      referenceId?: number;
+      referenceType?: string;
+      description?: string;
+      balanceAfter: number;
+      createdAt: string;
+    }>>("/connects/transactions");
+    return response.data;
+  },
+
+  purchase: async (amount: number, paymentReference?: string) => {
+    const response = await api.post<{ message: string; newBalance: number }>(
+      "/connects/purchase",
+      { amount, paymentReference }
+    );
     return response.data;
   },
 };
