@@ -2,6 +2,7 @@ package com.sajilokaam.job;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sajilokaam.jobcategory.JobCategory;
 import com.sajilokaam.jobskill.JobSkill;
 import com.sajilokaam.user.User;
@@ -10,7 +11,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "jobs", indexes = {
@@ -230,6 +233,35 @@ public class Job {
 
     public void setJobDetails(JobDetails jobDetails) {
         this.jobDetails = jobDetails;
+    }
+
+    @JsonProperty("requiredSkills")
+    public List<SkillDTO> getRequiredSkillsList() {
+        if (requiredSkills == null) {
+            return List.of();
+        }
+        return requiredSkills.stream()
+                .map(skill -> new SkillDTO(skill.getId(), skill.getName()))
+                .collect(Collectors.toList());
+    }
+
+    // Simple DTO for skill serialization
+    public static class SkillDTO {
+        private Long id;
+        private String name;
+
+        public SkillDTO(Long id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public Long getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
 
