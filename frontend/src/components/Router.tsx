@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'job-detail' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'job-detail' | 'proposals-list' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -51,6 +51,7 @@ const pathToPage: Record<string, Page> = {
   '/freelancer-profile': 'freelancer-profile',
   '/client-profile': 'client-profile',
   '/job-detail': 'job-detail',
+  '/proposals-list': 'proposals-list',
   '/messages': 'messages',
   '/project-detail': 'project-detail',
   '/project-workspace': 'project-workspace',
@@ -85,6 +86,7 @@ const pageToPath: Record<Page, string> = {
   'freelancer-profile': '/freelancer-profile',
   'client-profile': '/client-profile',
   'job-detail': '/job-detail',
+  'proposals-list': '/proposals-list',
   'messages': '/messages',
   'project-detail': '/project-detail',
   'project-workspace': '/project-workspace',
@@ -148,7 +150,7 @@ export function Router({ children }: { children: React.ReactNode }) {
     let url = path;
     if (params?.token) {
       url = `${path}?token=${params.token}`;
-    } else if (params?.jobId && page === 'job-detail') {
+    } else if (params?.jobId && (page === 'job-detail' || page === 'proposals-list')) {
       url = `${path}?jobId=${params.jobId}`;
     }
     window.history.pushState({ page, params }, '', url);
@@ -167,7 +169,7 @@ export function Router({ children }: { children: React.ReactNode }) {
     const jobId = urlParams.get('jobId');
     if (token && page === 'reset-password') {
       setPageParams({ token });
-    } else if (jobId && page === 'job-detail') {
+    } else if (jobId && (page === 'job-detail' || page === 'proposals-list')) {
       setPageParams({ jobId: parseInt(jobId, 10) });
     }
 
