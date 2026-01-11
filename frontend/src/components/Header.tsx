@@ -70,18 +70,24 @@ export function Header() {
           >
             Home
           </button>
-          <button 
-            onClick={() => navigate('find-work')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            Find Work
-          </button>
-          <button 
-            onClick={() => navigate('find-freelancers')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            Find Freelancers
-          </button>
+          {/* Show "Find Work" only for freelancers or non-authenticated users */}
+          {(!isAuthenticated || isFreelancer) && (
+            <button 
+              onClick={() => navigate('find-work')}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              Find Work
+            </button>
+          )}
+          {/* Show "Find Freelancers" only for clients or non-authenticated users */}
+          {(!isAuthenticated || isClient || isAdmin) && (
+            <button 
+              onClick={() => navigate('find-freelancers')}
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              Find Freelancers
+            </button>
+          )}
           <button 
             onClick={() => navigate('features')}
             className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
