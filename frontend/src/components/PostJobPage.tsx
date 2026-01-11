@@ -49,6 +49,7 @@ export function PostJobPage() {
     experienceLevel: '',
     skills: [] as string[],
     skillIds: [] as number[],
+    skillMap: {} as Record<string, number | undefined>, // Maps skill name to ID (undefined for custom)
     projectType: 'one-time',
     requirements: '',
     deliverables: '',
@@ -115,13 +116,15 @@ export function PostJobPage() {
         setJobData({
           ...jobData,
           skills: [...jobData.skills, existingSkill.name],
-          skillIds: [...jobData.skillIds, existingSkill.id]
+          skillIds: [...jobData.skillIds, existingSkill.id],
+          skillMap: { ...jobData.skillMap, [existingSkill.name]: existingSkill.id }
         });
       } else {
         // Add custom skill (without ID)
         setJobData({
           ...jobData,
-          skills: [...jobData.skills, trimmedSkill]
+          skills: [...jobData.skills, trimmedSkill],
+          skillMap: { ...jobData.skillMap, [trimmedSkill]: undefined }
         });
       }
       setSkillInput('');
@@ -251,12 +254,32 @@ export function PostJobPage() {
         payload.location = jobData.location.trim();
       }
 
-      // Add skill IDs if any skills were selected
-      if (jobData.skillIds.length > 0) {
-        payload.skillIds = jobData.skillIds;
+      // Separate skills with IDs from custom skills
+      const skillsWithIds: number[] = [];
+      const customSkillNames: string[] = [];
+      
+      jobData.skills.forEach(skillName => {
+        const skillId = jobData.skillMap[skillName];
+        if (skillId !== undefined) {
+          skillsWithIds.push(skillId);
+        } else {
+          customSkillNames.push(skillName);
+        }
+      });
+
+      // Add skill IDs if any
+      if (skillsWithIds.length > 0) {
+        payload.skillIds = skillsWithIds;
+      }
+
+      // Add custom skills if any
+      if (customSkillNames.length > 0) {
+        payload.customSkills = customSkillNames;
       }
 
       console.log('Creating job with payload:', payload);
+      console.log('Skills with IDs:', skillsWithIds);
+      console.log('Custom skills:', customSkillNames);
       const createdJob = await jobsApi.create(payload);
 
       toast.success('Job posted successfully!');
@@ -661,7 +684,8 @@ export function PostJobPage() {
                               setJobData({
                                 ...jobData,
                                 skillIds: [...jobData.skillIds, skillId],
-                                skills: [...jobData.skills, skill.name]
+                                skills: [...jobData.skills, skill.name],
+                                skillMap: { ...jobData.skillMap, [skill.name]: skillId }
                               });
                               setErrors({ ...errors, skills: '' });
                             }
@@ -728,9 +752,11 @@ export function PostJobPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const newSkills = jobData.skills.filter((_, i) => i !== index);
-                                  const newSkillIds = jobData.skillIds.filter((_, i) => i !== index);
-                                  setJobData({ ...jobData, skills: newSkills, skillIds: newSkillIds });
+                                  const removedSkill = skill;
+                                  const newSkills = jobData.skills.filter(s => s !== removedSkill);
+                                  const newSkillMap = { ...jobData.skillMap };
+                                  delete newSkillMap[removedSkill];
+                                  setJobData({ ...jobData, skills: newSkills, skillMap: newSkillMap });
                                 }}
                                 className="ml-2 hover:text-destructive"
                               >

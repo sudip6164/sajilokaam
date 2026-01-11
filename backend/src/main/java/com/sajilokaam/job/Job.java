@@ -245,6 +245,11 @@ public class Job {
                 .collect(Collectors.toList());
     }
 
+    @JsonProperty("clientId")
+    public Long getClientId() {
+        return client != null ? client.getId() : null;
+    }
+
     // Simple DTO for skill serialization
     public static class SkillDTO {
         private Long id;

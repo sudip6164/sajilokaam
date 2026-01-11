@@ -7,7 +7,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
-import { jobsApi, bidsApi } from '@/lib/api';
+import { jobsApi, bidsApi, profileApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProposalForm, ProposalData } from './proposals/ProposalForm';
 import { toast } from 'sonner';
@@ -174,6 +174,19 @@ export function JobDetailPage() {
         'SENIOR': 'Expert',
       };
 
+      // Fetch client profile to get their location
+      let clientLocation = 'Not specified';
+      let clientName = 'Client';
+      if (jobData.clientId) {
+        try {
+          const clientProfile = await profileApi.getClientProfile(jobData.clientId);
+          clientLocation = clientProfile.location || 'Not specified';
+          clientName = clientProfile.companyName || clientProfile.user?.fullName || 'Client';
+        } catch (err) {
+          console.error('Error fetching client profile:', err);
+        }
+      }
+
       const transformedJob: JobData = {
         id: jobData.id,
         title: jobData.title,
@@ -191,10 +204,10 @@ export function JobDetailPage() {
         proposals: 0, // Would need separate API call
         hires: 0, // Would need separate API call
         client: {
-          name: 'Client', // Backend doesn't expose client name in public endpoint
+          name: clientName,
           rating: 4.5, // Would need client profile API
           reviews: 0,
-          location: jobData.location || 'Not specified', // Use job location as client location
+          location: clientLocation, // Use client profile location
           memberSince: new Date(jobData.createdAt).getFullYear().toString(),
         },
         description: jobData.description || 'No description provided.',

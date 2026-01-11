@@ -16,7 +16,8 @@ public class JobCreateRequest {
     private Integer durationHours;
     private LocalDateTime expiresAt;
     private Boolean isFeatured;
-    private List<Long> skillIds; // Required skills
+    private List<Long> skillIds; // Required skills (existing in database)
+    private List<String> customSkills; // Custom skill names to create
     private String location;
     private String projectLength; // "Less than 1 month", "1-3 months", "3-6 months", "More than 6 months"
     private String requirements; // Long text field
@@ -116,6 +117,14 @@ public class JobCreateRequest {
 
     public void setSkillIds(List<Long> skillIds) {
         this.skillIds = skillIds;
+    }
+
+    public List<String> getCustomSkills() {
+        return customSkills;
+    }
+
+    public void setCustomSkills(List<String> customSkills) {
+        this.customSkills = customSkills;
     }
 
     public String getLocation() {

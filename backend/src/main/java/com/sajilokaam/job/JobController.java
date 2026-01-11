@@ -261,13 +261,39 @@ public class JobController {
         job.setIsFeatured(request.getIsFeatured() != null ? request.getIsFeatured() : false);
         
         // Set required skills
+        Set<JobSkill> skills = new HashSet<>();
+        
+        // Add existing skills from database
         if (request.getSkillIds() != null && !request.getSkillIds().isEmpty()) {
-            Set<JobSkill> skills = new HashSet<>();
             for (Long skillId : request.getSkillIds()) {
                 skillRepository.findById(skillId).ifPresent(skills::add);
             }
-            job.setRequiredSkills(skills);
         }
+        
+        // Create new JobSkill entries for custom skills
+        if (request.getCustomSkills() != null && !request.getCustomSkills().isEmpty()) {
+            for (String customSkillName : request.getCustomSkills()) {
+                if (customSkillName != null && !customSkillName.trim().isEmpty()) {
+                    // Check if skill already exists
+                    Optional<JobSkill> existing = skillRepository.findByNameIgnoreCase(customSkillName.trim());
+                    if (existing.isPresent()) {
+                        skills.add(existing.get());
+                    } else {
+                        // Create new skill
+                        JobSkill newSkill = new JobSkill();
+                        newSkill.setName(customSkillName.trim());
+                        // Associate with job category if available
+                        if (job.getCategory() != null) {
+                            newSkill.setCategory(job.getCategory());
+                        }
+                        JobSkill savedSkill = skillRepository.save(newSkill);
+                        skills.add(savedSkill);
+                    }
+                }
+            }
+        }
+        
+        job.setRequiredSkills(skills);
 
         // Set location and project length
         job.setLocation(request.getLocation());
