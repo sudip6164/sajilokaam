@@ -532,8 +532,8 @@ export function FreelancerProfilePage() {
         </div>
 
         {isEditMode && (
-          /* Progress Bar */
           <div className="mb-8">
+            {/* Progress Bar */}
             <div className="flex justify-between text-sm text-muted-foreground mb-2">
               <span>Step {currentStep} of {totalSteps}</span>
               <span>{Math.round(progress)}% complete</span>
@@ -543,8 +543,8 @@ export function FreelancerProfilePage() {
         )}
 
         {!isEditMode ? (
-          /* Profile View Mode - Beautiful Tabbed Design */
           <div className="space-y-6">
+            {/* Profile View Mode - Beautiful Tabbed Design */}
             {/* Profile Header Card */}
             <Card className="border-2 shadow-xl">
               <CardContent className="p-8">
