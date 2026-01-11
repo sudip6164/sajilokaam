@@ -41,6 +41,7 @@ export function ProposalsListPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [rejecting, setRejecting] = useState<number | null>(null);
   const [jobTitle, setJobTitle] = useState<string>('');
 
   useEffect(() => {
@@ -98,6 +99,24 @@ export function ProposalsListPage() {
       toast.error(err.response?.data?.message || 'Failed to accept proposal');
     } finally {
       setAccepting(false);
+    }
+  };
+
+  const handleRejectProposal = async (proposalId: number) => {
+    if (!pageParams?.jobId) return;
+    
+    try {
+      setRejecting(proposalId);
+      await bidsApi.reject(pageParams.jobId, proposalId);
+      toast.success('Proposal rejected');
+      
+      // Refresh proposals
+      await fetchProposals(pageParams.jobId);
+    } catch (err: any) {
+      console.error('Error rejecting proposal:', err);
+      toast.error(err.response?.data?.message || 'Failed to reject proposal');
+    } finally {
+      setRejecting(null);
     }
   };
 
@@ -243,10 +262,18 @@ export function ProposalsListPage() {
                         <Button
                           className="flex-1 bg-gradient-to-r from-primary to-secondary"
                           onClick={() => handleAcceptProposal(proposal.id, jobTitle)}
-                          disabled={accepting}
+                          disabled={accepting || rejecting !== null}
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
                           {accepting ? 'Accepting...' : 'Accept Proposal'}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleRejectProposal(proposal.id)}
+                          disabled={accepting || rejecting !== null}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          {rejecting === proposal.id ? 'Rejecting...' : 'Reject'}
                         </Button>
                         <Button
                           variant="outline"
@@ -262,6 +289,13 @@ export function ProposalsListPage() {
                       <div className="flex items-center gap-2 text-success">
                         <CheckCircle className="h-5 w-5" />
                         <span className="font-semibold">Proposal Accepted - Project Created</span>
+                      </div>
+                    )}
+
+                    {proposal.status === 'REJECTED' && (
+                      <div className="flex items-center gap-2 text-destructive">
+                        <XCircle className="h-5 w-5" />
+                        <span className="font-semibold">Proposal Rejected</span>
                       </div>
                     )}
                   </CardContent>

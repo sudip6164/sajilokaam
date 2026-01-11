@@ -198,6 +198,50 @@ public class BidController {
         return ResponseEntity.ok(updated);
     }
 
+    @DeleteMapping("/{jobId}/bids/{bidId}")
+    public ResponseEntity<Void> withdrawBid(
+            @PathVariable Long jobId,
+            @PathVariable Long bidId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Bid> bidOpt = bidRepository.findById(bidId);
+        if (bidOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Bid bid = bidOpt.get();
+        if (!bid.getJob().getId().equals(jobId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Verify user is the freelancer who created the bid
+        if (!bid.getFreelancer().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // Only allow withdrawal if bid is still pending
+        if (!bid.getStatus().equals("PENDING")) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        bidRepository.delete(bid);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{jobId}/bids/count")
     public ResponseEntity<Long> getBidCount(@PathVariable Long jobId) {
         if (!jobRepository.existsById(jobId)) {

@@ -452,15 +452,20 @@ export const bidsApi = {
     proposal: string;
     estimatedCompletionDate?: string;
   }) => {
+    const { jobId, ...payload } = data;
     const response = await api.post<{
       id: number;
       jobId: number;
       freelancerId: number;
       amount: number;
-      proposal: string;
+      message: string;
       status: string;
       createdAt: string;
-    }>("/bids", data);
+    }>(`/jobs/${jobId}/bids`, {
+      amount: payload.amount,
+      message: payload.proposal, // Backend expects 'message' not 'proposal'
+      status: 'PENDING'
+    });
     return response.data;
   },
 
@@ -470,6 +475,16 @@ export const bidsApi = {
       title: 'Project from accepted bid', 
       description: '' 
     });
+    return response.data;
+  },
+
+  reject: async (jobId: number, bidId: number) => {
+    const response = await api.patch(`/jobs/${jobId}/bids/${bidId}/reject`);
+    return response.data;
+  },
+
+  withdraw: async (jobId: number, bidId: number) => {
+    const response = await api.delete(`/jobs/${jobId}/bids/${bidId}`);
     return response.data;
   },
 };
