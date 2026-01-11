@@ -178,26 +178,8 @@ public class JobController {
         
         Job job = jobOpt.get();
         
-        // If authorization is provided, verify the user owns the job (for client access)
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            String token = authorization.substring("Bearer ".length()).trim();
-            Optional<String> emailOpt = jwtService.extractSubject(token);
-            if (emailOpt.isPresent()) {
-                Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
-                if (userOpt.isPresent()) {
-                    User user = userOpt.get();
-                    // Check if user is the client who owns the job
-                    if (job.getClient() != null && !job.getClient().getId().equals(user.getId())) {
-                        // User is not the owner, but allow access if they're an admin
-                        boolean isAdmin = user.getRoles().stream()
-                                .anyMatch(role -> role.getName().equals("ADMIN"));
-                        if (!isAdmin) {
-                            return ResponseEntity.status(403).build();
-                        }
-                    }
-                }
-            }
-        }
+        // Job details are public - anyone can view jobs to browse and submit proposals
+        // No authorization check needed here
         
         // Force eager loading of relationships to avoid lazy loading issues
         if (job.getClient() != null) {
