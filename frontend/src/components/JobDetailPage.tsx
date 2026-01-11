@@ -485,24 +485,29 @@ export function JobDetailPage() {
                   <p className="text-3xl font-bold text-primary mb-1">{job.budget.range}</p>
                   <p className="text-sm text-muted-foreground">{job.budget.type}</p>
                 </div>
-                {isAuthenticated ? (
+                {isAuthenticated && user?.type === 'freelancer' && jobClientId !== authUser?.id ? (
                   <Button 
                     className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                    onClick={() => {
-                      // TODO: Navigate to proposal form
-                      navigate('messages');
-                    }}
+                    onClick={() => setShowProposalForm(true)}
                   >
                     Submit Proposal
                   </Button>
-                ) : (
+                ) : isAuthenticated && jobClientId === authUser?.id ? (
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate('proposals-list', { jobId: job.id })}
+                  >
+                    View Proposals
+                  </Button>
+                ) : !isAuthenticated ? (
                   <Button 
                     className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
                     onClick={() => navigate('login')}
                   >
                     Login to Apply
                   </Button>
-                )}
+                ) : null}
               </CardContent>
             </Card>
 
