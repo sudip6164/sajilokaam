@@ -1002,8 +1002,8 @@ export function FreelancerProfilePage() {
             </Card>
           </div>
         ) : (
-          /* Edit Mode - Form */
           <>
+        {/* Edit Mode - Form */}
         {/* Form */}
         <Card className="border border-border">
           <CardContent className="p-6 md:p-8">
