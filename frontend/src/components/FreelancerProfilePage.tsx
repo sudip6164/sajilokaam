@@ -1003,9 +1003,8 @@ export function FreelancerProfilePage() {
           </div>
         ) : (
           <>
-        {/* Edit Mode - Form */}
-        {/* Form */}
-        <Card className="border border-border">
+            {/* Edit Mode - Form */}
+            <Card className="border border-border">
           <CardContent className="p-6 md:p-8">
             {/* Step 1: Basic Info */}
             {currentStep === 1 && (
