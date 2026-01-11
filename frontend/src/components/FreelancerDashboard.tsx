@@ -539,7 +539,10 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">{bid.jobTitle || `Proposal #${bid.id}`}</h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{bid.jobTitle || `Job #${bid.jobId}`}</h3>
+                        <span className="text-xs text-muted-foreground">• Proposal #{bid.id}</span>
+                      </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />

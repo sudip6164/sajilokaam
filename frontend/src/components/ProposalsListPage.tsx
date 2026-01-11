@@ -218,9 +218,12 @@ export function ProposalsListPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold mb-1">
-                            {proposal.freelancerName || 'Freelancer'}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-xl font-semibold">
+                              {proposal.freelancerName || 'Freelancer'}
+                            </h3>
+                            <span className="text-sm text-muted-foreground">• Proposal #{proposal.id}</span>
+                          </div>
                           <p className="text-sm text-muted-foreground mb-2">
                             {proposal.freelancerEmail}
                           </p>
