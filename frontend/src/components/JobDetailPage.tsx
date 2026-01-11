@@ -64,7 +64,7 @@ interface JobData {
 
 export function JobDetailPage() {
   const { navigate, pageParams, user } = useRouter();
-  const { isAuthenticated, user: authUser } = useAuth();
+  const { isAuthenticated, user: authUser, hasRole } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const [job, setJob] = useState<JobData | null>(null);
   const [jobClientId, setJobClientId] = useState<number | null>(null);
@@ -72,6 +72,16 @@ export function JobDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showProposalForm, setShowProposalForm] = useState(false);
   const [submittingProposal, setSubmittingProposal] = useState(false);
+
+  // Debug: Log user info
+  console.log('JobDetailPage - User Info:', {
+    userType: user?.type,
+    isAuthenticated,
+    authUserId: authUser?.id,
+    jobClientId,
+    isFreelancer: hasRole('FREELANCER'),
+    isClient: hasRole('CLIENT'),
+  });
 
   useEffect(() => {
     const jobId = pageParams?.jobId;
@@ -86,6 +96,20 @@ export function JobDetailPage() {
 
   const handleSubmitProposal = async (proposalData: ProposalData) => {
     if (!job) return;
+    
+    // Validate user is a freelancer
+    if (!hasRole('FREELANCER')) {
+      toast.error('Only freelancers can submit proposals');
+      setShowProposalForm(false);
+      return;
+    }
+    
+    // Validate user is not the job owner
+    if (jobClientId === authUser?.id) {
+      toast.error('You cannot submit a proposal on your own job');
+      setShowProposalForm(false);
+      return;
+    }
     
     try {
       setSubmittingProposal(true);
