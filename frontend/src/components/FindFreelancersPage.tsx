@@ -472,7 +472,7 @@ export function FindFreelancersPage() {
                     variant="outline" 
                     size="sm" 
                     className="flex-1 border-2 hover:border-primary hover:bg-primary/5"
-                    onClick={() => toast.info('Freelancer profile view coming soon!')}
+                    onClick={() => navigate('view-freelancer', { freelancerId: freelancer.id })}
                   >
                     View Profile
                   </Button>
