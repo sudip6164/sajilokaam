@@ -43,6 +43,8 @@ services:
       - DB_PASS=
     ports:
       - "8080:8080"
+    volumes:
+      - upload_data:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -72,6 +74,7 @@ services:
 
 volumes:
   db_data:
+  upload_data:
 
 
 
