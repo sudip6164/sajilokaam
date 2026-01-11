@@ -29,6 +29,7 @@ import { FreelancerProfilePage } from "./components/FreelancerProfilePage";
 import { ClientProfilePage } from "./components/ClientProfilePage";
 import { FreelancerPublicProfilePage } from "./components/FreelancerPublicProfilePage";
 import { JobDetailPage } from "./components/JobDetailPage";
+import { SubmitProposalPage } from "./components/SubmitProposalPage";
 import { ProposalsListPage } from "./components/ProposalsListPage";
 import { MessagesPage } from "./components/MessagesPage";
 import { ProjectDetailPage } from "./components/ProjectDetailPage";
@@ -114,6 +115,8 @@ function AppContent() {
       return <JobDetailPage />;
     case 'proposals-list':
       return <ProposalsListPage />;
+    case 'submit-proposal':
+      return <SubmitProposalPage />;
     case 'messages':
       return <MessagesPage />;
     case 'project-detail':

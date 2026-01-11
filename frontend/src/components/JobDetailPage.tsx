@@ -9,7 +9,6 @@ import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
 import { jobsApi, bidsApi, profileApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProposalForm, ProposalData } from './proposals/ProposalForm';
 import { toast } from 'sonner';
 import { 
   DollarSign, 
@@ -70,8 +69,6 @@ export function JobDetailPage() {
   const [jobClientId, setJobClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showProposalForm, setShowProposalForm] = useState(false);
-  const [submittingProposal, setSubmittingProposal] = useState(false);
 
   // Debug: Log user info
   console.log('JobDetailPage - User Info:', {
@@ -94,55 +91,6 @@ export function JobDetailPage() {
     fetchJob(jobId);
   }, [pageParams?.jobId]);
 
-  const handleSubmitProposal = async (proposalData: ProposalData) => {
-    if (!job) return;
-    
-    // Validate user is a freelancer
-    if (!hasRole('FREELANCER')) {
-      toast.error('Only freelancers can submit proposals');
-      setShowProposalForm(false);
-      return;
-    }
-    
-    // Validate user is not the job owner
-    if (jobClientId === authUser?.id) {
-      toast.error('You cannot submit a proposal on your own job');
-      setShowProposalForm(false);
-      return;
-    }
-    
-    try {
-      setSubmittingProposal(true);
-      
-      // Convert delivery time to estimated completion date
-      const deliveryDays = proposalData.deliveryUnit === 'days' 
-        ? proposalData.deliveryTime 
-        : proposalData.deliveryUnit === 'weeks' 
-        ? proposalData.deliveryTime * 7 
-        : proposalData.deliveryTime * 30;
-      
-      const estimatedDate = new Date();
-      estimatedDate.setDate(estimatedDate.getDate() + deliveryDays);
-      
-      await bidsApi.create({
-        jobId: job.id,
-        amount: proposalData.bidAmount,
-        proposal: proposalData.coverLetter,
-        estimatedCompletionDate: estimatedDate.toISOString(),
-      });
-      
-      toast.success('Proposal submitted successfully!');
-      setShowProposalForm(false);
-      
-      // Navigate to freelancer dashboard to see submitted proposals
-      navigate('freelancer-dashboard');
-    } catch (err: any) {
-      console.error('Error submitting proposal:', err);
-      toast.error(err.response?.data?.message || 'Failed to submit proposal. Please try again.');
-    } finally {
-      setSubmittingProposal(false);
-    }
-  };
 
   const fetchJob = async (jobId: number) => {
     try {
@@ -328,19 +276,6 @@ export function JobDetailPage() {
           </Card>
         </main>
         <Footer />
-        
-        {/* Proposal Form Modal */}
-        {showProposalForm && job && (
-          <ProposalForm
-            jobTitle={job.title}
-            jobBudget={{
-              type: job.budget.type === 'Hourly' ? 'hourly' : 'fixed',
-              amount: job.budget.amount,
-            }}
-            onSubmit={handleSubmitProposal}
-            onCancel={() => setShowProposalForm(false)}
-          />
-        )}
       </div>
     );
   }
@@ -416,13 +351,7 @@ export function JobDetailPage() {
                       <Button 
                         size="lg" 
                         className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                        onClick={() => {
-                          console.log('Submit Proposal button clicked!');
-                          console.log('Current showProposalForm state:', showProposalForm);
-                          console.log('Job data:', job);
-                          setShowProposalForm(true);
-                          console.log('Setting showProposalForm to true');
-                        }}
+                        onClick={() => navigate('submit-proposal', { jobId: job.id })}
                       >
                         Submit Proposal
                       </Button>
@@ -536,10 +465,7 @@ export function JobDetailPage() {
                 {isAuthenticated && hasRole('FREELANCER') && jobClientId !== authUser?.id ? (
                   <Button 
                     className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                    onClick={() => {
-                      console.log('Sidebar Submit Proposal button clicked!');
-                      setShowProposalForm(true);
-                    }}
+                    onClick={() => navigate('submit-proposal', { jobId: job.id })}
                   >
                     Submit Proposal
                   </Button>
@@ -645,19 +571,6 @@ export function JobDetailPage() {
       </main>
 
       <Footer />
-      
-      {/* Proposal Form Modal */}
-      {showProposalForm && job && (
-        <ProposalForm
-          jobTitle={job.title}
-          jobBudget={{
-            type: job.budget.type === 'Hourly' ? 'hourly' : 'fixed',
-            amount: job.budget.amount,
-          }}
-          onSubmit={handleSubmitProposal}
-          onCancel={() => setShowProposalForm(false)}
-        />
-      )}
     </div>
   );
 }
