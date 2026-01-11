@@ -815,9 +815,10 @@ export function FreelancerProfilePage() {
               </div>
             </Tabs>
           </div>
-        ) : (
-          /* Edit Mode - Form */
-          <div>
+        )}
+
+        {isEditMode && (
+          <>
             {/* Basic Info Card */}
             <Card>
               <CardHeader>
