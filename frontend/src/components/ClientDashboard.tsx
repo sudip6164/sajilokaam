@@ -196,10 +196,8 @@ export function ClientDashboard() {
           </Sidebar>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto ml-64 pt-16">
-            <div className="w-full pr-6 py-8">
-              {renderContent()}
-            </div>
+          <main className="flex-1 overflow-y-auto ml-64 pt-16 pr-6 pb-6">
+            {renderContent()}
           </main>
         </SidebarProvider>
       </div>
