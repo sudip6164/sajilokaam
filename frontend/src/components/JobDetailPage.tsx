@@ -242,6 +242,11 @@ export function JobDetailPage() {
       };
 
       setJob(transformedJob);
+      
+      // Store job client ID for validation
+      if (jobData.clientId) {
+        setJobClientId(jobData.clientId);
+      }
 
       // Fetch similar jobs (same category)
       if (jobData.category?.id) {
