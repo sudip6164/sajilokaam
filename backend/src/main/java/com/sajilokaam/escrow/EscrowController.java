@@ -28,7 +28,7 @@ public class EscrowController {
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<List<EscrowAccount>> getEscrowForProject(@PathVariable Long projectId) {
-        return ResponseEntity.ok(accountRepository.findAllByProjectId(projectId));
+        return ResponseEntity.ok(accountRepository.findAllByProject_Id(projectId));
     }
 
     @PostMapping

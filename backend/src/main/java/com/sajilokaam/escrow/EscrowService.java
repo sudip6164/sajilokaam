@@ -63,7 +63,7 @@ public class EscrowService {
     }
 
     public List<EscrowAccount> getByProject(Long projectId) {
-        return accountRepository.findAllByProjectId(projectId);
+        return accountRepository.findAllByProject_Id(projectId);
     }
 
     public List<EscrowRelease> getReleases(Long accountId) {
