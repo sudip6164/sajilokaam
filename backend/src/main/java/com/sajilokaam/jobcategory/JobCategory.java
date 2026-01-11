@@ -1,10 +1,12 @@
 package com.sajilokaam.jobcategory;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
 @Table(name = "job_categories")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class JobCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

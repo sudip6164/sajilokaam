@@ -16,6 +16,7 @@ public class JobSkillController {
     }
 
     @GetMapping
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<JobSkill>> getAllSkills(
             @RequestParam(required = false) Long categoryId) {
         List<JobSkill> skills;
@@ -23,6 +24,12 @@ public class JobSkillController {
             skills = skillRepository.findByCategoryId(categoryId);
         } else {
             skills = skillRepository.findAll();
+        }
+        // Initialize lazy-loaded relationships to avoid LazyInitializationException
+        for (JobSkill skill : skills) {
+            if (skill.getCategory() != null) {
+                skill.getCategory().getName(); // Trigger lazy load
+            }
         }
         return ResponseEntity.ok(skills);
     }

@@ -1,5 +1,6 @@
 package com.sajilokaam.jobskill;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.jobcategory.JobCategory;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -8,6 +9,7 @@ import java.time.Instant;
 @Table(name = "job_skills", indexes = {
         @Index(name = "idx_skills_category", columnList = "category_id")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class JobSkill {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
