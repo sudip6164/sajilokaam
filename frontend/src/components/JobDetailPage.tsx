@@ -645,6 +645,19 @@ export function JobDetailPage() {
       </main>
 
       <Footer />
+      
+      {/* Proposal Form Modal */}
+      {showProposalForm && job && (
+        <ProposalForm
+          jobTitle={job.title}
+          jobBudget={{
+            type: job.budget.type === 'Hourly' ? 'hourly' : 'fixed',
+            amount: job.budget.amount,
+          }}
+          onSubmit={handleSubmitProposal}
+          onCancel={() => setShowProposalForm(false)}
+        />
+      )}
     </div>
   );
 }
