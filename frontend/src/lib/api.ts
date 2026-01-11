@@ -20,6 +20,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem("jwt_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (config.url && !config.url.includes('/auth/')) {
+      // Log if making authenticated request without token (except auth endpoints)
+      console.warn('Making API request without token:', config.url);
     }
     return config;
   },
@@ -45,26 +48,45 @@ api.interceptors.response.use(
 
       // Handle 401 - Unauthorized
       if (status === 401) {
-        localStorage.removeItem("jwt_token");
+        // Only clear token if not a /me endpoint (initial auth check)
+        const isAuthCheckEndpoint = url.includes('/auth/me');
+        
+        // Clear token for actual authentication failures
+        if (!isAuthCheckEndpoint) {
+          localStorage.removeItem("jwt_token");
+        } else {
+          // For /me endpoint, just clear token silently (might be expired)
+          localStorage.removeItem("jwt_token");
+        }
+        
         // Only redirect if not already on login/register page and not on public pages
         const isPublicPage = window.location.pathname.startsWith("/jobs") || 
                             window.location.pathname === "/" ||
                             window.location.pathname.startsWith("/about") ||
                             window.location.pathname.startsWith("/contact") ||
-                            window.location.pathname.startsWith("/pricing");
+                            window.location.pathname.startsWith("/pricing") ||
+                            window.location.pathname.startsWith("/features") ||
+                            window.location.pathname.startsWith("/terms") ||
+                            window.location.pathname.startsWith("/privacy");
         
-        if (!window.location.pathname.includes("/login") && 
-            !window.location.pathname.includes("/register") &&
-            !isPublicPage) {
-          // For protected pages, redirect to login
-          window.location.href = "/login";
-        } else if (isPublicPage) {
-          // For public pages, just remove token silently - user can continue browsing
-          // Don't redirect or show error
+        const isAuthPage = window.location.pathname.includes("/login") || 
+                          window.location.pathname.includes("/register") ||
+                          window.location.pathname.includes("/forgot-password") ||
+                          window.location.pathname.includes("/reset-password") ||
+                          window.location.pathname.includes("/verify-email");
+        
+        // Only redirect if on a protected page (not public, not auth page, and not /me check)
+        if (!isPublicPage && !isAuthPage && !isAuthCheckEndpoint) {
+          // For protected pages, redirect to login after a brief delay (to avoid race conditions)
+          setTimeout(() => {
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login";
+            }
+          }, 100);
         }
-        // Only show error toast for protected pages
-        if (!isPublicPage && !window.location.pathname.includes("/login") && 
-            !window.location.pathname.includes("/register")) {
+        
+        // Only show error toast for protected pages and non-/me endpoints
+        if (!isPublicPage && !isAuthPage && !isAuthCheckEndpoint) {
           toast.error("Session expired. Please login again.");
         }
       } else if (status === 403) {
@@ -1184,6 +1206,7 @@ export const profileApi = {
       averageBudgetMax?: number;
       preferredContractType?: string;
       languages?: string;
+      profilePictureUrl?: string;
       status?: string;
       createdAt?: string;
       updatedAt?: string;
@@ -1224,6 +1247,18 @@ export const profileApi = {
       languages?: string;
       status?: string;
     }>("/profile/client", data);
+    return response.data;
+  },
+
+  uploadClientProfilePicture: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post<{
+      url: string;
+      message: string;
+    }>("/profile/client/picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return response.data;
   },
 };
@@ -1940,6 +1975,37 @@ export const tasksApiEnhanced = {
       name: string;
       color?: string;
     }>>("/task-labels");
+    return response.data;
+  },
+};
+
+// Freelancers API
+export const freelancersApi = {
+  list: async (page: number = 0, size: number = 100) => {
+    const response = await api.get<{
+      content: Array<{
+        id: number;
+        fullName: string;
+        email: string;
+        headline?: string;
+        overview?: string;
+        hourlyRate?: number;
+        hourlyRateMin?: number;
+        hourlyRateMax?: number;
+        locationCountry?: string;
+        locationCity?: string;
+        primarySkills?: string;
+        secondarySkills?: string;
+        profilePictureUrl?: string;
+        experienceYears?: number;
+        availability?: string;
+        experienceLevel?: string;
+      }>;
+      totalElements: number;
+      totalPages: number;
+      number: number;
+      size: number;
+    }>(`/users/freelancers?page=${page}&size=${size}`);
     return response.data;
   },
 };

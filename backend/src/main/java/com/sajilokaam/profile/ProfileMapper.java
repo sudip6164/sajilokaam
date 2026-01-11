@@ -62,6 +62,7 @@ public final class ProfileMapper {
         response.setAverageBudgetMax(profile.getAverageBudgetMax());
         response.setPreferredContractType(profile.getPreferredContractType());
         response.setLanguages(profile.getLanguages());
+        response.setProfilePictureUrl(profile.getProfilePictureUrl());
         response.setStatus(profile.getStatus());
         response.setVerificationNotes(profile.getVerificationNotes());
         response.setRejectionReason(profile.getRejectionReason());

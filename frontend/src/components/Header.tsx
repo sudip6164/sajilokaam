@@ -1,9 +1,9 @@
 import { Button } from "./ui/button";
-import { Menu, Bell, User, LayoutDashboard, MessageSquare, LogOut, Home, Zap } from "lucide-react";
+import { Menu, Bell, User, LayoutDashboard, MessageSquare, LogOut } from "lucide-react";
 import { useRouter } from "./Router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { connectsApi } from "@/lib/api";
+import { profileApi } from "@/lib/api";
 import { NotificationsDropdown } from "./notifications/NotificationsDropdown";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
@@ -18,7 +18,7 @@ export function Header() {
   const { navigate, isAuthenticated, user: routerUser } = useRouter();
   const { user: authUser, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [connectsBalance, setConnectsBalance] = useState<number | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   
   // Use authUser for profile info, routerUser for type
   const user = authUser || routerUser;
@@ -26,19 +26,25 @@ export function Header() {
   const isClient = authUser?.roles.some(r => r.name === 'CLIENT');
   const isAdmin = authUser?.roles.some(r => r.name === 'ADMIN');
 
-  // Fetch connects balance for freelancers
+  // Fetch profile picture
   useEffect(() => {
-    if (isAuthenticated && isFreelancer) {
-      fetchConnectsBalance();
+    if (isAuthenticated && (isFreelancer || isClient)) {
+      fetchProfilePicture();
     }
-  }, [isAuthenticated, isFreelancer]);
+  }, [isAuthenticated, isFreelancer, isClient]);
 
-  const fetchConnectsBalance = async () => {
+  const fetchProfilePicture = async () => {
     try {
-      const balance = await connectsApi.getBalance();
-      setConnectsBalance(balance);
+      if (isFreelancer) {
+        const profile = await profileApi.getFreelancerProfile();
+        setProfilePictureUrl(profile.profilePictureUrl || null);
+      } else if (isClient) {
+        const profile = await profileApi.getClientProfile();
+        setProfilePictureUrl(profile.profilePictureUrl || null);
+      }
     } catch (error) {
-      console.error('Error fetching connects:', error);
+      // Profile might not exist yet, that's okay
+      console.debug('Profile not found or error fetching profile picture');
     }
   };
 
@@ -106,16 +112,6 @@ export function Header() {
         <div className="hidden md:flex items-center space-x-3">
           {isAuthenticated && user ? (
             <>
-              {/* Connects Badge for Freelancers */}
-              {isFreelancer && connectsBalance !== null && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20">
-                  <Zap className="h-4 w-4 text-primary fill-primary" />
-                  <span className="text-sm font-semibold text-primary">
-                    {connectsBalance}
-                  </span>
-                </div>
-              )}
-
               {/* Notifications */}
               <div className="relative">
                 <button
@@ -136,7 +132,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={undefined} alt={authUser?.fullName || routerUser?.name || 'User'} />
+                      <AvatarImage src={profilePictureUrl || undefined} alt={authUser?.fullName || routerUser?.name || 'User'} />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground">
                         {(authUser?.fullName || routerUser?.name || 'U').charAt(0).toUpperCase()}
                       </AvatarFallback>

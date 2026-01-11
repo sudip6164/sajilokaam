@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Button } from './ui/button';
@@ -8,6 +8,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Progress } from './ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useRouter } from './Router';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileApi, authApi } from '@/lib/api';
@@ -26,13 +27,15 @@ import {
   DollarSign,
   FileText,
   Clock,
-  User
+  User,
+  Camera
 } from 'lucide-react';
 
 interface ClientProfileData {
   // Personal Account Info
   fullName: string;
   email: string;
+  profilePictureUrl?: string;
   // Company Profile Info
   companyName: string;
   companyWebsite: string;
@@ -98,12 +101,16 @@ const contractTypes = [
 export function ClientProfilePage() {
   const { navigate } = useRouter();
   const { isAuthenticated, hasRole, refreshUser, user } = useAuth();
+  const [isEditMode, setIsEditMode] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileData, setProfileData] = useState<ClientProfileData>({
     fullName: '',
     email: '',
+    profilePictureUrl: '',
     companyName: '',
     companyWebsite: '',
     companySize: '',
@@ -148,9 +155,12 @@ export function ClientProfilePage() {
       
       // Get company profile info
       const profile = await profileApi.getClientProfile();
-      if (profile) {
+      let isProfileIncomplete = false;
+      
+      if (profile && profile.companyName) {
         setProfileData({
           ...personalInfo,
+          profilePictureUrl: profile.profilePictureUrl || '',
           companyName: profile.companyName || '',
           companyWebsite: profile.companyWebsite || '',
           companySize: profile.companySize || '',
@@ -167,8 +177,10 @@ export function ClientProfilePage() {
         });
       } else {
         // If no company profile yet, just set personal info
+        isProfileIncomplete = true;
         setProfileData({
           ...personalInfo,
+          profilePictureUrl: '',
           companyName: '',
           companyWebsite: '',
           companySize: '',
@@ -184,12 +196,16 @@ export function ClientProfilePage() {
           languages: '',
         });
       }
+      
+      // Auto-enter edit mode if profile is incomplete
+      setIsEditMode(isProfileIncomplete);
     } catch (err: any) {
       console.error('Error fetching profile:', err);
       // Profile might not exist yet, that's okay - set personal info at least
       setProfileData({
         fullName: user?.fullName || '',
         email: user?.email || '',
+        profilePictureUrl: '',
         companyName: '',
         companyWebsite: '',
         companySize: '',
@@ -204,8 +220,39 @@ export function ClientProfilePage() {
         preferredContractType: '',
         languages: '',
       });
+      // Show edit mode if profile fetch failed
+      setIsEditMode(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      const response = await profileApi.uploadClientProfilePicture(file);
+      setProfileData(prev => ({ ...prev, profilePictureUrl: response.url }));
+      toast.success('Profile picture uploaded successfully!');
+    } catch (error: any) {
+      console.error('Error uploading profile picture:', error);
+      toast.error('Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploadingPicture(false);
     }
   };
 
@@ -341,11 +388,15 @@ export function ClientProfilePage() {
       
       toast.success('Profile saved successfully!');
       
-      // If on last step, redirect to dashboard
+      // Only redirect to dashboard if on last step
       if (currentStep === steps.length) {
-        navigate('client-dashboard');
+        setTimeout(() => {
+          setIsEditMode(false);
+          navigate('client-dashboard');
+        }, 1000);
       } else {
-        handleNext();
+        // Exit edit mode after saving intermediate steps
+        setIsEditMode(false);
       }
     } catch (err: any) {
       console.error('Error saving profile:', err);
@@ -356,9 +407,14 @@ export function ClientProfilePage() {
   };
 
   const calculateProgress = () => {
-    const totalFields = 15; // fullName, email, and 13 company fields
-    const filledFields = Object.values(profileData).filter(v => v && v.toString().trim()).length;
-    return (filledFields / totalFields) * 100;
+    // Count all fields in profileData interface (excluding profilePictureUrl which is optional)
+    const totalFields = Object.keys(profileData).filter(key => key !== 'profilePictureUrl').length;
+    const filledFields = Object.entries(profileData)
+      .filter(([key, value]) => key !== 'profilePictureUrl' && value && value.toString().trim())
+      .length;
+    const percentage = (filledFields / totalFields) * 100;
+    // Cap at 100% to prevent exceeding maximum
+    return Math.min(percentage, 100);
   };
 
   if (loading) {
@@ -384,20 +440,171 @@ export function ClientProfilePage() {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">Complete Your Client Profile</h1>
-            <p className="text-muted-foreground text-lg">
-              Help freelancers understand your business and hiring needs
-            </p>
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-muted-foreground">Profile Completion</span>
-                <span className="text-sm font-medium">{Math.round(calculateProgress())}%</span>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">{isEditMode ? 'Edit Your Profile' : 'Client Profile'}</h1>
+                <p className="text-muted-foreground text-lg">
+                  {isEditMode ? 'Update your business and hiring information' : profileData.companyName || 'Your Company Profile'}
+                </p>
               </div>
-              <Progress value={calculateProgress()} className="h-2" />
+              {!isEditMode && (
+                <Button onClick={() => setIsEditMode(true)} size="lg">
+                  Edit Profile
+                </Button>
+              )}
             </div>
+            {isEditMode && (
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-muted-foreground">Profile Completion</span>
+                  <span className="text-sm font-medium">{Math.round(calculateProgress())}%</span>
+                </div>
+                <Progress value={calculateProgress()} className="h-2" />
+              </div>
+            )}
           </div>
 
-          {/* Progress Steps */}
+          {!isEditMode ? (
+            /* Profile View Mode */
+            <div className="space-y-6">
+              {/* Personal Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-6">
+                    <Avatar className="h-24 w-24">
+                      {profileData.profilePictureUrl ? (
+                        <AvatarImage src={profileData.profilePictureUrl} alt={profileData.fullName} />
+                      ) : (
+                        <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                          {profileData.fullName.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="flex-1 grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground">Full Name</Label>
+                        <p className="font-medium">{profileData.fullName || 'Not set'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Email</Label>
+                        <p className="font-medium">{profileData.email || 'Not set'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Company Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Company Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Company Name</Label>
+                      <p className="font-medium">{profileData.companyName || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Company Size</Label>
+                      <p className="font-medium">{profileData.companySize || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Industry</Label>
+                      <p className="font-medium">{profileData.industry || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Website</Label>
+                      {profileData.companyWebsite ? (
+                        <a href={profileData.companyWebsite} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                          <Globe className="h-4 w-4" />
+                          Visit Website
+                        </a>
+                      ) : (
+                        <p className="font-medium">Not set</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Company Description</Label>
+                    <p className="mt-1">{profileData.description || 'No description provided'}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Location Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Location & Timezone
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">City</Label>
+                      <p className="font-medium">{profileData.locationCity || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Country</Label>
+                      <p className="font-medium">{profileData.locationCountry || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Timezone</Label>
+                      <p className="font-medium">{profileData.timezone || 'Not set'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Hiring Preferences Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Hiring Preferences
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Preferred Contract Type</Label>
+                      <p className="font-medium">{profileData.preferredContractType || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Average Budget Range</Label>
+                      <p className="font-medium">
+                        {profileData.averageBudgetMin && profileData.averageBudgetMax 
+                          ? `Rs. ${profileData.averageBudgetMin} - Rs. ${profileData.averageBudgetMax}`
+                          : 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Languages</Label>
+                      <p className="font-medium">{profileData.languages || 'Not set'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Hiring Needs</Label>
+                    <p className="mt-1">{profileData.hiringNeeds || 'No hiring needs specified'}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            /* Edit Mode - Existing Form */
+            <>
+              {/* Progress Steps */}
           <div className="mb-8">
             <div className="flex items-center justify-between relative">
               <div className="absolute top-5 left-0 right-0 h-1 bg-muted -z-10">
@@ -447,6 +654,40 @@ export function ClientProfilePage() {
                   </div>
 
                   <div className="space-y-4">
+                    {/* Profile Picture */}
+                    <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg">
+                      <Avatar className="h-32 w-32">
+                        {profileData.profilePictureUrl ? (
+                          <AvatarImage src={profileData.profilePictureUrl} alt={profileData.fullName} />
+                        ) : (
+                          <AvatarFallback className="bg-primary/10 text-primary text-3xl">
+                            {profileData.fullName.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="text-center">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProfilePictureUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingPicture}
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          {uploadingPicture ? 'Uploading...' : 'Upload Profile Picture'}
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          JPG, PNG or GIF. Max size 5MB.
+                        </p>
+                      </div>
+                    </div>
+
                     <div>
                       <Label htmlFor="fullName" className="text-base">Full Name *</Label>
                       <Input
@@ -947,33 +1188,61 @@ export function ClientProfilePage() {
               )}
 
               {/* Navigation Buttons */}
-              <div className="flex justify-between mt-8 pt-6 border-t">
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={currentStep === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-
-                {currentStep < steps.length ? (
-                  <Button onClick={handleNext}>
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
+              <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setCurrentStep(1);
+                    }}
+                  >
+                    Cancel
                   </Button>
-                ) : (
-                  <Button 
+                  <Button
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={currentStep === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
                     onClick={handleSave}
-                    className="bg-gradient-to-r from-primary to-secondary"
                     disabled={saving}
                   >
-                    {saving ? 'Saving...' : 'Complete Profile'}
+                    {saving ? 'Saving...' : 'Save Progress'}
                   </Button>
-                )}
+
+                  {currentStep < steps.length ? (
+                    <Button onClick={handleNext} disabled={saving}>
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handleSave}
+                      className="bg-gradient-to-r from-primary to-secondary"
+                      disabled={saving}
+                    >
+                      {saving ? 'Saving...' : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Complete Profile
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
         </div>
       </div>
       <Footer />

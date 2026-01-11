@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Star, Heart, MessageCircle, ArrowLeft, DollarSign, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useRouter } from './Router';
 import { Header } from './Header';
+import { freelancersApi } from '@/lib/api';
+import { toast } from 'sonner';
 
 const mockFreelancers = [
   {
@@ -151,13 +153,51 @@ const categories = [
   "DevOps & Cloud"
 ];
 
+interface Freelancer {
+  id: number;
+  fullName: string;
+  email: string;
+  headline?: string;
+  overview?: string;
+  hourlyRate?: number;
+  hourlyRateMin?: number;
+  hourlyRateMax?: number;
+  locationCountry?: string;
+  locationCity?: string;
+  primarySkills?: string;
+  secondarySkills?: string;
+  profilePictureUrl?: string;
+  experienceYears?: number;
+  availability?: string;
+  experienceLevel?: string;
+}
+
 export function FindFreelancersPage() {
   const { navigate } = useRouter();
+  const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'recommended' | 'rating' | 'hourly-rate'>('recommended');
   const [savedFreelancers, setSavedFreelancers] = useState<number[]>([]);
+
+  useEffect(() => {
+    fetchFreelancers();
+  }, []);
+
+  const fetchFreelancers = async () => {
+    try {
+      setLoading(true);
+      const response = await freelancersApi.list(0, 100);
+      setFreelancers(response.content);
+    } catch (error: any) {
+      console.error('Error fetching freelancers:', error);
+      toast.error('Failed to load freelancers');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleSaveFreelancer = (id: number) => {
     setSavedFreelancers(prev =>
@@ -166,37 +206,46 @@ export function FindFreelancersPage() {
   };
 
   // Filter freelancers
-  let filteredFreelancers = [...mockFreelancers];
+  let filteredFreelancers = [...freelancers];
 
   if (searchQuery) {
-    filteredFreelancers = filteredFreelancers.filter(freelancer =>
-      freelancer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      freelancer.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      freelancer.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }
-
-  if (selectedCategory) {
-    filteredFreelancers = filteredFreelancers.filter(f => f.category === selectedCategory);
-  }
-
-  if (selectedSkills.length > 0) {
-    filteredFreelancers = filteredFreelancers.filter(f =>
-      selectedSkills.every(skill => f.skills.includes(skill))
-    );
+    filteredFreelancers = filteredFreelancers.filter(freelancer => {
+      const fullName = freelancer.fullName?.toLowerCase() || '';
+      const headline = freelancer.headline?.toLowerCase() || '';
+      const primarySkills = freelancer.primarySkills?.toLowerCase() || '';
+      const secondarySkills = freelancer.secondarySkills?.toLowerCase() || '';
+      const query = searchQuery.toLowerCase();
+      
+      return fullName.includes(query) ||
+             headline.includes(query) ||
+             primarySkills.includes(query) ||
+             secondarySkills.includes(query);
+    });
   }
 
   // Sort freelancers
   filteredFreelancers.sort((a, b) => {
     switch (sortBy) {
-      case 'rating':
-        return b.rating - a.rating;
       case 'hourly-rate':
-        return a.hourlyRate - b.hourlyRate;
+        return (a.hourlyRate || 0) - (b.hourlyRate || 0);
       default:
         return 0;
     }
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[400px] pt-24">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading freelancers...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
@@ -286,33 +335,51 @@ export function FindFreelancersPage() {
 
         {/* Freelancer Listings */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {filteredFreelancers.map((freelancer) => (
+          {filteredFreelancers.length === 0 ? (
+            <div className="col-span-2 text-center py-12">
+              <p className="text-muted-foreground text-lg">No freelancers found</p>
+              <p className="text-sm text-muted-foreground mt-2">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            filteredFreelancers.map((freelancer) => {
+              const skills = [
+                ...(freelancer.primarySkills ? freelancer.primarySkills.split(',').map(s => s.trim()) : []),
+                ...(freelancer.secondarySkills ? freelancer.secondarySkills.split(',').map(s => s.trim()) : [])
+              ].filter(Boolean);
+              
+              const location = [freelancer.locationCity, freelancer.locationCountry]
+                .filter(Boolean)
+                .join(', ') || 'Location not specified';
+
+              return (
             <Card key={freelancer.id} className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 bg-card">
               <CardHeader className="pb-4">
                 <div className="flex items-start gap-4">
                   <div className="relative">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage
-                        src={freelancer.avatar}
-                        alt={freelancer.name}
-                      />
-                      <AvatarFallback>{freelancer.name.charAt(0)}</AvatarFallback>
+                      {freelancer.profilePictureUrl ? (
+                        <AvatarImage
+                          src={freelancer.profilePictureUrl}
+                          alt={freelancer.fullName}
+                        />
+                      ) : (
+                        <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                          {freelancer.fullName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
-                    {freelancer.online && (
-                      <div className="absolute bottom-0 right-0 h-4 w-4 rounded-full bg-success border-2 border-background"></div>
-                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors">
-                          {freelancer.name}
+                          {freelancer.fullName}
                         </h3>
-                        <p className="text-sm text-muted-foreground">{freelancer.title}</p>
+                        <p className="text-sm text-muted-foreground">{freelancer.headline || 'Freelancer'}</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{freelancer.location}</span>
+                          <span className="text-xs text-muted-foreground">{location}</span>
                         </div>
                       </div>
                       
@@ -332,77 +399,71 @@ export function FindFreelancersPage() {
               </CardHeader>
 
               <CardContent className="pt-0 space-y-4">
-                {/* Rating and Stats */}
+                {/* Rate and Experience */}
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1.5">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{freelancer.rating}</span>
-                    <span className="text-muted-foreground">({freelancer.reviews} reviews)</span>
+                    {freelancer.experienceYears && (
+                      <span className="text-muted-foreground">
+                        {freelancer.experienceYears} years exp.
+                      </span>
+                    )}
+                    {freelancer.experienceLevel && (
+                      <Badge variant="outline" className="text-xs">
+                        {freelancer.experienceLevel}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <DollarSign className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-primary">Rs. {freelancer.hourlyRate}/hr</span>
+                    <span className="font-semibold text-primary">
+                      {freelancer.hourlyRate 
+                        ? `Rs. ${freelancer.hourlyRate}/hr`
+                        : freelancer.hourlyRateMin && freelancer.hourlyRateMax
+                        ? `Rs. ${freelancer.hourlyRateMin}-${freelancer.hourlyRateMax}/hr`
+                        : 'Rate not set'}
+                    </span>
                   </div>
                 </div>
 
                 {/* Description */}
                 <p className="text-sm text-muted-foreground line-clamp-2">
-                  {freelancer.description}
+                  {freelancer.overview || 'No overview provided yet'}
                 </p>
 
                 {/* Skills */}
                 <div className="flex flex-wrap gap-1.5">
-                  {freelancer.skills.slice(0, 4).map((skill) => (
-                    <Badge key={skill} variant="outline" className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary transition-colors">
-                      {skill}
-                    </Badge>
-                  ))}
-                  {freelancer.skills.length > 4 && (
-                    <Badge variant="outline" className="text-xs bg-muted">
-                      +{freelancer.skills.length - 4} more
-                    </Badge>
+                  {skills.length > 0 ? (
+                    <>
+                      {skills.slice(0, 5).map((skill, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary transition-colors">
+                          {skill}
+                        </Badge>
+                      ))}
+                      {skills.length > 5 && (
+                        <Badge variant="outline" className="text-xs bg-muted">
+                          +{skills.length - 5} more
+                        </Badge>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No skills listed</span>
                   )}
                 </div>
 
-                {/* Portfolio Preview */}
-                {freelancer.portfolio.length > 0 && (
-                  <div className="flex gap-2">
-                    {freelancer.portfolio.slice(0, 2).map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`Portfolio ${index + 1}`}
-                        className="h-20 w-28 rounded-lg object-cover border-2 border-border hover:border-primary transition-colors cursor-pointer"
-                      />
-                    ))}
+                {/* Availability */}
+                {freelancer.availability && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{freelancer.availability}</span>
                   </div>
                 )}
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 text-xs text-center bg-muted/30 rounded-lg p-3">
-                  <div>
-                    <p className="font-semibold text-foreground text-sm">{freelancer.completedJobs}</p>
-                    <p className="text-muted-foreground">Jobs Done</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-success text-sm">{freelancer.successRate}</p>
-                    <p className="text-muted-foreground">Success</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-center gap-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-muted-foreground font-medium">{freelancer.responseTime}</span>
-                    </div>
-                    <p className="text-muted-foreground">Response</p>
-                  </div>
-                </div>
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-1">
                   <Button 
                     size="sm" 
                     className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
-                    onClick={() => navigate('freelancer-profile', { freelancerId: freelancer.id })}
+                    onClick={() => toast.info('Messaging feature coming soon!')}
                   >
                     <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
                     Contact
@@ -411,14 +472,17 @@ export function FindFreelancersPage() {
                     variant="outline" 
                     size="sm" 
                     className="flex-1 border-2 hover:border-primary hover:bg-primary/5"
-                    onClick={() => navigate('freelancer-profile', { freelancerId: freelancer.id })}
+                    onClick={() => toast.info('Freelancer profile view coming soon!')}
                   >
                     View Profile
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}</div>
+              );
+            })
+          )}
+        </div>
 
         {/* Load More */}
         <div className="mt-10 text-center">

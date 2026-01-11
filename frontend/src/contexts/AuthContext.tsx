@@ -38,11 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles: userData.roles,
       });
       return true;
-    } catch (error) {
-      // Token might be invalid, clear it
-      localStorage.removeItem("jwt_token");
-      setToken(null);
-      setUser(null);
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+      // Token might be invalid or expired, clear it
+      // Only clear if it's an auth error (401/403)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem("jwt_token");
+        setToken(null);
+        setUser(null);
+      }
       return false;
     } finally {
       setIsLoading(false);

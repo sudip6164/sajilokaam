@@ -21,6 +21,7 @@ public class ClientProfileResponse {
     private BigDecimal averageBudgetMax;
     private String preferredContractType;
     private String languages;
+    private String profilePictureUrl;
     private ProfileStatus status;
     private String verificationNotes;
     private String rejectionReason;
@@ -145,6 +146,14 @@ public class ClientProfileResponse {
 
     public void setLanguages(String languages) {
         this.languages = languages;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     public ProfileStatus getStatus() {

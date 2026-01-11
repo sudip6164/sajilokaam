@@ -1,413 +1,1354 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Progress } from './ui/progress';
 import { useRouter } from './Router';
+import { useAuth } from '@/contexts/AuthContext';
+import { profileApi, authApi, jobSkillsApi } from '@/lib/api';
+import { validateName } from '@/lib/validation';
+import { toast } from 'sonner';
 import { 
-  Star, 
-  MapPin, 
-  Clock, 
-  DollarSign, 
-  Award,
+  User,
+  MapPin,
   Briefcase,
-  Calendar,
-  MessageSquare,
-  Heart,
-  Share2,
   CheckCircle2,
-  TrendingUp
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle,
+  Globe,
+  DollarSign,
+  FileText,
+  Clock,
+  Award,
+  Code,
+  Camera,
+  X,
+  Plus
 } from 'lucide-react';
 
-// Mock freelancer data - in real app, this would come from the router params
-const freelancerData = {
-  id: 1,
-  name: "Sarah Chen",
-  title: "Full-Stack Developer",
-  location: "San Francisco, CA",
-  rating: 4.9,
-  reviewCount: 127,
-  hourlyRate: 85,
-  avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
-  coverImage: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&h=400&fit=crop",
-  skills: ["React", "Node.js", "Python", "TypeScript", "PostgreSQL", "AWS", "Docker", "GraphQL"],
-  languages: ["English (Native)", "Mandarin (Fluent)", "Spanish (Conversational)"],
-  description: "Experienced full-stack developer with 6+ years building scalable web applications. I specialize in React, Node.js, and cloud architecture. I've helped numerous startups and enterprises build robust, high-performance applications from the ground up.",
-  completedJobs: 89,
-  responseTime: "1 hour",
-  memberSince: "March 2019",
-  successRate: "98%",
-  totalEarnings: "Rs. 250K+",
-  availability: "Available 30 hrs/week",
-  portfolio: [
-    {
-      id: 1,
-      title: "E-commerce Platform",
-      image: "https://images.unsplash.com/photo-1557821552-17105176677c?w=400&h=300&fit=crop",
-      description: "Built a complete e-commerce platform with React and Node.js",
-      tech: ["React", "Node.js", "MongoDB"]
-    },
-    {
-      id: 2,
-      title: "Healthcare Dashboard",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
-      description: "Analytics dashboard for healthcare providers",
-      tech: ["React", "D3.js", "PostgreSQL"]
-    },
-    {
-      id: 3,
-      title: "Mobile Banking App",
-      image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&h=300&fit=crop",
-      description: "Secure mobile banking application with real-time features",
-      tech: ["React Native", "Firebase", "AWS"]
-    }
-  ],
-  reviewsList: [
-    {
-      id: 1,
-      client: "John Smith",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-      rating: 5,
-      date: "2 weeks ago",
-      project: "E-commerce Website Development",
-      comment: "Sarah is an exceptional developer! She delivered a high-quality product ahead of schedule. Her communication was excellent throughout the project, and she provided valuable insights that improved our final product. Highly recommend!"
-    },
-    {
-      id: 2,
-      client: "Emily Watson",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face",
-      rating: 5,
-      date: "1 month ago",
-      project: "React Dashboard Development",
-      comment: "Outstanding work! Sarah understood our requirements perfectly and implemented features beyond our expectations. Will definitely hire again."
-    },
-    {
-      id: 3,
-      client: "Michael Brown",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
-      rating: 4.8,
-      date: "2 months ago",
-      project: "API Integration",
-      comment: "Great developer with strong technical skills. The API integration was completed smoothly and works perfectly."
-    }
-  ],
-  experience: [
-    {
-      id: 1,
-      title: "Senior Full-Stack Developer",
-      company: "TechCorp Inc.",
-      period: "2020 - Present",
-      description: "Leading development of enterprise web applications"
-    },
-    {
-      id: 2,
-      title: "Full-Stack Developer",
-      company: "StartupX",
-      period: "2018 - 2020",
-      description: "Built and maintained multiple SaaS products"
-    }
-  ],
-  certifications: [
-    "AWS Certified Solutions Architect",
-    "React Advanced Certification",
-    "Node.js Professional Certification"
-  ]
-};
+interface FreelancerProfileData {
+  // Personal Account Info
+  fullName: string;
+  email: string;
+  profilePictureUrl?: string;
+  // Freelancer Profile Info
+  headline: string;
+  overview: string;
+  hourlyRate: string;
+  hourlyRateMin: string;
+  hourlyRateMax: string;
+  locationCity: string;
+  locationCountry: string;
+  timezone: string;
+  primarySkills: string[];
+  secondarySkills: string[];
+  languages: string;
+  education: string;
+  certifications: string;
+  portfolioUrl: string;
+  websiteUrl: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  experience: string;
+  availability: string;
+  preferredJobTypes: string;
+  preferredContractTypes: string;
+}
+
+const timezones = [
+  'UTC',
+  'America/New_York (EST)',
+  'America/Chicago (CST)',
+  'America/Denver (MST)',
+  'America/Los_Angeles (PST)',
+  'Europe/London (GMT)',
+  'Europe/Paris (CET)',
+  'Asia/Dubai (GST)',
+  'Asia/Kolkata (IST)',
+  'Asia/Kathmandu (NPT)',
+  'Asia/Shanghai (CST)',
+  'Asia/Tokyo (JST)',
+  'Australia/Sydney (AEDT)'
+];
+
+const availabilityOptions = [
+  'Full-time (40+ hrs/week)',
+  'Part-time (20-40 hrs/week)',
+  'Flexible (10-20 hrs/week)',
+  'As needed (<10 hrs/week)'
+];
+
+const contractTypes = [
+  'Fixed Price',
+  'Hourly',
+  'Both'
+];
+
+const jobTypes = [
+  'One-time projects',
+  'Ongoing projects',
+  'Both'
+];
 
 export function FreelancerProfilePage() {
-  const { navigate, pageParams, user } = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
-  
-  // Get profile user ID from params or use logged-in user
-  const profileUserId = pageParams?.userId || pageParams?.freelancerId || user?.id;
-  
-  // TODO: Fetch freelancer data based on profileUserId
-  // For now, using mock data
-  const freelancer = freelancerData;
+  const { navigate } = useRouter();
+  const { isAuthenticated, hasRole, refreshUser, user } = useAuth();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [availableSkills, setAvailableSkills] = useState<Array<{ id: number; name: string }>>([]);
+  const [primarySkillInput, setPrimarySkillInput] = useState('');
+  const [secondarySkillInput, setSecondarySkillInput] = useState('');
+  const [profileData, setProfileData] = useState<FreelancerProfileData>({
+    fullName: '',
+    email: '',
+    profilePictureUrl: '',
+    headline: '',
+    overview: '',
+    hourlyRate: '',
+    hourlyRateMin: '',
+    hourlyRateMax: '',
+    locationCity: '',
+    locationCountry: '',
+    timezone: '',
+    primarySkills: [],
+    secondarySkills: [],
+    languages: '',
+    education: '',
+    certifications: '',
+    portfolioUrl: '',
+    websiteUrl: '',
+    linkedinUrl: '',
+    githubUrl: '',
+    experience: '',
+    availability: '',
+    preferredJobTypes: '',
+    preferredContractTypes: ''
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof FreelancerProfileData, string>>>({});
+
+  const totalSteps = 5;
+  const progress = Math.min((currentStep / totalSteps) * 100, 100);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('login');
+      return;
+    }
+
+    if (!hasRole('FREELANCER')) {
+      toast.error('Only freelancers can access this page');
+      navigate('home');
+      return;
+    }
+
+    fetchProfile();
+    fetchSkills();
+  }, [isAuthenticated]);
+
+  const fetchSkills = async () => {
+    try {
+      const data = await jobSkillsApi.list();
+      setAvailableSkills(data);
+    } catch (err) {
+      console.error('Error fetching skills:', err);
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // Get personal account info
+      const personalInfo = {
+        fullName: user?.fullName || '',
+        email: user?.email || '',
+      };
+      
+      // Get freelancer profile info
+      const profile = await profileApi.getFreelancerProfile();
+      let isProfileIncomplete = false;
+      
+      if (profile && profile.headline) {
+        setProfileData({
+          ...personalInfo,
+          profilePictureUrl: profile.profilePictureUrl || '',
+          headline: profile.headline || '',
+          overview: profile.overview || '',
+          hourlyRate: profile.hourlyRate?.toString() || '',
+          hourlyRateMin: profile.hourlyRateMin?.toString() || '',
+          hourlyRateMax: profile.hourlyRateMax?.toString() || '',
+          locationCity: profile.locationCity || '',
+          locationCountry: profile.locationCountry || '',
+          timezone: profile.timezone || '',
+          primarySkills: profile.primarySkills ? profile.primarySkills.split(',').map(s => s.trim()) : [],
+          secondarySkills: profile.secondarySkills ? profile.secondarySkills.split(',').map(s => s.trim()) : [],
+          languages: profile.languages || '',
+          education: profile.education || '',
+          certifications: profile.certifications || '',
+          portfolioUrl: profile.portfolioUrl || '',
+          websiteUrl: profile.websiteUrl || '',
+          linkedinUrl: profile.linkedinUrl || '',
+          githubUrl: profile.githubUrl || '',
+          experience: profile.experience || '',
+          availability: profile.availability || '',
+          preferredJobTypes: profile.preferredJobTypes || '',
+          preferredContractTypes: profile.preferredContractTypes || ''
+        });
+      } else {
+        // No profile yet, use defaults
+        isProfileIncomplete = true;
+        setProfileData({
+          ...personalInfo,
+          profilePictureUrl: '',
+          headline: '',
+          overview: '',
+          hourlyRate: '',
+          hourlyRateMin: '',
+          hourlyRateMax: '',
+          locationCity: '',
+          locationCountry: '',
+          timezone: '',
+          primarySkills: [],
+          secondarySkills: [],
+          languages: '',
+          education: '',
+          certifications: '',
+          portfolioUrl: '',
+          websiteUrl: '',
+          linkedinUrl: '',
+          githubUrl: '',
+          experience: '',
+          availability: '',
+          preferredJobTypes: '',
+          preferredContractTypes: ''
+        });
+      }
+      
+      // Auto-enter edit mode if profile is incomplete
+      setIsEditMode(isProfileIncomplete);
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      if (error.response?.status === 404) {
+        // No profile yet, use defaults
+        toast.info('Please complete your profile to start working');
+      } else {
+        toast.error('Failed to load profile. Please try again.');
+      }
+      // Show edit mode if profile fetch failed
+      setIsEditMode(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateField = <K extends keyof FreelancerProfileData>(field: K, value: any) => {
+    setProfileData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPicture(true);
+      const response = await profileApi.uploadProfilePicture(file);
+      setProfileData(prev => ({ ...prev, profilePictureUrl: response.url }));
+      toast.success('Profile picture uploaded successfully!');
+    } catch (error: any) {
+      console.error('Error uploading profile picture:', error);
+      toast.error('Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploadingPicture(false);
+    }
+  };
+
+  const addPrimarySkill = () => {
+    if (!primarySkillInput.trim()) return;
+    if (profileData.primarySkills.includes(primarySkillInput.trim())) {
+      toast.error('Skill already added');
+      return;
+    }
+    setProfileData(prev => ({
+      ...prev,
+      primarySkills: [...prev.primarySkills, primarySkillInput.trim()]
+    }));
+    setPrimarySkillInput('');
+  };
+
+  const removePrimarySkill = (skill: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      primarySkills: prev.primarySkills.filter(s => s !== skill)
+    }));
+  };
+
+  const addSecondarySkill = () => {
+    if (!secondarySkillInput.trim()) return;
+    if (profileData.secondarySkills.includes(secondarySkillInput.trim())) {
+      toast.error('Skill already added');
+      return;
+    }
+    setProfileData(prev => ({
+      ...prev,
+      secondarySkills: [...prev.secondarySkills, secondarySkillInput.trim()]
+    }));
+    setSecondarySkillInput('');
+  };
+
+  const removeSecondarySkill = (skill: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      secondarySkills: prev.secondarySkills.filter(s => s !== skill)
+    }));
+  };
+
+  const validateStep = (step: number): boolean => {
+    const newErrors: Partial<Record<keyof FreelancerProfileData, string>> = {};
+
+    if (step === 1) {
+      // Basic info validation
+      if (!profileData.fullName.trim()) {
+        newErrors.fullName = 'Full name is required';
+      } else {
+        const nameValidation = validateName(profileData.fullName);
+        if (!nameValidation.valid) {
+          newErrors.fullName = nameValidation.error;
+        }
+      }
+      if (!profileData.headline.trim()) {
+        newErrors.headline = 'Professional headline is required';
+      }
+    } else if (step === 2) {
+      // Rate validation
+      if (profileData.hourlyRate && parseFloat(profileData.hourlyRate) <= 0) {
+        newErrors.hourlyRate = 'Rate must be greater than 0';
+      }
+      if (profileData.hourlyRateMin && parseFloat(profileData.hourlyRateMin) <= 0) {
+        newErrors.hourlyRateMin = 'Minimum rate must be greater than 0';
+      }
+      if (profileData.hourlyRateMax && parseFloat(profileData.hourlyRateMax) <= 0) {
+        newErrors.hourlyRateMax = 'Maximum rate must be greater than 0';
+      }
+      if (profileData.hourlyRateMin && profileData.hourlyRateMax && 
+          parseFloat(profileData.hourlyRateMin) > parseFloat(profileData.hourlyRateMax)) {
+        newErrors.hourlyRateMax = 'Maximum rate must be greater than minimum';
+      }
+    } else if (step === 3) {
+      // Skills validation
+      if (profileData.primarySkills.length === 0) {
+        newErrors.primarySkills = 'At least one primary skill is required';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleSave = async () => {
+    if (!validateStep(currentStep)) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      // Save personal account info (fullName) if on step 1 or if it changed
+      if (currentStep === 1 || profileData.fullName !== user?.fullName) {
+        await authApi.updateProfile({ fullName: profileData.fullName.trim() });
+        await refreshUser(); // Refresh to update header
+      }
+      
+      // Save freelancer profile info (skip if on step 1)
+      if (currentStep !== 1) {
+        const payload: any = {};
+
+        // Only include non-empty fields
+        if (profileData.headline.trim()) {
+          payload.headline = profileData.headline.trim();
+        }
+        if (profileData.overview.trim()) {
+          payload.overview = profileData.overview.trim();
+        }
+        if (profileData.hourlyRate) {
+          payload.hourlyRate = parseFloat(profileData.hourlyRate);
+        }
+        if (profileData.hourlyRateMin) {
+          payload.hourlyRateMin = parseFloat(profileData.hourlyRateMin);
+        }
+        if (profileData.hourlyRateMax) {
+          payload.hourlyRateMax = parseFloat(profileData.hourlyRateMax);
+        }
+        if (profileData.locationCity.trim()) {
+          payload.locationCity = profileData.locationCity.trim();
+        }
+        if (profileData.locationCountry.trim()) {
+          payload.locationCountry = profileData.locationCountry.trim();
+        }
+        if (profileData.timezone) {
+          payload.timezone = profileData.timezone;
+        }
+        if (profileData.primarySkills.length > 0) {
+          payload.primarySkills = profileData.primarySkills.join(', ');
+        }
+        if (profileData.secondarySkills.length > 0) {
+          payload.secondarySkills = profileData.secondarySkills.join(', ');
+        }
+        if (profileData.languages.trim()) {
+          payload.languages = profileData.languages.trim();
+        }
+        if (profileData.education.trim()) {
+          payload.education = profileData.education.trim();
+        }
+        if (profileData.certifications.trim()) {
+          payload.certifications = profileData.certifications.trim();
+        }
+        if (profileData.portfolioUrl.trim()) {
+          payload.portfolioUrl = profileData.portfolioUrl.trim();
+        }
+        if (profileData.websiteUrl.trim()) {
+          payload.websiteUrl = profileData.websiteUrl.trim();
+        }
+        if (profileData.linkedinUrl.trim()) {
+          payload.linkedinUrl = profileData.linkedinUrl.trim();
+        }
+        if (profileData.githubUrl.trim()) {
+          payload.githubUrl = profileData.githubUrl.trim();
+        }
+        if (profileData.experience.trim()) {
+          payload.experience = profileData.experience.trim();
+        }
+        if (profileData.availability) {
+          payload.availability = profileData.availability;
+        }
+        if (profileData.preferredJobTypes) {
+          payload.preferredJobTypes = profileData.preferredJobTypes;
+        }
+        if (profileData.preferredContractTypes) {
+          payload.preferredContractTypes = profileData.preferredContractTypes;
+        }
+
+        await profileApi.updateFreelancerProfile(payload);
+      }
+      
+      toast.success('Profile saved successfully!');
+      
+      // If on last step, redirect to dashboard
+      if (currentStep === totalSteps) {
+        setTimeout(() => {
+          setIsEditMode(false);
+          navigate('freelancer-dashboard');
+        }, 1000);
+      } else {
+        // Exit edit mode after saving intermediate steps
+        setIsEditMode(false);
+      }
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      toast.error('Failed to save profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="flex items-center justify-center min-h-[400px] pt-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-16">
-        {/* Profile Header Card */}
-        <Card className="border-2 shadow-xl">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              {/* Avatar */}
-              <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                <AvatarImage src={freelancer.avatar} alt={freelancer.name} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-3xl">
-                  {freelancer.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+      <div className="max-w-4xl mx-auto pt-24 px-4 pb-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center gap-3">
+              <User className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold">{isEditMode ? 'Edit Profile' : 'Freelancer Profile'}</h1>
+                <p className="text-muted-foreground">
+                  {isEditMode ? 'Update your freelance profile' : (profileData.headline || 'Your Freelance Profile')}
+                </p>
+              </div>
+            </div>
+            {!isEditMode && (
+              <Button onClick={() => setIsEditMode(true)} size="lg">
+                Edit Profile
+              </Button>
+            )}
+          </div>
+        </div>
 
-              {/* Info */}
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div>
-                    <h1 className="text-3xl font-bold">{freelancer.name}</h1>
-                    <p className="text-xl text-muted-foreground mt-1">{freelancer.title}</p>
-                    
-                    <div className="flex flex-wrap items-center gap-4 mt-3">
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {freelancer.location}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="font-semibold">{freelancer.rating}</span>
-                        <span className="text-sm text-muted-foreground">({freelancer.reviewCount} reviews)</span>
-                      </div>
-                      <Badge className="bg-success text-white">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Top Rated
-                      </Badge>
+        {isEditMode && (
+          /* Progress Bar */
+          <div className="mb-8">
+            <div className="flex justify-between text-sm text-muted-foreground mb-2">
+              <span>Step {currentStep} of {totalSteps}</span>
+              <span>{Math.round(progress)}% complete</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+
+        {!isEditMode ? (
+          /* Profile View Mode */
+          <div className="space-y-6">
+            {/* Basic Info Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-start gap-6">
+                  <Avatar className="h-24 w-24">
+                    {profileData.profilePictureUrl ? (
+                      <AvatarImage src={profileData.profilePictureUrl} alt={profileData.fullName} />
+                    ) : (
+                      <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                        {profileData.fullName.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <Label className="text-muted-foreground">Full Name</Label>
+                      <p className="font-medium text-lg">{profileData.fullName || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Professional Headline</Label>
+                      <p className="font-medium">{profileData.headline || 'Not set'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Overview</Label>
+                      <p className="text-sm">{profileData.overview || 'No overview provided'}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rate & Availability Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Rate & Availability
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Hourly Rate</Label>
+                  <p className="font-medium">
+                    {profileData.hourlyRate ? `Rs. ${profileData.hourlyRate}/hr` : 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Rate Range</Label>
+                  <p className="font-medium">
+                    {profileData.hourlyRateMin && profileData.hourlyRateMax
+                      ? `Rs. ${profileData.hourlyRateMin} - Rs. ${profileData.hourlyRateMax}/hr`
+                      : 'Not set'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Availability</Label>
+                  <p className="font-medium">{profileData.availability || 'Not set'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Preferred Contract Types</Label>
+                  <p className="font-medium">{profileData.preferredContractTypes || 'Not set'}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Skills Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5" />
+                  Skills
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-muted-foreground mb-2 block">Primary Skills</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {profileData.primarySkills.length > 0 ? (
+                      profileData.primarySkills.map((skill, idx) => (
+                        <Badge key={idx} variant="default">{skill}</Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No primary skills added</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground mb-2 block">Secondary Skills</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {profileData.secondarySkills.length > 0 ? (
+                      profileData.secondarySkills.map((skill, idx) => (
+                        <Badge key={idx} variant="secondary">{skill}</Badge>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No secondary skills added</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">City</Label>
+                  <p className="font-medium">{profileData.locationCity || 'Not set'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Country</Label>
+                  <p className="font-medium">{profileData.locationCountry || 'Not set'}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Timezone</Label>
+                  <p className="font-medium">{profileData.timezone || 'Not set'}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Portfolio & Links Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  Portfolio & Links
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Portfolio URL</Label>
+                  {profileData.portfolioUrl ? (
+                    <a href={profileData.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      View Portfolio
+                    </a>
+                  ) : (
+                    <p className="text-sm">Not set</p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Website</Label>
+                  {profileData.websiteUrl ? (
+                    <a href={profileData.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Visit Website
+                    </a>
+                  ) : (
+                    <p className="text-sm">Not set</p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">LinkedIn</Label>
+                  {profileData.linkedinUrl ? (
+                    <a href={profileData.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      View LinkedIn
+                    </a>
+                  ) : (
+                    <p className="text-sm">Not set</p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">GitHub</Label>
+                  {profileData.githubUrl ? (
+                    <a href={profileData.githubUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      View GitHub
+                    </a>
+                  ) : (
+                    <p className="text-sm">Not set</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          /* Edit Mode - Form */
+          <div>
+        {/* Form */}
+        <Card className="border border-border">
+          <CardContent className="p-6 md:p-8">
+            {/* Step 1: Basic Info */}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                    <User className="h-6 w-6 text-primary" />
+                    Basic Information
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Let clients know who you are
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Profile Picture */}
+                  <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg">
+                    <Avatar className="h-32 w-32">
+                      {profileData.profilePictureUrl ? (
+                        <AvatarImage src={profileData.profilePictureUrl} alt={profileData.fullName} />
+                      ) : (
+                        <AvatarFallback className="bg-primary/10 text-primary text-3xl">
+                          {profileData.fullName.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="text-center">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePictureUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPicture}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        {uploadingPicture ? 'Uploading...' : 'Upload Profile Picture'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        JPG, PNG or GIF. Max size 5MB.
+                      </p>
                     </div>
                   </div>
 
-                  {/* CTA Buttons */}
-                  <div className="flex flex-col gap-2">
-                    <Button 
-                      size="lg" 
-                      className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                      onClick={() => navigate('login')}
+                  <div>
+                    <Label htmlFor="fullName">
+                      Full Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="fullName"
+                      value={profileData.fullName}
+                      onChange={(e) => updateField('fullName', e.target.value)}
+                      placeholder="John Doe"
+                      className={errors.fullName ? 'border-destructive' : ''}
+                    />
+                    {errors.fullName && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.fullName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profileData.email}
+                      disabled
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Email cannot be changed. Contact support if needed.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="headline">
+                      Professional Headline <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="headline"
+                      value={profileData.headline}
+                      onChange={(e) => updateField('headline', e.target.value)}
+                      placeholder="Full-Stack Developer | React & Node.js Expert"
+                      maxLength={100}
+                      className={errors.headline ? 'border-destructive' : ''}
+                    />
+                    {errors.headline && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.headline}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {profileData.headline.length}/100 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="overview">Professional Overview</Label>
+                    <Textarea
+                      id="overview"
+                      value={profileData.overview}
+                      onChange={(e) => updateField('overview', e.target.value)}
+                      placeholder="Tell clients about your experience, skills, and what makes you unique..."
+                      rows={6}
+                      maxLength={2000}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {profileData.overview.length}/2000 characters
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Rates & Location */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                    <DollarSign className="h-6 w-6 text-primary" />
+                    Rates & Location
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Set your hourly rate and location
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="hourlyRate">Hourly Rate (NPR)</Label>
+                    <Input
+                      id="hourlyRate"
+                      type="number"
+                      value={profileData.hourlyRate}
+                      onChange={(e) => updateField('hourlyRate', e.target.value)}
+                      placeholder="1000"
+                      min="0"
+                      step="50"
+                      className={errors.hourlyRate ? 'border-destructive' : ''}
+                    />
+                    {errors.hourlyRate && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.hourlyRate}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="hourlyRateMin">Minimum Rate (NPR)</Label>
+                      <Input
+                        id="hourlyRateMin"
+                        type="number"
+                        value={profileData.hourlyRateMin}
+                        onChange={(e) => updateField('hourlyRateMin', e.target.value)}
+                        placeholder="800"
+                        min="0"
+                        step="50"
+                        className={errors.hourlyRateMin ? 'border-destructive' : ''}
+                      />
+                      {errors.hourlyRateMin && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.hourlyRateMin}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="hourlyRateMax">Maximum Rate (NPR)</Label>
+                      <Input
+                        id="hourlyRateMax"
+                        type="number"
+                        value={profileData.hourlyRateMax}
+                        onChange={(e) => updateField('hourlyRateMax', e.target.value)}
+                        placeholder="1500"
+                        min="0"
+                        step="50"
+                        className={errors.hourlyRateMax ? 'border-destructive' : ''}
+                      />
+                      {errors.hourlyRateMax && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.hourlyRateMax}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="locationCity">City</Label>
+                      <Input
+                        id="locationCity"
+                        value={profileData.locationCity}
+                        onChange={(e) => updateField('locationCity', e.target.value)}
+                        placeholder="Kathmandu"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="locationCountry">Country</Label>
+                      <Input
+                        id="locationCountry"
+                        value={profileData.locationCountry}
+                        onChange={(e) => updateField('locationCountry', e.target.value)}
+                        placeholder="Nepal"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Select 
+                      value={profileData.timezone}
+                      onValueChange={(value) => updateField('timezone', value)}
                     >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Contact Me
-                    </Button>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Heart className="h-4 w-4 mr-1" />
-                        Save
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
-                      </Button>
-                    </div>
+                      <SelectTrigger id="timezone">
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timezones.map(tz => (
+                          <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  <div>
+                    <Label htmlFor="availability">Availability</Label>
+                    <Select 
+                      value={profileData.availability}
+                      onValueChange={(value) => updateField('availability', value)}
+                    >
+                      <SelectTrigger id="availability">
+                        <SelectValue placeholder="Select availability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availabilityOptions.map(option => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Skills */}
+            {currentStep === 3 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                    <Code className="h-6 w-6 text-primary" />
+                    Skills & Expertise
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Showcase your technical skills
+                  </p>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t">
+                <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Hourly Rate</p>
-                    <p className="text-xl font-bold text-primary">Rs. {freelancer.hourlyRate}/hr</p>
+                    <Label htmlFor="primarySkills">
+                      Primary Skills <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="flex gap-2 mb-2">
+                      <Select
+                        value={primarySkillInput}
+                        onValueChange={setPrimarySkillInput}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select a skill" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSkills.map(skill => (
+                            <SelectItem key={skill.id} value={skill.name}>
+                              {skill.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        onClick={addPrimarySkill}
+                        disabled={!primarySkillInput}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Or type custom skill"
+                        value={primarySkillInput}
+                        onChange={(e) => setPrimarySkillInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addPrimarySkill();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addPrimarySkill}
+                        disabled={!primarySkillInput}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border rounded-md">
+                      {profileData.primarySkills.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">No skills added yet</span>
+                      ) : (
+                        profileData.primarySkills.map((skill, index) => (
+                          <Badge key={index} variant="secondary" className="gap-1">
+                            {skill}
+                            <button
+                              type="button"
+                              onClick={() => removePrimarySkill(skill)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                    {errors.primarySkills && (
+                      <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.primarySkills}
+                      </p>
+                    )}
                   </div>
+
                   <div>
-                    <p className="text-sm text-muted-foreground">Completed Jobs</p>
-                    <p className="text-xl font-bold">{freelancer.completedJobs}</p>
+                    <Label htmlFor="secondarySkills">Secondary Skills</Label>
+                    <div className="flex gap-2 mb-2">
+                      <Select
+                        value={secondarySkillInput}
+                        onValueChange={setSecondarySkillInput}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select a skill" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSkills.map(skill => (
+                            <SelectItem key={skill.id} value={skill.name}>
+                              {skill.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        onClick={addSecondarySkill}
+                        disabled={!secondarySkillInput}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="Or type custom skill"
+                        value={secondarySkillInput}
+                        onChange={(e) => setSecondarySkillInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addSecondarySkill();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addSecondarySkill}
+                        disabled={!secondarySkillInput}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border rounded-md">
+                      {profileData.secondarySkills.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">No skills added yet</span>
+                      ) : (
+                        profileData.secondarySkills.map((skill, index) => (
+                          <Badge key={index} variant="secondary" className="gap-1">
+                            {skill}
+                            <button
+                              type="button"
+                              onClick={() => removeSecondarySkill(skill)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))
+                      )}
+                    </div>
                   </div>
+
                   <div>
-                    <p className="text-sm text-muted-foreground">Success Rate</p>
-                    <p className="text-xl font-bold text-success">{freelancer.successRate}</p>
+                    <Label htmlFor="languages">Languages</Label>
+                    <Input
+                      id="languages"
+                      value={profileData.languages}
+                      onChange={(e) => updateField('languages', e.target.value)}
+                      placeholder="English (Fluent), Nepali (Native)"
+                    />
                   </div>
+
                   <div>
-                    <p className="text-sm text-muted-foreground">Response Time</p>
-                    <p className="text-xl font-bold">{freelancer.responseTime}</p>
+                    <Label htmlFor="experience">Years of Experience</Label>
+                    <Input
+                      id="experience"
+                      value={profileData.experience}
+                      onChange={(e) => updateField('experience', e.target.value)}
+                      placeholder="5+ years"
+                    />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Step 4: Education & Certifications */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                    <Award className="h-6 w-6 text-primary" />
+                    Education & Certifications
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Build credibility with your qualifications
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="education">Education</Label>
+                    <Textarea
+                      id="education"
+                      value={profileData.education}
+                      onChange={(e) => updateField('education', e.target.value)}
+                      placeholder="Bachelor's in Computer Science, XYZ University (2018)"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="certifications">Certifications</Label>
+                    <Textarea
+                      id="certifications"
+                      value={profileData.certifications}
+                      onChange={(e) => updateField('certifications', e.target.value)}
+                      placeholder="AWS Certified Solutions Architect, Google Cloud Professional"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Portfolio & Preferences */}
+            {currentStep === 5 && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                    <Briefcase className="h-6 w-6 text-primary" />
+                    Portfolio & Work Preferences
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Share your work and preferences
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="portfolioUrl">Portfolio URL</Label>
+                    <Input
+                      id="portfolioUrl"
+                      type="url"
+                      value={profileData.portfolioUrl}
+                      onChange={(e) => updateField('portfolioUrl', e.target.value)}
+                      placeholder="https://yourportfolio.com"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="websiteUrl">Personal Website</Label>
+                    <Input
+                      id="websiteUrl"
+                      type="url"
+                      value={profileData.websiteUrl}
+                      onChange={(e) => updateField('websiteUrl', e.target.value)}
+                      placeholder="https://yourwebsite.com"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="linkedinUrl">LinkedIn Profile</Label>
+                    <Input
+                      id="linkedinUrl"
+                      type="url"
+                      value={profileData.linkedinUrl}
+                      onChange={(e) => updateField('linkedinUrl', e.target.value)}
+                      placeholder="https://linkedin.com/in/yourprofile"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="githubUrl">GitHub Profile</Label>
+                    <Input
+                      id="githubUrl"
+                      type="url"
+                      value={profileData.githubUrl}
+                      onChange={(e) => updateField('githubUrl', e.target.value)}
+                      placeholder="https://github.com/yourusername"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="preferredJobTypes">Preferred Job Types</Label>
+                    <Select 
+                      value={profileData.preferredJobTypes}
+                      onValueChange={(value) => updateField('preferredJobTypes', value)}
+                    >
+                      <SelectTrigger id="preferredJobTypes">
+                        <SelectValue placeholder="Select job type preference" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {jobTypes.map(type => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="preferredContractTypes">Preferred Contract Types</Label>
+                    <Select 
+                      value={profileData.preferredContractTypes}
+                      onValueChange={(value) => updateField('preferredContractTypes', value)}
+                    >
+                      <SelectTrigger id="preferredContractTypes">
+                        <SelectValue placeholder="Select contract type preference" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contractTypes.map(type => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center mt-8 pt-6 border-t">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setCurrentStep(1);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={currentStep === 1 || saving}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Back
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save Progress'}
+                </Button>
+
+                {currentStep < totalSteps ? (
+                  <Button onClick={handleNext} disabled={saving}>
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                ) : (
+                  <Button onClick={handleSave} disabled={saving} className="bg-green-600 hover:bg-green-700">
+                    {saving ? 'Saving...' : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        Complete Profile
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Tabs */}
-        <div className="mt-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
-              <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="portfolio" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
-                Portfolio
-              </TabsTrigger>
-              <TabsTrigger value="reviews" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
-                Reviews ({freelancer.reviewsList.length})
-              </TabsTrigger>
-              <TabsTrigger value="experience" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
-                Experience
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="mt-6">
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Main Content */}
-                  <div className="lg:col-span-2 space-y-6">
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>About Me</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {freelancer.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>Skills</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {freelancer.skills.map((skill) => (
-                            <Badge key={skill} variant="secondary" className="px-3 py-1">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>Languages</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {freelancer.languages.map((lang) => (
-                            <div key={lang} className="flex items-center gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-success" />
-                              <span>{lang}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Sidebar */}
-                  <div className="space-y-6">
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>Quick Stats</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Member Since</span>
-                          <span className="font-semibold">{freelancer.memberSince}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Total Earned</span>
-                          <span className="font-semibold text-success">{freelancer.totalEarnings}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Availability</span>
-                          <span className="font-semibold">{freelancer.availability}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>Certifications</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {freelancer.certifications.map((cert) => (
-                          <div key={cert} className="flex items-start gap-2">
-                            <Award className="h-4 w-4 text-primary mt-0.5" />
-                            <span className="text-sm">{cert}</span>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="portfolio" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {freelancer.portfolio.map((project) => (
-                    <Card key={project.id} className="border-2 hover:border-primary/50 hover:shadow-lg transition-all overflow-hidden">
-                      <img 
-                        src={project.image} 
-                        alt={project.title}
-                        className="w-full h-48 object-cover"
-                      />
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold mb-2">{project.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-3">{project.description}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {project.tech.map((tech) => (
-                            <Badge key={tech} variant="outline" className="text-xs">
-                              {tech}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="reviews" className="space-y-4">
-                {freelancer.reviewsList.map((review) => (
-                  <Card key={review.id} className="border-2">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={review.avatar} alt={review.client} />
-                          <AvatarFallback>{review.client.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-semibold">{review.client}</h4>
-                              <p className="text-sm text-muted-foreground">{review.project}</p>
-                            </div>
-                            <span className="text-sm text-muted-foreground">{review.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1 mt-2">
-                            {[...Array(5)].map((_, i) => (
-                              <Star 
-                                key={i}
-                                className={`h-4 w-4 ${i < Math.floor(review.rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                              />
-                            ))}
-                            <span className="ml-2 font-semibold">{review.rating}</span>
-                          </div>
-                          <p className="mt-3 text-muted-foreground">{review.comment}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="experience" className="space-y-4">
-                {freelancer.experience.map((exp) => (
-                  <Card key={exp.id} className="border-2">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Briefcase className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg">{exp.title}</h3>
-                          <p className="text-muted-foreground">{exp.company}</p>
-                          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            {exp.period}
-                          </div>
-                          <p className="mt-3 text-muted-foreground">{exp.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-            </div>
-          </Tabs>
-        </div>
-      </main>
-
+          </div>
+        )}
+      </div>
       <Footer />
     </div>
   );

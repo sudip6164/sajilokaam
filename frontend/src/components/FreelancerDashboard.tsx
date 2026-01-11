@@ -30,77 +30,6 @@ const sidebarItems = [
   { title: "Earnings", icon: DollarSign, id: "earnings" },
 ];
 
-const mockData = {
-  stats: {
-    totalEarnings: 24580,
-    monthlyEarnings: 3420,
-    activeProjects: 4,
-    completedJobs: 127,
-    clientRating: 4.9,
-    profileViews: 142,
-    responseTime: "2 hours",
-    successRate: "98%"
-  },
-  activeProjects: [
-    {
-      id: 1,
-      title: "E-commerce Website Development",
-      client: "TechCorp Solutions",
-      budget: 5000,
-      progress: 75,
-      deadline: "2024-02-15",
-      status: "In Progress",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-    },
-    {
-      id: 2,
-      title: "Mobile App UI Design",
-      client: "StartupX",
-      budget: 3200,
-      progress: 45,
-      deadline: "2024-02-20",
-      status: "In Progress",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=40&h=40&fit=crop&crop=face"
-    },
-    {
-      id: 3,
-      title: "Data Analysis Dashboard",
-      client: "Analytics Pro",
-      budget: 2800,
-      progress: 20,
-      deadline: "2024-02-28",
-      status: "Starting Soon",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face"
-    }
-  ],
-  recentProposals: [
-    {
-      id: 1,
-      title: "React Development for SaaS Platform",
-      submittedAt: "2 days ago",
-      status: "Under Review",
-      budget: 4500,
-      competition: 12
-    },
-    {
-      id: 2,
-      title: "WordPress Website Redesign",
-      submittedAt: "1 week ago",
-      status: "Rejected",
-      budget: 2000,
-      competition: 23
-    },
-    {
-      id: 3,
-      title: "API Integration Project",
-      submittedAt: "3 days ago",
-      status: "Interview Scheduled",
-      budget: 3500,
-      competition: 8
-    }
-  ]
-};
-
 export function FreelancerDashboard() {
   const { navigate, user } = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
@@ -340,39 +269,43 @@ function OverviewContent({ navigate }: { navigate: any }) {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {mockData.activeProjects.map((project) => (
-              <div key={project.id} className="flex items-start space-x-4 p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('project-detail', { projectId: project.id })}>
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={project.avatar} />
-                  <AvatarFallback>{project.client[0]}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold truncate">{project.title}</h4>
-                    <Badge variant={project.status === "In Progress" ? "default" : "secondary"}>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">{project.client}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      <span className="font-medium">Rs. {project.budget.toLocaleString()}</span>
+          {projects.length === 0 ? (
+            <div className="text-center py-8">
+              <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-muted-foreground">No active projects yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {projects.slice(0, 3).map((project: any) => (
+                <div key={project.id} className="flex items-start space-x-4 p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer" onClick={() => navigate('project-detail', { projectId: project.id })}>
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback>{project.clientName?.[0] || 'C'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold truncate">{project.title || 'Untitled Project'}</h4>
+                      <Badge variant={project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : "secondary"}>
+                        {project.status}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{project.deadline}</span>
+                    <p className="text-sm text-muted-foreground mb-2">{project.clientName || 'Client'}</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Rs. {(project.budget || 0).toLocaleString()}</span>
+                      </div>
+                      {project.deadline && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">{new Date(project.deadline).toLocaleDateString()}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="mt-3">
-                    <Progress value={project.progress} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1">{project.progress}% complete</p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -385,29 +318,35 @@ function OverviewContent({ navigate }: { navigate: any }) {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {mockData.recentProposals.map((proposal) => (
-              <div key={proposal.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium truncate mb-1">{proposal.title}</h4>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>{proposal.submittedAt}</span>
-                    <span>•</span>
-                    <span>Rs. {proposal.budget}</span>
-                    <span>•</span>
-                    <span>{proposal.competition} applicants</span>
+          {bids.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-muted-foreground">No proposals submitted yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {bids.slice(0, 5).map((bid: any) => (
+                <div key={bid.id} className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium truncate mb-1">{bid.jobTitle || 'Job'}</h4>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <span>{bid.createdAt ? new Date(bid.createdAt).toLocaleDateString() : 'Recently'}</span>
+                      <span>•</span>
+                      <span>Rs. {(bid.amount || 0).toLocaleString()}</span>
+                    </div>
                   </div>
+                  <Badge variant={
+                    bid.status === "PENDING" || bid.status === "UNDER_REVIEW" ? "secondary" :
+                    bid.status === "REJECTED" ? "destructive" :
+                    bid.status === "ACCEPTED" ? "default" :
+                    "secondary"
+                  }>
+                    {bid.status}
+                  </Badge>
                 </div>
-                <Badge variant={
-                  proposal.status === "Under Review" ? "secondary" :
-                  proposal.status === "Rejected" ? "destructive" :
-                  "default"
-                }>
-                  {proposal.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
