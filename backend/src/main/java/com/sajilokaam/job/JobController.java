@@ -147,7 +147,7 @@ public class JobController {
             return ResponseEntity.status(401).build();
         }
 
-        List<Job> jobs = jobRepository.findByClientId(userOpt.get().getId());
+        List<Job> jobs = jobRepository.findByClient_Id(userOpt.get().getId());
         
         // Initialize lazy-loaded relationships to avoid LazyInitializationException
         for (Job job : jobs) {

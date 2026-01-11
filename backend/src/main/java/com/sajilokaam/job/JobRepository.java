@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
-    List<Job> findByClientId(Long clientId);
+    List<Job> findByClient_Id(Long clientId);
     
     @EntityGraph(attributePaths = {"client", "category", "requiredSkills"})
     Optional<Job> findById(Long id);

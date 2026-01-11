@@ -66,8 +66,8 @@ public class InvoiceController {
         User user = userOpt.get();
 
         // Return invoices where user is either client or freelancer
-        List<Invoice> invoices = invoiceRepository.findByClientIdOrderByCreatedAtDesc(user.getId());
-        List<Invoice> freelancerInvoices = invoiceRepository.findByFreelancerIdOrderByCreatedAtDesc(user.getId());
+        List<Invoice> invoices = invoiceRepository.findByClient_IdOrderByCreatedAtDesc(user.getId());
+        List<Invoice> freelancerInvoices = invoiceRepository.findByFreelancer_IdOrderByCreatedAtDesc(user.getId());
         
         // Combine and remove duplicates
         invoices.addAll(freelancerInvoices.stream()

@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EscrowAccountRepository extends JpaRepository<EscrowAccount, Long> {
-    Optional<EscrowAccount> findByProjectId(Long projectId);
-    List<EscrowAccount> findByProjectIdAndClientId(Long projectId, Long clientId);
-    List<EscrowAccount> findByClientId(Long clientId);
-    List<EscrowAccount> findByFreelancerId(Long freelancerId);
+    Optional<EscrowAccount> findByProject_Id(Long projectId);
+    List<EscrowAccount> findByProject_IdAndClient_Id(Long projectId, Long clientId);
+    List<EscrowAccount> findByClient_Id(Long clientId);
+    List<EscrowAccount> findByFreelancer_Id(Long freelancerId);
     List<EscrowAccount> findByStatus(String status);
-    List<EscrowAccount> findAllByProjectId(Long projectId);
+    List<EscrowAccount> findAllByProject_Id(Long projectId);
 }
 
