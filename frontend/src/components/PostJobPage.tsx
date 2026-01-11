@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
 import { useAuth } from '@/contexts/AuthContext';
-import { jobCategoriesApi, jobsApi } from '@/lib/api';
+import { jobCategoriesApi, jobsApi, jobSkillsApi } from '@/lib/api';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { 
@@ -34,6 +34,8 @@ export function PostJobPage() {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [availableSkills, setAvailableSkills] = useState<Array<{ id: number; name: string }>>([]);
+  const [loadingSkills, setLoadingSkills] = useState(false);
   const [jobData, setJobData] = useState({
     title: '',
     categoryId: '',
@@ -67,6 +69,15 @@ export function PostJobPage() {
     fetchCategories();
   }, []);
 
+  // Fetch skills when category changes
+  useEffect(() => {
+    if (jobData.categoryId) {
+      fetchSkills(parseInt(jobData.categoryId));
+    } else {
+      fetchSkills(); // Fetch all skills if no category selected
+    }
+  }, [jobData.categoryId]);
+
   const fetchCategories = async () => {
     try {
       setLoadingCategories(true);
@@ -77,6 +88,19 @@ export function PostJobPage() {
       toast.error('Failed to load categories');
     } finally {
       setLoadingCategories(false);
+    }
+  };
+
+  const fetchSkills = async (categoryId?: number) => {
+    try {
+      setLoadingSkills(true);
+      const data = await jobSkillsApi.list(categoryId);
+      setAvailableSkills(data);
+    } catch (err: any) {
+      console.error('Error fetching skills:', err);
+      toast.error('Failed to load skills');
+    } finally {
+      setLoadingSkills(false);
     }
   };
 
@@ -604,40 +628,65 @@ export function PostJobPage() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="skills" className="text-base">Required Skills *</Label>
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          id="skills"
-                          placeholder="e.g., React, Node.js, TypeScript"
-                          value={skillInput}
-                          onChange={(e) => {
-                            setSkillInput(e.target.value);
-                            setErrors({ ...errors, skills: '' });
+                      {loadingSkills ? (
+                        <Skeleton className="h-10 w-full mt-2" />
+                      ) : (
+                        <Select
+                          value=""
+                          onValueChange={(value) => {
+                            const skillId = parseInt(value);
+                            const skill = availableSkills.find(s => s.id === skillId);
+                            if (skill && !jobData.skillIds.includes(skillId)) {
+                              setJobData({
+                                ...jobData,
+                                skillIds: [...jobData.skillIds, skillId],
+                                skills: [...jobData.skills, skill.name]
+                              });
+                              setErrors({ ...errors, skills: '' });
+                            }
                           }}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
-                        />
-                        <Button type="button" onClick={addSkill}>
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <p className="text-sm text-muted-foreground">
-                          Press Enter or click + to add skills
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue placeholder="Select required skills" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableSkills.length === 0 ? (
+                              <SelectItem value="0" disabled>No skills available</SelectItem>
+                            ) : (
+                              availableSkills.map((skill) => (
+                                <SelectItem
+                                  key={skill.id}
+                                  value={skill.id.toString()}
+                                  disabled={jobData.skillIds.includes(skill.id)}
+                                >
+                                  {skill.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {jobData.categoryId ? 'Skills for selected category' : 'Select a category first to see relevant skills'}
+                      </p>
+                      {errors.skills && (
+                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.skills}
                         </p>
-                        {errors.skills && (
-                          <p className="text-sm text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            {errors.skills}
-                          </p>
-                        )}
-                      </div>
+                      )}
                       
                       {jobData.skills.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-4">
-                          {jobData.skills.map((skill) => (
+                          {jobData.skills.map((skill, index) => (
                             <Badge key={skill} variant="secondary" className="px-3 py-1.5">
                               {skill}
                               <button
-                                onClick={() => removeSkill(skill)}
+                                onClick={() => {
+                                  const newSkills = jobData.skills.filter((_, i) => i !== index);
+                                  const newSkillIds = jobData.skillIds.filter((_, i) => i !== index);
+                                  setJobData({ ...jobData, skills: newSkills, skillIds: newSkillIds });
+                                }}
                                 className="ml-2 hover:text-destructive"
                               >
                                 <X className="h-3 w-3" />

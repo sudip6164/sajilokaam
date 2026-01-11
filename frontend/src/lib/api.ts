@@ -347,6 +347,35 @@ export const jobCategoriesApi = {
   },
 };
 
+// Job Skills API
+export const jobSkillsApi = {
+  list: async (categoryId?: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      category?: {
+        id: number;
+        name: string;
+      };
+    }>>("/job-skills", {
+      params: categoryId ? { categoryId } : undefined
+    });
+    return response.data;
+  },
+
+  get: async (id: number) => {
+    const response = await api.get<{
+      id: number;
+      name: string;
+      category?: {
+        id: number;
+        name: string;
+      };
+    }>(`/job-skills/${id}`);
+    return response.data;
+  },
+};
+
 // Bids API
 export const bidsApi = {
   list: async (params?: {
