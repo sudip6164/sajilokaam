@@ -79,6 +79,12 @@ export function SubmitProposalPage() {
       return;
     }
 
+    // Validate bid amount doesn't exceed client's maximum budget
+    if (job.budgetMax && bidAmount > job.budgetMax) {
+      toast.error(`Your bid (Rs. ${bidAmount.toLocaleString()}) exceeds the client's maximum budget (Rs. ${job.budgetMax.toLocaleString()})`);
+      return;
+    }
+
     if (deliveryTime <= 0) {
       toast.error('Please enter a valid delivery time');
       return;
@@ -87,16 +93,28 @@ export function SubmitProposalPage() {
     setSubmitting(true);
 
     try {
-      await bidsApi.create(job.id, {
+      // Calculate estimated completion date
+      const deliveryDays = deliveryUnit === 'days' 
+        ? deliveryTime 
+        : deliveryUnit === 'weeks' 
+        ? deliveryTime * 7 
+        : deliveryTime * 30;
+      
+      const estimatedDate = new Date();
+      estimatedDate.setDate(estimatedDate.getDate() + deliveryDays);
+
+      await bidsApi.create({
+        jobId: job.id,
         amount: bidAmount,
-        message: coverLetter,
-        status: 'PENDING'
+        proposal: coverLetter,
+        estimatedCompletionDate: estimatedDate.toISOString()
       });
 
       toast.success('Proposal submitted successfully!');
       navigate('freelancer-dashboard');
     } catch (error: any) {
       console.error('Error submitting proposal:', error);
+      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to submit proposal');
     } finally {
       setSubmitting(false);
@@ -207,16 +225,28 @@ export function SubmitProposalPage() {
                           type="number"
                           value={bidAmount}
                           onChange={(e) => setBidAmount(parseFloat(e.target.value) || 0)}
-                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:outline-none ${
+                            job.budgetMax && bidAmount > job.budgetMax
+                              ? 'border-destructive focus:border-destructive'
+                              : 'border-gray-300 focus:border-primary'
+                          }`}
                           placeholder="0.00"
                           min="0"
                           step="0.01"
                           required
                         />
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Client's budget: Rs. {job.budgetMin?.toLocaleString() || '0'} - Rs. {job.budgetMax?.toLocaleString() || '0'}
-                      </p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          Client's budget: Rs. {job.budgetMin?.toLocaleString() || '0'} - Rs. {job.budgetMax?.toLocaleString() || '0'}
+                        </p>
+                        {job.budgetMax && bidAmount > job.budgetMax && (
+                          <p className="text-sm text-destructive font-medium flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            Your bid exceeds the client's maximum budget
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Delivery Time */}
@@ -263,7 +293,13 @@ export function SubmitProposalPage() {
                       <Button
                         type="submit"
                         className="flex-1 bg-gradient-to-r from-primary to-secondary"
-                        disabled={submitting || coverLetter.length < 100 || bidAmount <= 0}
+                        disabled={
+                          submitting || 
+                          coverLetter.length < 100 || 
+                          bidAmount <= 0 || 
+                          (job.budgetMax && bidAmount > job.budgetMax) || 
+                          false
+                        }
                       >
                         {submitting ? 'Submitting...' : 'Submit Proposal'}
                       </Button>
