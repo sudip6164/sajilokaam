@@ -31,8 +31,13 @@ import {
   Code,
   Camera,
   X,
-  Plus
+  Plus,
+  MessageSquare,
+  Heart,
+  Share2,
+  Star
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface FreelancerProfileData {
   // Personal Account Info
@@ -102,6 +107,7 @@ export function FreelancerProfilePage() {
   const { navigate } = useRouter();
   const { isAuthenticated, hasRole, refreshUser, user } = useAuth();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -537,8 +543,281 @@ export function FreelancerProfilePage() {
         )}
 
         {!isEditMode ? (
-          /* Profile View Mode */
+          /* Profile View Mode - Beautiful Tabbed Design */
           <div className="space-y-6">
+            {/* Profile Header Card */}
+            <Card className="border-2 shadow-xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  {/* Avatar */}
+                  <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                    <AvatarImage src={profileData.profilePictureUrl} alt={profileData.fullName} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-3xl">
+                      {profileData.fullName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Info */}
+                  <div className="flex-1">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div>
+                        <h2 className="text-3xl font-bold">{profileData.fullName}</h2>
+                        <p className="text-xl text-muted-foreground mt-1">{profileData.headline || 'Freelancer'}</p>
+                        
+                        <div className="flex flex-wrap items-center gap-4 mt-3">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            {[profileData.locationCity, profileData.locationCountry].filter(Boolean).join(', ') || 'Location not specified'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Hourly Rate</p>
+                        <p className="text-xl font-bold text-primary">
+                          {profileData.hourlyRate 
+                            ? `Rs. ${profileData.hourlyRate}/hr`
+                            : profileData.hourlyRateMin && profileData.hourlyRateMax
+                            ? `Rs. ${profileData.hourlyRateMin}-${profileData.hourlyRateMax}/hr`
+                            : 'Not set'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Job Types</p>
+                        <p className="text-xl font-bold">{profileData.preferredJobTypes || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Contract Types</p>
+                        <p className="text-xl font-bold text-success">{profileData.preferredContractTypes || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Availability</p>
+                        <p className="text-xl font-bold">{profileData.availability || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
+                <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="experience" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+                  Experience
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="mt-6">
+                <TabsContent value="overview" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                      <Card className="border-2">
+                        <CardHeader>
+                          <CardTitle>About Me</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                            {profileData.overview || 'No overview provided yet.'}
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-2">
+                        <CardHeader>
+                          <CardTitle>Skills</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {profileData.primarySkills.length > 0 || profileData.secondarySkills.length > 0 ? (
+                            <div className="space-y-4">
+                              {profileData.primarySkills.length > 0 && (
+                                <div>
+                                  <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Primary Skills</h3>
+                                  <div className="flex flex-wrap gap-2">
+                                    {profileData.primarySkills.map((skill, idx) => (
+                                      <Badge key={idx} variant="default" className="px-3 py-1">
+                                        {skill}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {profileData.secondarySkills.length > 0 && (
+                                <div>
+                                  <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Secondary Skills</h3>
+                                  <div className="flex flex-wrap gap-2">
+                                    {profileData.secondarySkills.map((skill, idx) => (
+                                      <Badge key={idx} variant="secondary" className="px-3 py-1">
+                                        {skill}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-muted-foreground">No skills listed</p>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {profileData.languages && (
+                        <Card className="border-2">
+                          <CardHeader>
+                            <CardTitle>Languages</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              {profileData.languages.split(',').map((lang, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <CheckCircle2 className="h-4 w-4 text-success" />
+                                  <span>{lang.trim()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Sidebar */}
+                    <div className="space-y-6">
+                      <Card className="border-2">
+                        <CardHeader>
+                          <CardTitle>Quick Stats</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Availability</span>
+                            <span className="font-semibold">{profileData.availability || 'Not set'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Job Types</span>
+                            <span className="font-semibold">{profileData.preferredJobTypes || 'Not set'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Contract Types</span>
+                            <span className="font-semibold">{profileData.preferredContractTypes || 'Not set'}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Timezone</span>
+                            <span className="font-semibold">{profileData.timezone || 'Not set'}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {profileData.certifications && (
+                        <Card className="border-2">
+                          <CardHeader>
+                            <CardTitle>Certifications</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            {profileData.certifications.split('\n').filter(Boolean).map((cert, idx) => (
+                              <div key={idx} className="flex items-start gap-2">
+                                <Award className="h-4 w-4 text-primary mt-0.5" />
+                                <span className="text-sm">{cert}</span>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Social Links */}
+                      {(profileData.websiteUrl || profileData.linkedinUrl || profileData.githubUrl || profileData.portfolioUrl) && (
+                        <Card className="border-2">
+                          <CardHeader>
+                            <CardTitle>Links</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            {profileData.portfolioUrl && (
+                              <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                                <a href={profileData.portfolioUrl} target="_blank" rel="noopener noreferrer">
+                                  Portfolio
+                                </a>
+                              </Button>
+                            )}
+                            {profileData.websiteUrl && (
+                              <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                                <a href={profileData.websiteUrl} target="_blank" rel="noopener noreferrer">
+                                  Website
+                                </a>
+                              </Button>
+                            )}
+                            {profileData.linkedinUrl && (
+                              <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                                <a href={profileData.linkedinUrl} target="_blank" rel="noopener noreferrer">
+                                  LinkedIn
+                                </a>
+                              </Button>
+                            )}
+                            {profileData.githubUrl && (
+                              <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                                <a href={profileData.githubUrl} target="_blank" rel="noopener noreferrer">
+                                  GitHub
+                                </a>
+                              </Button>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="experience" className="space-y-4">
+                  {profileData.education && (
+                    <Card className="border-2">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Award className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg">Education</h3>
+                            <p className="mt-3 text-muted-foreground whitespace-pre-line">{profileData.education}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {profileData.experience && (
+                    <Card className="border-2">
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Briefcase className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg">Work Experience</h3>
+                            <p className="mt-3 text-muted-foreground whitespace-pre-line">{profileData.experience}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {!profileData.education && !profileData.experience && (
+                    <Card className="border-2">
+                      <CardContent className="p-12 text-center">
+                        <p className="text-muted-foreground">No experience information provided yet.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
+        ) : (
+          /* Edit Mode - Form */
+          <div>
             {/* Basic Info Card */}
             <Card>
               <CardHeader>
