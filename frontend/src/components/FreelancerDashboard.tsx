@@ -92,7 +92,7 @@ export function FreelancerDashboard() {
 
           {/* Main Content - Scrollable */}
           <main className="flex-1 overflow-y-auto ml-64 pt-16">
-            <div className="w-full pl-8 pr-8 py-8">
+            <div className="w-full px-6 py-8">
               {renderContent()}
             </div>
           </main>
