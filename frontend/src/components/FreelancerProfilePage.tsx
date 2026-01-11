@@ -1008,9 +1008,9 @@ export function FreelancerProfilePage() {
           <>
             {/* Edit Mode - Form */}
             <Card className="border border-border">
-          <CardContent className="p-6 md:p-8">
-            {/* Step 1: Basic Info */}
-            {currentStep === 1 && (
+              <CardContent className="p-6 md:p-8">
+                {/* Step 1: Basic Info */}
+                {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -1132,7 +1132,7 @@ export function FreelancerProfilePage() {
             )}
 
             {/* Step 2: Rates & Location */}
-            {currentStep === 2 && (
+                {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -1265,7 +1265,7 @@ export function FreelancerProfilePage() {
             )}
 
             {/* Step 3: Skills */}
-            {currentStep === 3 && (
+                {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -1444,7 +1444,7 @@ export function FreelancerProfilePage() {
             )}
 
             {/* Step 4: Education & Certifications */}
-            {currentStep === 4 && (
+                {currentStep === 4 && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -1483,7 +1483,7 @@ export function FreelancerProfilePage() {
             )}
 
             {/* Step 5: Portfolio & Preferences */}
-            {currentStep === 5 && (
+                {currentStep === 5 && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
@@ -1575,10 +1575,10 @@ export function FreelancerProfilePage() {
                   </div>
                 </div>
               </div>
-            )}
+                )}
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between items-center mt-8 pt-6 border-t">
+                {/* Navigation Buttons */}
+                <div className="flex justify-between items-center mt-8 pt-6 border-t">
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -1623,10 +1623,10 @@ export function FreelancerProfilePage() {
                     )}
                   </Button>
                 )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>
