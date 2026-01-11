@@ -75,7 +75,7 @@ export function JobDetailPage() {
 
   // Debug: Log user info
   console.log('JobDetailPage - User Info:', {
-    userType: user?.type,
+    userType: authUser?.type,
     isAuthenticated,
     authUserId: authUser?.id,
     jobClientId,
@@ -411,12 +411,18 @@ export function JobDetailPage() {
 
                 {/* CTA */}
                 <div className="mt-6 flex gap-3">
-                  {isAuthenticated && user?.type === 'freelancer' && jobClientId !== authUser?.id ? (
+                  {isAuthenticated && hasRole('FREELANCER') && jobClientId !== authUser?.id ? (
                     <>
                       <Button 
                         size="lg" 
                         className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                        onClick={() => setShowProposalForm(true)}
+                        onClick={() => {
+                          console.log('Submit Proposal button clicked!');
+                          console.log('Current showProposalForm state:', showProposalForm);
+                          console.log('Job data:', job);
+                          setShowProposalForm(true);
+                          console.log('Setting showProposalForm to true');
+                        }}
                       >
                         Submit Proposal
                       </Button>
@@ -527,10 +533,13 @@ export function JobDetailPage() {
                   <p className="text-3xl font-bold text-primary mb-1">{job.budget.range}</p>
                   <p className="text-sm text-muted-foreground">{job.budget.type}</p>
                 </div>
-                {isAuthenticated && user?.type === 'freelancer' && jobClientId !== authUser?.id ? (
+                {isAuthenticated && hasRole('FREELANCER') && jobClientId !== authUser?.id ? (
                   <Button 
                     className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                    onClick={() => setShowProposalForm(true)}
+                    onClick={() => {
+                      console.log('Sidebar Submit Proposal button clicked!');
+                      setShowProposalForm(true);
+                    }}
                   >
                     Submit Proposal
                   </Button>
