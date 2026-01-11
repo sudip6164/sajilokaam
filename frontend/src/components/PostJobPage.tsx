@@ -24,7 +24,8 @@ import {
   Plus,
   ChevronLeft,
   Check,
-  MapPin
+  MapPin,
+  AlertCircle
 } from 'lucide-react';
 
 export function PostJobPage() {
@@ -105,9 +106,26 @@ export function PostJobPage() {
   };
 
   const addSkill = () => {
-    if (skillInput.trim() && !jobData.skills.includes(skillInput.trim())) {
-      setJobData({ ...jobData, skills: [...jobData.skills, skillInput.trim()] });
+    const trimmedSkill = skillInput.trim();
+    if (trimmedSkill && !jobData.skills.includes(trimmedSkill)) {
+      // Check if skill exists in available skills
+      const existingSkill = availableSkills.find(s => s.name.toLowerCase() === trimmedSkill.toLowerCase());
+      if (existingSkill) {
+        // Add with ID
+        setJobData({
+          ...jobData,
+          skills: [...jobData.skills, existingSkill.name],
+          skillIds: [...jobData.skillIds, existingSkill.id]
+        });
+      } else {
+        // Add custom skill (without ID)
+        setJobData({
+          ...jobData,
+          skills: [...jobData.skills, trimmedSkill]
+        });
+      }
       setSkillInput('');
+      setErrors({ ...errors, skills: '' });
     }
   };
 
@@ -629,9 +647,11 @@ export function PostJobPage() {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="skills" className="text-base">Required Skills *</Label>
+                      
+                      {/* Select from available skills */}
                       {loadingSkills ? (
                         <Skeleton className="h-10 w-full mt-2" />
-                      ) : (
+                      ) : availableSkills.length > 0 ? (
                         <Select
                           value=""
                           onValueChange={(value) => {
@@ -648,28 +668,50 @@ export function PostJobPage() {
                           }}
                         >
                           <SelectTrigger className="mt-2">
-                            <SelectValue placeholder="Select required skills" />
+                            <SelectValue placeholder="Select from available skills" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableSkills.length === 0 ? (
-                              <SelectItem value="0" disabled>No skills available</SelectItem>
-                            ) : (
-                              availableSkills.map((skill) => (
-                                <SelectItem
-                                  key={skill.id}
-                                  value={skill.id.toString()}
-                                  disabled={jobData.skillIds.includes(skill.id)}
-                                >
-                                  {skill.name}
-                                </SelectItem>
-                              ))
-                            )}
+                            {availableSkills.map((skill) => (
+                              <SelectItem
+                                key={skill.id}
+                                value={skill.id.toString()}
+                                disabled={jobData.skillIds.includes(skill.id)}
+                              >
+                                {skill.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                      )}
+                      ) : null}
+                      
+                      {/* Or add custom skill */}
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          id="skills"
+                          placeholder="Or type a custom skill (e.g., React, Node.js)"
+                          value={skillInput}
+                          onChange={(e) => {
+                            setSkillInput(e.target.value);
+                            setErrors({ ...errors, skills: '' });
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addSkill();
+                            }
+                          }}
+                        />
+                        <Button type="button" onClick={addSkill} size="icon">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
                       <p className="text-sm text-muted-foreground mt-2">
-                        {jobData.categoryId ? 'Skills for selected category' : 'Select a category first to see relevant skills'}
+                        {jobData.categoryId 
+                          ? 'Select from dropdown or type custom skills' 
+                          : 'Select a category to see relevant skills, or type custom ones'}
                       </p>
+                      
                       {errors.skills && (
                         <p className="text-sm text-destructive mt-1 flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
@@ -677,12 +719,14 @@ export function PostJobPage() {
                         </p>
                       )}
                       
+                      {/* Selected skills */}
                       {jobData.skills.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-4">
                           {jobData.skills.map((skill, index) => (
-                            <Badge key={skill} variant="secondary" className="px-3 py-1.5">
+                            <Badge key={`${skill}-${index}`} variant="secondary" className="px-3 py-1.5">
                               {skill}
                               <button
+                                type="button"
                                 onClick={() => {
                                   const newSkills = jobData.skills.filter((_, i) => i !== index);
                                   const newSkillIds = jobData.skillIds.filter((_, i) => i !== index);
