@@ -238,6 +238,7 @@ export function PostJobPage() {
         payload.skillIds = jobData.skillIds;
       }
 
+      console.log('Creating job with payload:', payload);
       const createdJob = await jobsApi.create(payload);
 
       toast.success('Job posted successfully!');

@@ -69,7 +69,7 @@ public class Job {
     @Column(name = "is_featured")
     private Boolean isFeatured = false;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "job_required_skills",
             joinColumns = @JoinColumn(name = "job_id"),
