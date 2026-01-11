@@ -542,7 +542,7 @@ export function FreelancerProfilePage() {
           </div>
         )}
 
-        {!isEditMode ? (
+        {!isEditMode && (
           <div className="space-y-6">
             {/* Profile View Mode - Beautiful Tabbed Design */}
             {/* Profile Header Card */}
@@ -1001,7 +1001,9 @@ export function FreelancerProfilePage() {
               </CardContent>
             </Card>
           </div>
-        ) : (
+        )}
+
+        {isEditMode && (
           <>
             {/* Edit Mode - Form */}
             <Card className="border border-border">
