@@ -1,88 +1,67 @@
-import { useState, useEffect } from 'react';
-import { Header } from './Header';
-import { Footer } from './Footer';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { useRouter } from './Router';
-import { freelancersApi } from '@/lib/api';
-import { toast } from 'sonner';
-import {
-  User,
-  MapPin,
+import { useState, useEffect } from "react";
+import { 
+  MapPin, 
+  Mail, 
+  Globe, 
+  Linkedin, 
+  Github, 
+  CheckCircle,
+  Briefcase,
+  GraduationCap,
+  Award,
   DollarSign,
   Clock,
-  Code,
-  Globe,
-  Mail,
-  ArrowLeft,
-  Briefcase,
-  Award
-} from 'lucide-react';
-
-interface FreelancerProfile {
-  id: number;
-  fullName: string;
-  email: string;
-  headline?: string;
-  overview?: string;
-  hourlyRate?: number;
-  hourlyRateMin?: number;
-  hourlyRateMax?: number;
-  locationCountry?: string;
-  locationCity?: string;
-  primarySkills?: string;
-  secondarySkills?: string;
-  profilePictureUrl?: string;
-  experienceYears?: number;
-  availability?: string;
-  experienceLevel?: string;
-}
+  ArrowLeft
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Header } from './Header';
+import { Footer } from './Footer';
+import { useRouter } from './Router';
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 export function FreelancerPublicProfilePage() {
   const { navigate, pageParams } = useRouter();
-  const [freelancer, setFreelancer] = useState<FreelancerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (pageParams?.freelancerId) {
-      fetchFreelancerProfile(pageParams.freelancerId);
+      loadProfile(pageParams.freelancerId);
     } else {
       toast.error('Freelancer not found');
       navigate('find-freelancers');
     }
   }, [pageParams]);
 
-  const fetchFreelancerProfile = async (freelancerId: number) => {
+  const loadProfile = async (id: number) => {
     try {
-      setLoading(true);
-      const response = await freelancersApi.list(0, 100);
-      const profile = response.content.find(f => f.id === freelancerId);
-      
-      if (profile) {
-        setFreelancer(profile);
-      } else {
-        toast.error('Freelancer not found');
-        navigate('find-freelancers');
-      }
+      setIsLoading(true);
+      const response = await api.get(`/users/freelancers/${id}`);
+      setProfile(response.data);
     } catch (error: any) {
-      console.error('Error fetching freelancer profile:', error);
-      toast.error('Failed to load freelancer profile');
+      console.error("Failed to load profile:", error);
+      toast.error(error.response?.data?.message || "Failed to load freelancer profile");
       navigate('find-freelancers');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <Header />
-        <div className="flex items-center justify-center min-h-[400px] pt-24">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading profile...</p>
+        <div className="flex-1 container mx-auto px-4 py-8 pt-24">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading profile...</p>
+            </div>
           </div>
         </div>
         <Footer />
@@ -90,229 +69,237 @@ export function FreelancerPublicProfilePage() {
     );
   }
 
-  if (!freelancer) {
-    return null;
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 container mx-auto px-4 py-8 pt-24">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">Freelancer profile not found</p>
+                <Button onClick={() => navigate('find-freelancers')}>
+                  Browse Freelancers
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
-  const primarySkills = freelancer.primarySkills 
-    ? freelancer.primarySkills.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
-  const secondarySkills = freelancer.secondarySkills 
-    ? freelancer.secondarySkills.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
-  const location = [freelancer.locationCity, freelancer.locationCountry]
-    .filter(Boolean)
-    .join(', ') || 'Location not specified';
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const parseSkills = (skills: string) => {
+    if (!skills) return [];
+    try {
+      return JSON.parse(skills);
+    } catch {
+      return skills.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+  };
+
+  const skills = parseSkills(profile.primarySkills || "");
+  const secondarySkills = parseSkills(profile.secondarySkills || "");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       
-      <main className="flex-1 w-full px-4 md:px-8 lg:px-12 py-8 pt-24">
-        <div className="max-w-5xl mx-auto">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate('find-freelancers')}
-            className="mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Freelancers
-          </Button>
+      <main className="flex-1 container mx-auto px-4 py-8 pt-24 max-w-6xl">
+        <Button variant="ghost" onClick={() => navigate('find-freelancers')} className="mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Freelancers
+        </Button>
 
-          {/* Profile Header Card */}
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                <Avatar className="h-32 w-32">
-                  {freelancer.profilePictureUrl ? (
-                    <AvatarImage src={freelancer.profilePictureUrl} alt={freelancer.fullName} />
-                  ) : (
-                    <AvatarFallback className="bg-primary/10 text-primary text-4xl">
-                      {freelancer.fullName.charAt(0).toUpperCase()}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Avatar className="h-24 w-24 mx-auto mb-4">
+                    <AvatarImage src={profile.profilePictureUrl || ""} alt={profile.fullName} />
+                    <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                      {getInitials(profile.fullName)}
                     </AvatarFallback>
+                  </Avatar>
+                  <h1 className="text-2xl font-bold mb-2">{profile.fullName}</h1>
+                  {profile.headline && (
+                    <p className="text-muted-foreground mb-4">{profile.headline}</p>
                   )}
-                </Avatar>
-
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold mb-2">{freelancer.fullName}</h1>
-                  {freelancer.headline && (
-                    <p className="text-xl text-muted-foreground mb-4">{freelancer.headline}</p>
+                  {profile.status === "VERIFIED" && (
+                    <Badge className="mb-4" variant="default">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Verified
+                    </Badge>
                   )}
-
-                  <div className="flex flex-wrap gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{location}</span>
-                    </div>
-                    {freelancer.experienceYears && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Briefcase className="h-4 w-4" />
-                        <span>{freelancer.experienceYears} years experience</span>
-                      </div>
-                    )}
-                    {freelancer.experienceLevel && (
-                      <Badge variant="outline">
-                        {freelancer.experienceLevel}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 text-2xl font-bold text-primary mb-4">
-                    <DollarSign className="h-6 w-6" />
-                    {freelancer.hourlyRate 
-                      ? `Rs. ${freelancer.hourlyRate}/hr`
-                      : freelancer.hourlyRateMin && freelancer.hourlyRateMax
-                      ? `Rs. ${freelancer.hourlyRateMin}-${freelancer.hourlyRateMax}/hr`
-                      : 'Rate not set'}
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button 
-                      size="lg"
-                      className="bg-gradient-to-r from-primary to-secondary"
-                      onClick={() => toast.info('Messaging feature coming soon!')}
-                    >
-                      <Mail className="h-4 w-4 mr-2" />
-                      Contact Freelancer
-                    </Button>
-                    <Button 
-                      size="lg"
-                      variant="outline"
-                      onClick={() => toast.info('Hire feature coming soon!')}
-                    >
-                      Hire Now
-                    </Button>
-                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* About */}
+                <Separator className="my-4" />
+
+                <div className="space-y-3">
+                  {profile.hourlyRate && (
+                    <div className="flex items-center text-sm">
+                      <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span className="font-medium">Rs. {profile.hourlyRate.toLocaleString()}/hr</span>
+                    </div>
+                  )}
+                  {(profile.locationCity || profile.locationCountry) && (
+                    <div className="flex items-center text-sm">
+                      <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>
+                        {[profile.locationCity, profile.locationCountry]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </span>
+                    </div>
+                  )}
+                  {profile.email && (
+                    <div className="flex items-center text-sm">
+                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{profile.email}</span>
+                    </div>
+                  )}
+                  {profile.experienceYears && (
+                    <div className="flex items-center text-sm">
+                      <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span>{profile.experienceYears} years experience</span>
+                    </div>
+                  )}
+                  {profile.availability && (
+                    <div className="flex items-center text-sm">
+                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                      <span className="capitalize">{profile.availability.toLowerCase().replace("_", " ")}</span>
+                    </div>
+                  )}
+                </div>
+
+                {(profile.websiteUrl || profile.linkedinUrl || profile.githubUrl || profile.portfolioUrl) && (
+                  <>
+                    <Separator className="my-4" />
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {profile.websiteUrl && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer">
+                            <Globe className="h-4 w-4 mr-1" />
+                            Website
+                          </a>
+                        </Button>
+                      )}
+                      {profile.linkedinUrl && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
+                            <Linkedin className="h-4 w-4 mr-1" />
+                            LinkedIn
+                          </a>
+                        </Button>
+                      )}
+                      {profile.githubUrl && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer">
+                            <Github className="h-4 w-4 mr-1" />
+                            GitHub
+                          </a>
+                        </Button>
+                      )}
+                      {profile.portfolioUrl && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={profile.portfolioUrl} target="_blank" rel="noopener noreferrer">
+                            <Globe className="h-4 w-4 mr-1" />
+                            Portfolio
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {profile.overview && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    About
+                  <CardTitle>About</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground whitespace-pre-line">{profile.overview}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {skills.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Skills</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((skill: string, idx: number) => (
+                      <Badge key={idx} variant="secondary">
+                        {skill}
+                      </Badge>
+                    ))}
+                    {secondarySkills.map((skill: string, idx: number) => (
+                      <Badge key={`sec-${idx}`} variant="outline">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {profile.education && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <GraduationCap className="h-5 w-5 mr-2" />
+                    Education
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground whitespace-pre-wrap">
-                    {freelancer.overview || 'No overview provided yet'}
-                  </p>
+                  <p className="text-muted-foreground whitespace-pre-line">{profile.education}</p>
                 </CardContent>
               </Card>
+            )}
 
-              {/* Skills */}
+            {profile.certifications && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Code className="h-5 w-5" />
-                    Skills
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {primarySkills.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Primary Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {primarySkills.map((skill, idx) => (
-                          <Badge key={idx} variant="default" className="text-sm">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {secondarySkills.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-2 text-muted-foreground">Secondary Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {secondarySkills.map((skill, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-sm">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {primarySkills.length === 0 && secondarySkills.length === 0 && (
-                    <p className="text-muted-foreground text-sm">No skills listed yet</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Availability */}
-              {freelancer.availability && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Clock className="h-4 w-4" />
-                      Availability
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">{freelancer.availability}</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Quick Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Award className="h-4 w-4" />
-                    Quick Stats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Experience Level</span>
-                    <span className="text-sm font-medium">
-                      {freelancer.experienceLevel || 'Not specified'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Years of Experience</span>
-                    <span className="text-sm font-medium">
-                      {freelancer.experienceYears ? `${freelancer.experienceYears} years` : 'Not specified'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Location</span>
-                    <span className="text-sm font-medium">{location}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Globe className="h-4 w-4" />
-                    Contact Information
+                  <CardTitle className="flex items-center">
+                    <Award className="h-5 w-5 mr-2" />
+                    Certifications
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-2">Interested in hiring?</p>
-                  <Button 
-                    className="w-full" 
-                    variant="outline"
-                    onClick={() => toast.info('Contact feature coming soon!')}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Send Message
-                  </Button>
+                  <p className="text-muted-foreground whitespace-pre-line">{profile.certifications}</p>
                 </CardContent>
               </Card>
-            </div>
+            )}
+
+            {profile.languages && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Languages</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{profile.languages}</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>
