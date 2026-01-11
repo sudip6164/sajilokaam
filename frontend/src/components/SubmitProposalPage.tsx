@@ -50,12 +50,12 @@ export function SubmitProposalPage() {
 
   const fetchJob = async (jobId: number) => {
     try {
-      const response = await jobsApi.get(jobId);
-      setJob(response.data);
+      const jobData = await jobsApi.get(jobId);
+      setJob(jobData);
       
       // Set default bid amount based on job budget
-      if (response.data.budgetMax) {
-        setBidAmount(response.data.budgetMax);
+      if (jobData.budgetMax) {
+        setBidAmount(jobData.budgetMax);
       }
     } catch (error) {
       console.error('Error fetching job:', error);
