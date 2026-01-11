@@ -107,11 +107,11 @@ export function SubmitProposalPage() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="w-full px-4 md:px-8 lg:px-16 pt-24 pb-16">
-          <div className="max-w-7xl mx-auto">
-            <div className="animate-pulse space-y-8">
-              <div className="h-10 bg-muted rounded w-1/4"></div>
-              <div className="h-96 bg-muted rounded"></div>
+        <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-16">
+          <div className="max-w-6xl mx-auto">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-muted rounded w-1/3"></div>
+              <div className="h-64 bg-muted rounded"></div>
             </div>
           </div>
         </main>
@@ -124,13 +124,13 @@ export function SubmitProposalPage() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="w-full px-4 md:px-8 lg:px-16 pt-24 pb-16">
-          <div className="max-w-7xl mx-auto">
-            <Card className="shadow-lg">
-              <CardContent className="p-12 text-center">
-                <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-6" />
-                <h2 className="text-3xl font-bold mb-4">Job Not Found</h2>
-                <Button onClick={() => navigate('find-work')} className="py-6 px-8 text-lg">
+        <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-16">
+          <div className="max-w-6xl mx-auto">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Job Not Found</h2>
+                <Button onClick={() => navigate('find-work')}>
                   Back to Jobs
                 </Button>
               </CardContent>
@@ -149,89 +149,89 @@ export function SubmitProposalPage() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="w-full px-4 md:px-8 lg:px-16 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto">
+      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-16">
+        <div className="max-w-6xl mx-auto">
           {/* Back Button */}
           <Button
             variant="ghost"
             onClick={() => navigate('job-detail', { jobId: job.id })}
-            className="mb-8"
+            className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Job
           </Button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Form */}
-            <div className="lg:col-span-3">
-              <Card className="border-2 shadow-lg">
-                <CardHeader className="pb-6">
-                  <CardTitle className="text-3xl">Submit Proposal</CardTitle>
-                  <p className="text-muted-foreground text-lg mt-2">{job.title}</p>
+            <div className="lg:col-span-2">
+              <Card className="border-2">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Submit Proposal</CardTitle>
+                  <p className="text-muted-foreground mt-1">{job.title}</p>
                 </CardHeader>
-                <CardContent className="space-y-8">
-                  <form onSubmit={handleSubmit}>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Cover Letter */}
-                    <div className="space-y-3">
-                      <label className="block text-lg font-semibold">
+                    <div>
+                      <label className="block font-semibold mb-2">
                         Cover Letter <span className="text-destructive">*</span>
                       </label>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mb-3">
                         Introduce yourself and explain why you're the best fit for this project (minimum 100 characters)
                       </p>
                       <textarea
                         value={coverLetter}
                         onChange={(e) => setCoverLetter(e.target.value)}
-                        className="w-full min-h-[250px] p-5 text-base border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none resize-none"
+                        className="w-full min-h-[200px] p-4 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none resize-none"
                         placeholder="Dear Client,&#10;&#10;I am excited to submit my proposal for this project..."
                         required
                       />
-                      <div className="flex items-center justify-between mt-3">
-                        <span className={`text-sm font-medium ${coverLetter.length < 100 ? 'text-destructive' : 'text-success'}`}>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className={`text-sm ${coverLetter.length < 100 ? 'text-destructive' : 'text-success'}`}>
                           {coverLetter.length} / 100 characters minimum
                         </span>
                         {coverLetter.length >= 100 && (
-                          <CheckCircle className="h-5 w-5 text-success" />
+                          <CheckCircle className="h-4 w-4 text-success" />
                         )}
                       </div>
                     </div>
 
                     {/* Bid Amount */}
-                    <div className="space-y-3">
-                      <label className="block text-lg font-semibold">
+                    <div>
+                      <label className="block font-semibold mb-2">
                         Your Bid Amount <span className="text-destructive">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">Rs.</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-semibold text-muted-foreground">Rs.</span>
                         <input
                           type="number"
                           value={bidAmount}
                           onChange={(e) => setBidAmount(parseFloat(e.target.value) || 0)}
-                          className="w-full pl-16 pr-6 py-4 text-lg border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
                           placeholder="0.00"
                           min="0"
                           step="0.01"
                           required
                         />
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mt-2">
                         Client's budget: Rs. {job.budgetMin?.toLocaleString() || '0'} - Rs. {job.budgetMax?.toLocaleString() || '0'}
                       </p>
                     </div>
 
                     {/* Delivery Time */}
-                    <div className="space-y-3">
-                      <label className="block text-lg font-semibold">
+                    <div>
+                      <label className="block font-semibold mb-2">
                         Delivery Time <span className="text-destructive">*</span>
                       </label>
-                      <div className="flex gap-4">
+                      <div className="flex gap-3">
                         <div className="relative flex-1">
-                          <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                           <input
                             type="number"
                             value={deliveryTime}
                             onChange={(e) => setDeliveryTime(parseInt(e.target.value) || 0)}
-                            className="w-full pl-12 pr-6 py-4 text-lg border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                            className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
                             placeholder="7"
                             min="1"
                             required
@@ -240,7 +240,7 @@ export function SubmitProposalPage() {
                         <select
                           value={deliveryUnit}
                           onChange={(e) => setDeliveryUnit(e.target.value as any)}
-                          className="px-6 py-4 text-lg border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none bg-background min-w-[140px]"
+                          className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none bg-background"
                         >
                           <option value="days">Days</option>
                           <option value="weeks">Weeks</option>
@@ -250,19 +250,19 @@ export function SubmitProposalPage() {
                     </div>
 
                     {/* Submit Buttons */}
-                    <div className="flex gap-4 pt-8 border-t">
+                    <div className="flex gap-3 pt-6 border-t">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => navigate('job-detail', { jobId: job.id })}
-                        className="flex-1 py-6 text-lg"
+                        className="flex-1"
                         disabled={submitting}
                       >
                         Cancel
                       </Button>
                       <Button
                         type="submit"
-                        className="flex-1 py-6 text-lg bg-gradient-to-r from-primary to-secondary"
+                        className="flex-1 bg-gradient-to-r from-primary to-secondary"
                         disabled={submitting || coverLetter.length < 100 || bidAmount <= 0}
                       >
                         {submitting ? 'Submitting...' : 'Submit Proposal'}
@@ -274,37 +274,37 @@ export function SubmitProposalPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
               {/* Earnings Breakdown */}
-              <Card className="border-2 shadow-lg">
+              <Card className="border-2">
                 <CardHeader>
-                  <CardTitle className="text-xl">Earnings Breakdown</CardTitle>
+                  <CardTitle className="text-lg">Earnings Breakdown</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="flex justify-between text-base">
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Bid Amount</span>
-                    <span className="font-semibold text-lg">Rs. {bidAmount.toLocaleString()}</span>
+                    <span className="font-semibold">Rs. {bidAmount.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-base text-destructive">
+                  <div className="flex justify-between text-destructive">
                     <span>Platform Fee (10%)</span>
-                    <span className="font-semibold">- Rs. {platformFee.toLocaleString()}</span>
+                    <span>- Rs. {platformFee.toLocaleString()}</span>
                   </div>
-                  <div className="pt-4 border-t flex justify-between text-lg">
+                  <div className="pt-3 border-t flex justify-between text-lg">
                     <span className="font-semibold">You'll Receive</span>
-                    <span className="font-bold text-xl text-success">Rs. {youllReceive.toLocaleString()}</span>
+                    <span className="font-bold text-success">Rs. {youllReceive.toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Tips */}
-              <Card className="border-2 shadow-lg bg-primary/5">
+              <Card className="border-2 bg-primary/5">
                 <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
                     <FileText className="h-5 w-5" />
                     Tips for Success
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 text-base">
+                <CardContent className="space-y-3 text-sm">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                     <p>Write a personalized cover letter addressing the client's specific needs</p>
