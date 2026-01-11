@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -54,6 +54,7 @@ const pathToPage: Record<string, Page> = {
   '/job-detail': 'job-detail',
   '/proposals-list': 'proposals-list',
   '/submit-proposal': 'submit-proposal',
+  '/view-proposal': 'view-proposal',
   '/messages': 'messages',
   '/project-detail': 'project-detail',
   '/project-workspace': 'project-workspace',
@@ -91,6 +92,7 @@ const pageToPath: Record<Page, string> = {
   'job-detail': '/job-detail',
   'proposals-list': '/proposals-list',
   'submit-proposal': '/submit-proposal',
+  'view-proposal': '/view-proposal',
   'messages': '/messages',
   'project-detail': '/project-detail',
   'project-workspace': '/project-workspace',
@@ -158,6 +160,8 @@ export function Router({ children }: { children: React.ReactNode }) {
       url = `${path}?jobId=${params.jobId}`;
     } else if (params?.freelancerId && page === 'view-freelancer') {
       url = `${path}?freelancerId=${params.freelancerId}`;
+    } else if (params?.bidId && page === 'view-proposal') {
+      url = `${path}?bidId=${params.bidId}`;
     }
     window.history.pushState({ page, params }, '', url);
   };
@@ -174,12 +178,15 @@ export function Router({ children }: { children: React.ReactNode }) {
     const token = urlParams.get('token');
     const jobId = urlParams.get('jobId');
     const freelancerId = urlParams.get('freelancerId');
+    const bidId = urlParams.get('bidId');
     if (token && page === 'reset-password') {
       setPageParams({ token });
     } else if (jobId && (page === 'job-detail' || page === 'proposals-list' || page === 'submit-proposal')) {
       setPageParams({ jobId: parseInt(jobId, 10) });
     } else if (freelancerId && page === 'view-freelancer') {
       setPageParams({ freelancerId: parseInt(freelancerId, 10) });
+    } else if (bidId && page === 'view-proposal') {
+      setPageParams({ bidId: parseInt(bidId, 10) });
     }
 
     // Handle browser back/forward buttons
@@ -192,12 +199,15 @@ export function Router({ children }: { children: React.ReactNode }) {
       const token = urlParams.get('token');
       const jobId = urlParams.get('jobId');
       const freelancerId = urlParams.get('freelancerId');
+      const bidId = urlParams.get('bidId');
       if (token && page === 'reset-password') {
         setPageParams({ token });
       } else if (jobId && (page === 'job-detail' || page === 'proposals-list' || page === 'submit-proposal')) {
         setPageParams({ jobId: parseInt(jobId, 10) });
       } else if (freelancerId && page === 'view-freelancer') {
         setPageParams({ freelancerId: parseInt(freelancerId, 10) });
+      } else if (bidId && page === 'view-proposal') {
+        setPageParams({ bidId: parseInt(bidId, 10) });
       } else {
         setPageParams(null);
       }

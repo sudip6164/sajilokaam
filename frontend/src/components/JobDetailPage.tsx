@@ -69,6 +69,7 @@ export function JobDetailPage() {
   const [jobClientId, setJobClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userBid, setUserBid] = useState<any>(null);
 
   // Debug: Log user info
   console.log('JobDetailPage - User Info:', {
@@ -194,6 +195,20 @@ export function JobDetailPage() {
       // Store job client ID for validation
       if (jobData.clientId) {
         setJobClientId(jobData.clientId);
+      }
+
+      // Check if user has already submitted a bid for this job
+      if (isAuthenticated && hasRole('FREELANCER')) {
+        try {
+          const bidsResponse = await bidsApi.listByJob(jobId);
+          const myBid = bidsResponse.find((bid: any) => bid.freelancerId === authUser?.id);
+          if (myBid) {
+            setUserBid(myBid);
+          }
+        } catch (err) {
+          console.error('Error fetching user bid:', err);
+          // Ignore error - user may not have bid yet
+        }
       }
 
       // Fetch similar jobs (same category)
@@ -348,13 +363,24 @@ export function JobDetailPage() {
                 <div className="mt-6 flex gap-3">
                   {isAuthenticated && hasRole('FREELANCER') && jobClientId !== authUser?.id ? (
                     <>
-                      <Button 
-                        size="lg" 
-                        className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                        onClick={() => navigate('submit-proposal', { jobId: job.id })}
-                      >
-                        Submit Proposal
-                      </Button>
+                      {userBid ? (
+                        <Button 
+                          size="lg" 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => navigate('view-proposal', { bidId: userBid.id })}
+                        >
+                          View Your Proposal
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="lg" 
+                          className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                          onClick={() => navigate('submit-proposal', { jobId: job.id })}
+                        >
+                          Submit Proposal
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         size="lg"
@@ -463,12 +489,22 @@ export function JobDetailPage() {
                   <p className="text-sm text-muted-foreground">{job.budget.type}</p>
                 </div>
                 {isAuthenticated && hasRole('FREELANCER') && jobClientId !== authUser?.id ? (
-                  <Button 
-                    className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                    onClick={() => navigate('submit-proposal', { jobId: job.id })}
-                  >
-                    Submit Proposal
-                  </Button>
+                  userBid ? (
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => navigate('view-proposal', { bidId: userBid.id })}
+                    >
+                      View Your Proposal
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                      onClick={() => navigate('submit-proposal', { jobId: job.id })}
+                    >
+                      Submit Proposal
+                    </Button>
+                  )
                 ) : isAuthenticated && jobClientId === authUser?.id ? (
                   <Button 
                     variant="outline"

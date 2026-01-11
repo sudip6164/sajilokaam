@@ -535,11 +535,11 @@ function ProposalsContent({ navigate }: { navigate: any }) {
           {bids.map((bid: any) => {
             const submittedAt = bid.createdAt ? new Date(bid.createdAt).toLocaleDateString() : 'Recently';
             return (
-              <Card key={bid.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('job-detail', { jobId: bid.jobId })}>
+              <Card key={bid.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">Proposal for Job #{bid.jobId}</h3>
+                      <h3 className="font-semibold text-lg mb-2">{bid.jobTitle || `Proposal #${bid.id}`}</h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -550,8 +550,8 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                           Rs. {bid.amount?.toLocaleString() || '0'}
                         </span>
                       </div>
-                      {bid.proposal && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{bid.proposal}</p>
+                      {(bid.proposal || bid.message) && (
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{bid.proposal || bid.message}</p>
                       )}
                     </div>
                     <Badge variant={
@@ -562,12 +562,22 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                       {bid.status}
                     </Badge>
                   </div>
-                  <Button variant="outline" className="w-full" onClick={(e) => {
-                    e.stopPropagation();
-                    navigate('job-detail', { jobId: bid.jobId });
-                  }}>
-                    View Job Details
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="default" 
+                      className="flex-1" 
+                      onClick={() => navigate('view-proposal', { bidId: bid.id })}
+                    >
+                      View Proposal
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1" 
+                      onClick={() => navigate('job-detail', { jobId: bid.jobId })}
+                    >
+                      View Job
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
