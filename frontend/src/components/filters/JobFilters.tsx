@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { X, ChevronDown, ChevronUp, DollarSign, MapPin, Briefcase, Clock, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, ChevronDown, ChevronUp, DollarSign, MapPin, Briefcase, Clock, Star, Plus } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { jobCategoriesApi, jobSkillsApi } from '@/lib/api';
 
 export interface JobFiltersState {
   categories: string[];
@@ -33,29 +35,49 @@ export function JobFilters({ filters, onFilterChange, onClearAll }: JobFiltersPr
     location: false,
     skills: false,
   });
+  
+  const [availableCategories, setAvailableCategories] = useState<Array<{ id: number; name: string }>>([]);
+  const [availableSkills, setAvailableSkills] = useState<Array<{ id: number; name: string }>>([]);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllSkills, setShowAllSkills] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
+  const [customSkillInput, setCustomSkillInput] = useState('');
+  const [showCategoryInput, setShowCategoryInput] = useState(false);
+  const [showSkillInput, setShowSkillInput] = useState(false);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchSkills();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const data = await jobCategoriesApi.list();
+      setAvailableCategories(data);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
+
+  const fetchSkills = async () => {
+    try {
+      const data = await jobSkillsApi.list();
+      setAvailableSkills(data);
+    } catch (err) {
+      console.error('Error fetching skills:', err);
+    }
+  };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const categories = [
-    'Web Development',
-    'Mobile Development',
-    'Design & Creative',
-    'Writing & Translation',
-    'Marketing & Sales',
-    'Data Science & Analytics',
-    'Admin & Customer Support',
-    'Engineering & Architecture',
-  ];
+  const displayedCategories = showAllCategories ? availableCategories : availableCategories.slice(0, 10);
+  const displayedSkills = showAllSkills ? availableSkills : availableSkills.slice(0, 10);
 
   const experienceLevels = ['Entry Level', 'Intermediate', 'Expert'];
   const projectLengths = ['Less than 1 month', '1-3 months', '3-6 months', 'More than 6 months'];
   const locations = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'Remote Only'];
-  const popularSkills = [
-    'React', 'JavaScript', 'Python', 'Node.js', 'TypeScript', 'AWS',
-    'UI/UX Design', 'Figma', 'SEO', 'Content Writing', 'SQL', 'MongoDB'
-  ];
 
   const handleCategoryToggle = (category: string) => {
     const newCategories = filters.categories.includes(category)
@@ -90,6 +112,22 @@ export function JobFilters({ filters, onFilterChange, onClearAll }: JobFiltersPr
       ? filters.skills.filter(s => s !== skill)
       : [...filters.skills, skill];
     onFilterChange({ ...filters, skills: newSkills });
+  };
+
+  const addCustomCategory = () => {
+    if (customCategoryInput.trim() && !filters.categories.includes(customCategoryInput.trim())) {
+      onFilterChange({ ...filters, categories: [...filters.categories, customCategoryInput.trim()] });
+      setCustomCategoryInput('');
+      setShowCategoryInput(false);
+    }
+  };
+
+  const addCustomSkill = () => {
+    if (customSkillInput.trim() && !filters.skills.includes(customSkillInput.trim())) {
+      onFilterChange({ ...filters, skills: [...filters.skills, customSkillInput.trim()] });
+      setCustomSkillInput('');
+      setShowSkillInput(false);
+    }
   };
 
   const activeFilterCount = 
@@ -127,21 +165,60 @@ export function JobFilters({ filters, onFilterChange, onClearAll }: JobFiltersPr
         count={filters.categories.length}
       >
         <div className="space-y-2">
-          {categories.map(category => (
-            <div key={category} className="flex items-center space-x-2">
+          {displayedCategories.map(category => (
+            <div key={category.id} className="flex items-center space-x-2">
               <Checkbox
-                id={`category-${category}`}
-                checked={filters.categories.includes(category)}
-                onCheckedChange={() => handleCategoryToggle(category)}
+                id={`category-${category.id}`}
+                checked={filters.categories.includes(category.name)}
+                onCheckedChange={() => handleCategoryToggle(category.name)}
               />
               <Label
-                htmlFor={`category-${category}`}
+                htmlFor={`category-${category.id}`}
                 className="text-sm cursor-pointer flex-1"
               >
-                {category}
+                {category.name}
               </Label>
             </div>
           ))}
+          
+          {availableCategories.length > 10 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAllCategories(!showAllCategories)}
+              className="w-full text-xs"
+            >
+              {showAllCategories ? 'Show Less' : `Show All (${availableCategories.length})`}
+            </Button>
+          )}
+          
+          {!showCategoryInput ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCategoryInput(true)}
+              className="w-full text-xs"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add Custom Category
+            </Button>
+          ) : (
+            <div className="flex gap-1 mt-2">
+              <Input
+                placeholder="Enter category"
+                value={customCategoryInput}
+                onChange={(e) => setCustomCategoryInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addCustomCategory()}
+                className="h-8 text-xs"
+              />
+              <Button size="sm" onClick={addCustomCategory} className="h-8 px-2">
+                <Plus className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowCategoryInput(false)} className="h-8 px-2">
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
       </FilterSection>
 
@@ -297,18 +374,57 @@ export function JobFilters({ filters, onFilterChange, onClearAll }: JobFiltersPr
         count={filters.skills.length}
       >
         <div className="space-y-2">
-          {popularSkills.map(skill => (
-            <div key={skill} className="flex items-center space-x-2">
+          {displayedSkills.map(skill => (
+            <div key={skill.id} className="flex items-center space-x-2">
               <Checkbox
-                id={`skill-${skill}`}
-                checked={filters.skills.includes(skill)}
-                onCheckedChange={() => handleSkillToggle(skill)}
+                id={`skill-${skill.id}`}
+                checked={filters.skills.includes(skill.name)}
+                onCheckedChange={() => handleSkillToggle(skill.name)}
               />
-              <Label htmlFor={`skill-${skill}`} className="text-sm cursor-pointer flex-1">
-                {skill}
+              <Label htmlFor={`skill-${skill.id}`} className="text-sm cursor-pointer flex-1">
+                {skill.name}
               </Label>
             </div>
           ))}
+          
+          {availableSkills.length > 10 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAllSkills(!showAllSkills)}
+              className="w-full text-xs"
+            >
+              {showAllSkills ? 'Show Less' : `Show All (${availableSkills.length})`}
+            </Button>
+          )}
+          
+          {!showSkillInput ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSkillInput(true)}
+              className="w-full text-xs"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add Custom Skill
+            </Button>
+          ) : (
+            <div className="flex gap-1 mt-2">
+              <Input
+                placeholder="Enter skill"
+                value={customSkillInput}
+                onChange={(e) => setCustomSkillInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addCustomSkill()}
+                className="h-8 text-xs"
+              />
+              <Button size="sm" onClick={addCustomSkill} className="h-8 px-2">
+                <Plus className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowSkillInput(false)} className="h-8 px-2">
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
       </FilterSection>
 
