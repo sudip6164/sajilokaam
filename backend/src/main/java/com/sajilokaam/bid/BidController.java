@@ -341,5 +341,37 @@ public class BidController {
         
         return ResponseEntity.ok(comparisons);
     }
+
+    @GetMapping("/bids/{id}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<BidResponse> getBidById(@PathVariable Long id) {
+        Optional<Bid> bidOpt = bidRepository.findById(id);
+        if (bidOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Bid bid = bidOpt.get();
+        
+        // Access job and freelancer to initialize them
+        Job job = bid.getJob();
+        User freelancer = bid.getFreelancer();
+        
+        String jobTitle = job != null ? job.getTitle() : null;
+        String freelancerName = freelancer != null ? freelancer.getFullName() : null;
+        String freelancerEmail = freelancer != null ? freelancer.getEmail() : null;
+        Long freelancerId = freelancer != null ? freelancer.getId() : null;
+
+        return ResponseEntity.ok(new BidResponse(
+            bid.getId(),
+            job.getId(),
+            jobTitle,
+            freelancerId,
+            freelancerName,
+            freelancerEmail,
+            bid.getAmount(),
+            bid.getMessage(),
+            bid.getStatus(),
+            bid.getCreatedAt()
+        ));
+    }
 }
 

@@ -32,14 +32,20 @@ export function ViewProposalPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('ViewProposalPage - useEffect triggered');
+    console.log('pageParams:', pageParams);
+    console.log('isAuthenticated:', isAuthenticated);
+    
     if (!isAuthenticated) {
       navigate('login');
       return;
     }
 
     const bidId = pageParams?.bidId;
+    console.log('bidId from pageParams:', bidId, 'Type:', typeof bidId);
+    
     if (!bidId || typeof bidId !== 'number' || isNaN(bidId)) {
-      console.error('Invalid bid ID:', bidId);
+      console.error('Invalid bid ID:', bidId, 'Type:', typeof bidId);
       toast.error('Invalid proposal ID');
       navigate('freelancer-dashboard');
       return;
