@@ -44,7 +44,7 @@ export function MessagesPage() {
             id: wsMessage.id,
             senderId: wsMessage.sender.id.toString(),
             senderName: wsMessage.sender.fullName,
-            senderAvatar: (wsMessage.sender as any).profilePictureUrl,
+            senderAvatar: (wsMessage as any).profilePictureUrl, // Profile picture URL is on message, not sender
             content: wsMessage.content,
             timestamp: wsMessage.createdAt,
             isRead: true,
@@ -139,7 +139,7 @@ export function MessagesPage() {
         id: msg.id,
         senderId: msg.sender?.id.toString() || 'unknown',
         senderName: msg.sender?.fullName || 'Unknown',
-        senderAvatar: msg.sender?.profilePictureUrl,
+        senderAvatar: msg.profilePictureUrl, // Profile picture URL is directly on message object
         content: msg.content || msg.richContent || '',
         timestamp: msg.createdAt,
         isRead: true, // Can be enhanced with read receipts
@@ -180,7 +180,7 @@ export function MessagesPage() {
         id: newMessage.id,
         senderId: user?.id.toString() || 'user-1',
         senderName: user?.fullName || 'You',
-        senderAvatar: (user as any)?.profilePictureUrl,
+        senderAvatar: (newMessage as any).profilePictureUrl, // Get from API response
         content: newMessage.content,
         timestamp: newMessage.createdAt,
         isRead: true,
