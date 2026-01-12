@@ -1,5 +1,6 @@
 package com.sajilokaam.conversation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.project.Project;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -17,17 +18,19 @@ public class Conversation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "job"})
     private Project project;
 
     @Column(length = 255)
     private String title;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "conversation_participants",
             joinColumns = @JoinColumn(name = "conversation_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private Set<com.sajilokaam.user.User> participants = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
