@@ -79,10 +79,12 @@ export function JobFilters({ filters, onFilterChange, onClearAll }: JobFiltersPr
   const projectLengths = ['Less than 1 month', '1-3 months', '3-6 months', 'More than 6 months'];
   const locations = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'Remote Only'];
 
-  const handleCategoryToggle = (category: string) => {
-    const newCategories = filters.categories.includes(category)
-      ? filters.categories.filter(c => c !== category)
-      : [...filters.categories, category];
+  const handleCategoryToggle = (categoryId: number, categoryName: string) => {
+    // Store category ID as string in the filter
+    const categoryIdStr = categoryId.toString();
+    const newCategories = filters.categories.includes(categoryIdStr)
+      ? filters.categories.filter(c => c !== categoryIdStr)
+      : [...filters.categories, categoryIdStr];
     onFilterChange({ ...filters, categories: newCategories });
   };
 
@@ -169,8 +171,8 @@ export function JobFilters({ filters, onFilterChange, onClearAll }: JobFiltersPr
             <div key={category.id} className="flex items-center space-x-2">
               <Checkbox
                 id={`category-${category.id}`}
-                checked={filters.categories.includes(category.name)}
-                onCheckedChange={() => handleCategoryToggle(category.name)}
+                checked={filters.categories.includes(category.id.toString())}
+                onCheckedChange={() => handleCategoryToggle(category.id, category.name)}
               />
               <Label
                 htmlFor={`category-${category.id}`}

@@ -233,7 +233,8 @@ export function EnhancedFindWorkPage() {
       // Map filters to API params
       if (filters.categories.length > 0) {
         // Use first category for now (backend supports single categoryId)
-        params.categoryId = filters.categories[0];
+        // The category filter now stores IDs as strings, so convert to number
+        params.categoryId = parseInt(filters.categories[0], 10);
       }
 
       if (filters.fixedPrice.min > 0 || filters.fixedPrice.max > 0) {
@@ -277,8 +278,22 @@ export function EnhancedFindWorkPage() {
       setJobs(transformedJobs);
     } catch (err: any) {
       console.error('Error fetching jobs:', err);
-      setError('Failed to load jobs. Please try again later.');
-      setJobs([]); // Fallback to empty array
+      
+      // Handle specific error cases
+      if (err.response?.status === 400) {
+        // Bad request, likely invalid filter parameters
+        // Don't show error, just show empty results
+        setJobs([]);
+        setError(null);
+      } else if (err.response?.status === 404) {
+        // No jobs found
+        setJobs([]);
+        setError(null);
+      } else {
+        // Other errors
+        setError('Failed to load jobs. Please try again later.');
+        setJobs([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -351,9 +366,11 @@ export function EnhancedFindWorkPage() {
   }
 
   // Apply filters
-  if (filters.categories.length > 0) {
-    filteredJobs = filteredJobs.filter(job => filters.categories.includes(job.category));
-  }
+  // Note: Category filter is already applied server-side via API params
+  // Client-side category filtering is not needed when using real API data
+  // if (filters.categories.length > 0) {
+  //   filteredJobs = filteredJobs.filter(job => filters.categories.includes(job.category));
+  // }
   if (filters.experienceLevel.length > 0) {
     filteredJobs = filteredJobs.filter(job => filters.experienceLevel.includes(job.experienceLevel));
   }

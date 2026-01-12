@@ -1,5 +1,7 @@
 import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { JobFiltersState } from './JobFilters';
+import { jobCategoriesApi } from '@/lib/api';
 
 interface ActiveFiltersProps {
   filters: JobFiltersState;
@@ -7,11 +9,31 @@ interface ActiveFiltersProps {
 }
 
 export function ActiveFilters({ filters, onRemoveFilter }: ActiveFiltersProps) {
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Fetch categories to map IDs to names
+    const fetchCategories = async () => {
+      try {
+        const categories = await jobCategoriesApi.list();
+        const map: Record<string, string> = {};
+        categories.forEach((cat: any) => {
+          map[cat.id.toString()] = cat.name;
+        });
+        setCategoryMap(map);
+      } catch (err) {
+        console.error('Error fetching categories for active filters:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const chips: { type: string; label: string; value?: string }[] = [];
 
-  // Add category chips
-  filters.categories.forEach(cat => {
-    chips.push({ type: 'category', label: cat, value: cat });
+  // Add category chips (convert ID to name)
+  filters.categories.forEach(catId => {
+    const categoryName = categoryMap[catId] || `Category ${catId}`;
+    chips.push({ type: 'category', label: categoryName, value: catId });
   });
 
   // Add experience level chips
