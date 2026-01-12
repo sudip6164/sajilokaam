@@ -38,14 +38,18 @@ interface TimeEntry {
 interface ProjectWorkspaceProps {
   project: {
     id: number;
-    title: string;
-    client: string;
-    freelancer: string;
-    status: 'active' | 'completed' | 'paused';
-    budget: number;
-    budgetType: 'fixed' | 'hourly';
-    startDate: string;
+    title?: string;
+    client?: string;
+    freelancer?: string;
+    clientId?: number;
+    freelancerId?: number;
+    status?: string;
+    budget?: number;
+    budgetType?: 'fixed' | 'hourly';
+    startDate?: string;
     endDate?: string;
+    deadline?: string;
+    description?: string;
   };
 }
 
@@ -177,18 +181,18 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
       <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold mb-2">{project.title}</h1>
+            <h1 className="text-2xl font-bold mb-2">{project.title || 'Untitled Project'}</h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Client: {project.client}</span>
+              <span>Client ID: {project.clientId || project.client || 'N/A'}</span>
               <span>•</span>
-              <span>Freelancer: {project.freelancer}</span>
+              <span>Freelancer ID: {project.freelancerId || project.freelancer || 'N/A'}</span>
             </div>
           </div>
           <Badge className={
-            project.status === 'active' ? 'bg-success' :
-            project.status === 'completed' ? 'bg-primary' : 'bg-yellow-500'
+            project.status === 'active' || project.status === 'ACTIVE' || project.status === 'IN_PROGRESS' ? 'bg-success' :
+            project.status === 'completed' || project.status === 'COMPLETED' ? 'bg-primary' : 'bg-yellow-500'
           }>
-            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+            {project.status ? (project.status.charAt(0).toUpperCase() + project.status.slice(1).toLowerCase().replace('_', ' ')) : 'Unknown'}
           </Badge>
         </div>
 
@@ -199,28 +203,28 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
               <DollarSign className="h-4 w-4" />
               <span className="text-sm">Total Budget</span>
             </div>
-            <p className="text-2xl font-bold">${project.budget.toLocaleString()}</p>
+            <p className="text-2xl font-bold">Rs. {project.budget?.toLocaleString() || '0'}</p>
           </div>
           <div className="p-4 rounded-lg bg-background">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <CheckCircle className="h-4 w-4" />
               <span className="text-sm">Paid</span>
             </div>
-            <p className="text-2xl font-bold text-success">${totalPaid.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-success">Rs. {totalPaid.toLocaleString()}</p>
           </div>
           <div className="p-4 rounded-lg bg-background">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Clock className="h-4 w-4" />
               <span className="text-sm">Pending</span>
             </div>
-            <p className="text-2xl font-bold text-yellow-500">${totalPending.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-yellow-500">Rs. {totalPending.toLocaleString()}</p>
           </div>
           <div className="p-4 rounded-lg bg-background">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Calendar className="h-4 w-4" />
               <span className="text-sm">Due Date</span>
             </div>
-            <p className="text-lg font-bold">{project.endDate || 'Ongoing'}</p>
+            <p className="text-lg font-bold">{project.deadline || project.endDate || 'Ongoing'}</p>
           </div>
         </div>
       </div>
