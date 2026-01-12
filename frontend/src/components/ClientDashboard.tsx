@@ -196,8 +196,10 @@ export function ClientDashboard() {
           </Sidebar>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto ml-64 pt-16 pr-6 pb-6" style={{ paddingLeft: 0 }}>
-            {renderContent()}
+          <main className="flex-1 overflow-y-auto ml-64 pt-16 pr-6 pb-6 pl-4" style={{ display: 'block' }}>
+            <div style={{ width: '100%', maxWidth: 'none', margin: 0 }}>
+              {renderContent()}
+            </div>
           </main>
         </SidebarProvider>
       </div>

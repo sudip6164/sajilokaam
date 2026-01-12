@@ -91,8 +91,10 @@ export function FreelancerDashboard() {
           </Sidebar>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto ml-64 pt-16 pr-6 pb-6" style={{ paddingLeft: 0 }}>
-            {renderContent()}
+          <main className="flex-1 overflow-y-auto ml-64 pt-16 pr-6 pb-6 pl-4" style={{ display: 'block' }}>
+            <div style={{ width: '100%', maxWidth: 'none', margin: 0 }}>
+              {renderContent()}
+            </div>
           </main>
         </SidebarProvider>
       </div>
@@ -186,9 +188,9 @@ function OverviewContent({ navigate }: { navigate: any }) {
   }
 
   return (
-    <div className="space-y-8" style={{ marginLeft: 0, paddingLeft: 0 }}>
+    <div className="space-y-8">
       {/* Header */}
-      <div style={{ marginLeft: 0, paddingLeft: 0 }}>
+      <div>
         <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Dashboard</h1>
         <p className="text-muted-foreground">Welcome back! Here's your freelancing overview.</p>
       </div>
@@ -374,8 +376,8 @@ function ProjectsContent({ navigate }: { navigate: any }) {
 
   if (loading) {
     return (
-      <div className="space-y-6" style={{ marginLeft: 0, paddingLeft: 0 }}>
-        <div style={{ marginLeft: 0, paddingLeft: 0 }}>
+      <div className="space-y-6">
+        <div>
           <h1 className="text-3xl font-bold mb-2">Active Projects</h1>
           <p className="text-muted-foreground">Manage your ongoing projects</p>
         </div>
@@ -662,8 +664,8 @@ function EarningsContent({ navigate }: { navigate: any }) {
 
   if (loading) {
     return (
-      <div className="space-y-6" style={{ marginLeft: 0, paddingLeft: 0 }}>
-        <div style={{ marginLeft: 0, paddingLeft: 0 }}>
+      <div className="space-y-6">
+        <div>
           <h1 className="text-3xl font-bold mb-2">Earnings</h1>
           <p className="text-muted-foreground">Track your income and payments</p>
         </div>
@@ -678,8 +680,8 @@ function EarningsContent({ navigate }: { navigate: any }) {
   }
 
   return (
-    <div className="space-y-6" style={{ marginLeft: 0, paddingLeft: 0 }}>
-      <div style={{ marginLeft: 0, paddingLeft: 0 }}>
+    <div className="space-y-6">
+      <div>
         <h1 className="text-3xl font-bold mb-2">Earnings</h1>
         <p className="text-muted-foreground">Track your income and payments</p>
       </div>
