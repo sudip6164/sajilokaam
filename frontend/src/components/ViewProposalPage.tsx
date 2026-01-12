@@ -38,18 +38,25 @@ export function ViewProposalPage() {
     }
 
     const bidId = pageParams?.bidId;
-    if (!bidId) {
-      toast.error('Proposal ID not provided');
+    if (!bidId || typeof bidId !== 'number' || isNaN(bidId)) {
+      console.error('Invalid bid ID:', bidId);
+      toast.error('Invalid proposal ID');
       navigate('freelancer-dashboard');
       return;
     }
 
     fetchProposal(bidId);
-  }, [pageParams, isAuthenticated]);
+  }, [pageParams?.bidId, isAuthenticated]);
 
   const fetchProposal = async (bidId: number) => {
     try {
       setLoading(true);
+      
+      console.log('Fetching proposal with ID:', bidId, 'Type:', typeof bidId);
+      if (!bidId || typeof bidId !== 'number' || isNaN(bidId)) {
+        throw new Error('Invalid bid ID: ' + bidId);
+      }
+      
       // First try to get bid from my-bids to get jobId
       const bidData = await bidsApi.get(bidId);
       setProposal(bidData);

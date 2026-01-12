@@ -565,7 +565,13 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                     <Button 
                       variant="default" 
                       className="flex-1" 
-                      onClick={() => navigate('view-proposal', { bidId: bid.id })}
+                      onClick={() => {
+                        if (bid?.id) {
+                          navigate('view-proposal', { bidId: bid.id });
+                        } else {
+                          toast.error('Invalid proposal ID');
+                        }
+                      }}
                     >
                       View Proposal
                     </Button>

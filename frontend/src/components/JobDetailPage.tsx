@@ -368,7 +368,13 @@ export function JobDetailPage() {
                           size="lg" 
                           variant="outline"
                           className="flex-1"
-                          onClick={() => navigate('view-proposal', { bidId: userBid.id })}
+                          onClick={() => {
+                            if (userBid?.id) {
+                              navigate('view-proposal', { bidId: userBid.id });
+                            } else {
+                              toast.error('Invalid proposal ID');
+                            }
+                          }}
                         >
                           View Your Proposal
                         </Button>
@@ -493,7 +499,13 @@ export function JobDetailPage() {
                     <Button 
                       variant="outline"
                       className="w-full"
-                      onClick={() => navigate('view-proposal', { bidId: userBid.id })}
+                      onClick={() => {
+                        if (userBid?.id) {
+                          navigate('view-proposal', { bidId: userBid.id });
+                        } else {
+                          toast.error('Invalid proposal ID');
+                        }
+                      }}
                     >
                       View Your Proposal
                     </Button>
