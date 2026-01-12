@@ -1,5 +1,6 @@
 package com.sajilokaam.project;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.user.User;
 import jakarta.persistence.*;
@@ -23,10 +24,12 @@ public class Project {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "freelancer_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private User freelancer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private User client;
 
     @Column(nullable = false, length = 255)
