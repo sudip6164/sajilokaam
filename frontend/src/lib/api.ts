@@ -433,7 +433,7 @@ export const bidsApi = {
   },
 
   get: async (id: number, jobId?: number) => {
-    // Use the direct /api/bids/{id} endpoint
+    // Use the direct /api/jobs/bids/{id} endpoint
     const response = await api.get<{
       id: number;
       jobId: number;
@@ -445,7 +445,7 @@ export const bidsApi = {
       message: string;
       status: string;
       createdAt: string;
-    }>(`/bids/${id}`);
+    }>(`/jobs/bids/${id}`);
     return response.data;
   },
 
