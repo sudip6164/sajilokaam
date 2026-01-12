@@ -11,6 +11,7 @@ export interface WebSocketMessage {
   };
   content: string;
   createdAt: string;
+  profilePictureUrl?: string;
 }
 
 export const connectWebSocket = (
