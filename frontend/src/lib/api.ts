@@ -770,16 +770,16 @@ export const paymentsApi = {
     return response.data;
   },
 
-  initiate: async (paymentId: number, gateway: "KHALTI" | "ESEWA", returnUrl?: string, cancelUrl?: string) => {
+  initiate: async (paymentId: number, data: { gateway: string; returnUrl?: string; cancelUrl?: string }) => {
     const response = await api.post<{
       success: boolean;
       paymentUrl?: string;
       transactionId?: string;
       message?: string;
     }>(`/payments/${paymentId}/initiate`, {
-      gateway,
-      returnUrl: returnUrl || `${window.location.origin}/success?type=payment`,
-      cancelUrl: cancelUrl || `${window.location.origin}/failure?type=payment`,
+      gateway: data.gateway,
+      returnUrl: data.returnUrl || `${window.location.origin}/payment-success`,
+      cancelUrl: data.cancelUrl || `${window.location.origin}/payment-cancel`,
     });
     return response.data;
   },
@@ -821,12 +821,18 @@ export const paymentsApi = {
     return response.data;
   },
 
-  verify: async (transactionId: string) => {
+  verify: async (paymentId: number, data: { token: string }) => {
     const response = await api.post<{
       success: boolean;
       verified: boolean;
+      payment?: any;
       message?: string;
-    }>(`/payments/verify/${transactionId}`);
+    }>(`/payments/${paymentId}/verify`, data);
+    return response.data;
+  },
+
+  getTransactions: async () => {
+    const response = await api.get<Array<any>>("/payments/transactions");
     return response.data;
   },
 
@@ -857,6 +863,35 @@ export const paymentsApi = {
       paidAt?: string;
       createdAt: string;
     }>>("/payments", { params });
+    return response.data;
+  },
+};
+
+// Escrow API
+export const escrowApi = {
+  create: async (data: {
+    projectId: number;
+    amount: number;
+    clientId: number;
+    freelancerId: number;
+  }) => {
+    const response = await api.post<any>("/escrow", data);
+    return response.data;
+  },
+
+  getByProject: async (projectId: number) => {
+    const response = await api.get<Array<any>>(`/escrow/project/${projectId}`);
+    return response.data;
+  },
+
+  release: async (accountId: number, data: {
+    amount: number;
+    releaseType: string;
+    milestoneId?: number;
+    transactionId?: number;
+    notes?: string;
+  }) => {
+    const response = await api.post<any>(`/escrow/${accountId}/release`, data);
     return response.data;
   },
 };

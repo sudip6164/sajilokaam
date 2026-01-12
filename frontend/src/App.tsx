@@ -52,6 +52,13 @@ import { FreelancerManagementPage } from "./components/admin/FreelancerManagemen
 import { ClientManagementPage } from "./components/admin/ClientManagementPage";
 import { AdminManagementPage } from "./components/admin/AdminManagementPage";
 import { VerificationQueuePage } from "./components/admin/VerificationQueuePage";
+import { InvoicesListPage } from "./components/payments/InvoicesListPage";
+import { CreateInvoicePage } from "./components/payments/CreateInvoicePage";
+import { InvoiceDetailPage } from "./components/payments/InvoiceDetailPage";
+import { TransactionsPage } from "./components/payments/TransactionsPage";
+import { EscrowManagementPage } from "./components/payments/EscrowManagementPage";
+import { PaymentSuccessPage } from "./components/payments/PaymentSuccessPage";
+import { PaymentCancelPage } from "./components/payments/PaymentCancelPage";
 
 const queryClient = new QueryClient();
 
@@ -134,6 +141,20 @@ function AppContent() {
       return <EarningsPage />;
     case 'post-job':
       return <PostJobPage />;
+    case 'invoices-list':
+      return <InvoicesListPage />;
+    case 'create-invoice':
+      return <CreateInvoicePage />;
+    case 'invoice-detail':
+      return <InvoiceDetailPage />;
+    case 'transactions':
+      return <TransactionsPage />;
+    case 'escrow':
+      return <EscrowManagementPage />;
+    case 'payment-success':
+      return <PaymentSuccessPage />;
+    case 'payment-cancel':
+      return <PaymentCancelPage />;
     case 'features':
       return <FeaturesPage />;
     case 'about':
