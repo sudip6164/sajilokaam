@@ -177,14 +177,24 @@ export function MessagesPage() {
         })),
       };
 
-      // Add message to state (don't wait for WebSocket)
-      setMessages(prev => ({
-        ...prev,
-        [selectedConversationId]: [
-          ...(prev[selectedConversationId] || []),
-          transformedMessage,
-        ],
-      }));
+      console.log('Adding sent message optimistically:', newMessage.id);
+
+      // Add message to state with duplicate check
+      setMessages(prev => {
+        const conversationMessages = prev[selectedConversationId] || [];
+        
+        // Check if message already exists (in case WebSocket was faster)
+        const exists = conversationMessages.some(m => Number(m.id) === Number(newMessage.id));
+        if (exists) {
+          console.log('Message already exists from WebSocket, skipping optimistic update:', newMessage.id);
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [selectedConversationId]: [...conversationMessages, transformedMessage],
+        };
+      });
 
       // Update conversation last message
       setConversations(prev =>
