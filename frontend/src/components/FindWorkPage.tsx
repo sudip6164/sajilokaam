@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Clock, DollarSign, Star, Bookmark, ArrowLeft } from 'lucide-react';
+import { Search, Filter, MapPin, Clock, Wallet, Star, Bookmark, ArrowLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
@@ -325,7 +325,7 @@ export function FindWorkPage() {
                       {/* Budget and Duration */}
                       <div className="flex flex-wrap items-center gap-6 text-sm">
                         <div className="flex items-center gap-1.5">
-                          <DollarSign className="h-4 w-4 text-primary" />
+                          <Wallet className="h-4 w-4 text-primary" />
                           <span className="font-semibold text-foreground">
                             {formatBudget(job)}
                           </span>

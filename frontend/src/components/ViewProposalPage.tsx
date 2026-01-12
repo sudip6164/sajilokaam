@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
   ArrowLeft,
-  DollarSign,
+  Wallet,
   Calendar,
   Clock,
   FileText,
@@ -292,7 +292,7 @@ export function ViewProposalPage() {
                   ) : (
                     <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                        <Wallet className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Bid Amount</p>
                           <p className="font-semibold text-lg">Rs. {proposal.amount?.toLocaleString()}</p>

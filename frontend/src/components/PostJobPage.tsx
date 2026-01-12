@@ -16,7 +16,7 @@ import { Header } from './Header';
 import { Footer } from './Footer';
 import { 
   Briefcase, 
-  DollarSign, 
+  Wallet, 
   Clock, 
   Tag, 
   FileText,
@@ -514,7 +514,7 @@ export function PostJobPage() {
                       <div>
                         <Label htmlFor="fixedBudget" className="text-base">Fixed Budget (NPR) *</Label>
                         <div className="relative mt-2">
-                          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">Rs.</span>
                           <Input
                             id="fixedBudget"
                             type="number"
@@ -539,7 +539,7 @@ export function PostJobPage() {
                         <div>
                           <Label htmlFor="hourlyMin" className="text-base">Min Hourly Rate (NPR) *</Label>
                           <div className="relative mt-2">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">Rs.</span>
                             <Input
                               id="hourlyMin"
                               type="number"
@@ -562,7 +562,7 @@ export function PostJobPage() {
                         <div>
                           <Label htmlFor="hourlyMax" className="text-base">Max Hourly Rate (NPR) *</Label>
                           <div className="relative mt-2">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">Rs.</span>
                             <Input
                               id="hourlyMax"
                               type="number"
@@ -822,7 +822,7 @@ export function PostJobPage() {
                         <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                           <div>
                             <h4 className="font-semibold mb-2 flex items-center gap-2">
-                              <DollarSign className="h-4 w-4 text-primary" />
+                              <Wallet className="h-4 w-4 text-primary" />
                               Budget
                             </h4>
                             <p className="text-muted-foreground">

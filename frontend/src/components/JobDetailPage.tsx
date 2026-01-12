@@ -11,7 +11,7 @@ import { jobsApi, bidsApi, profileApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
-  DollarSign, 
+  Wallet, 
   MapPin, 
   Clock, 
   Calendar,
@@ -335,7 +335,7 @@ export function JobDetailPage() {
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Budget</p>
                     <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-primary" />
+                      <Wallet className="h-4 w-4 text-primary" />
                       <span className="font-bold text-primary">{job.budget.range}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{job.budget.type}</p>
