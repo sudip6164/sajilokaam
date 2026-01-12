@@ -94,7 +94,18 @@ export function MessageThread({
       <div className="flex items-center justify-between p-4 border-b border-border bg-background">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            {recipientAvatar ? (
+              <img
+                src={`http://localhost:8080${recipientAvatar}`}
+                alt={recipientName}
+                className="w-10 h-10 rounded-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center ${recipientAvatar ? 'hidden' : ''}`}>
               <span className="text-white font-semibold">
                 {recipientName.charAt(0)}
               </span>
@@ -141,13 +152,27 @@ export function MessageThread({
             >
               {/* Avatar */}
               {showAvatar ? (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
+                message.senderAvatar ? (
+                  <img
+                    src={`http://localhost:8080${message.senderAvatar}`}
+                    alt={message.senderName}
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null
+              ) : (
+                <div className="w-8" />
+              )}
+              {showAvatar && (
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0 ${message.senderAvatar ? 'hidden' : ''}`}>
                   <span className="text-white text-sm font-semibold">
                     {message.senderName.charAt(0)}
                   </span>
                 </div>
-              ) : (
-                <div className="w-8" />
               )}
 
               {/* Message Content */}

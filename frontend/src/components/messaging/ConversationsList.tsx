@@ -89,7 +89,18 @@ export function ConversationsList({
             >
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                {conversation.participant.avatar ? (
+                  <img
+                    src={`http://localhost:8080${conversation.participant.avatar}`}
+                    alt={conversation.participant.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center ${conversation.participant.avatar ? 'hidden' : ''}`}>
                   <span className="text-white font-semibold">
                     {conversation.participant.name.charAt(0)}
                   </span>

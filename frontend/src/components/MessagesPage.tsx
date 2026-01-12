@@ -44,6 +44,7 @@ export function MessagesPage() {
             id: wsMessage.id,
             senderId: wsMessage.sender.id.toString(),
             senderName: wsMessage.sender.fullName,
+            senderAvatar: (wsMessage.sender as any).profilePictureUrl,
             content: wsMessage.content,
             timestamp: wsMessage.createdAt,
             isRead: true,
@@ -138,6 +139,7 @@ export function MessagesPage() {
         id: msg.id,
         senderId: msg.sender?.id.toString() || 'unknown',
         senderName: msg.sender?.fullName || 'Unknown',
+        senderAvatar: msg.sender?.profilePictureUrl,
         content: msg.content || msg.richContent || '',
         timestamp: msg.createdAt,
         isRead: true, // Can be enhanced with read receipts
@@ -178,6 +180,7 @@ export function MessagesPage() {
         id: newMessage.id,
         senderId: user?.id.toString() || 'user-1',
         senderName: user?.fullName || 'You',
+        senderAvatar: (user as any)?.profilePictureUrl,
         content: newMessage.content,
         timestamp: newMessage.createdAt,
         isRead: true,
@@ -277,6 +280,7 @@ export function MessagesPage() {
             {selectedConversation ? (
               <MessageThread
                 recipientName={selectedConversation.participant.name}
+                recipientAvatar={selectedConversation.participant.avatar}
                 recipientStatus={selectedConversation.status}
                 messages={currentMessages}
                 onSendMessage={handleSendMessage}
