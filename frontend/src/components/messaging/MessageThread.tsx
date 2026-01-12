@@ -27,6 +27,7 @@ interface MessageThreadProps {
   onSendMessage: (message: string, attachments?: File[]) => void;
   currentUserId: string;
   projectName?: string;
+  disabled?: boolean;
 }
 
 export function MessageThread({
@@ -37,6 +38,7 @@ export function MessageThread({
   onSendMessage,
   currentUserId,
   projectName,
+  disabled = false,
 }: MessageThreadProps) {
   const [messageInput, setMessageInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -267,7 +269,7 @@ export function MessageThread({
 
           <Button
             onClick={handleSend}
-            disabled={!messageInput.trim() && attachments.length === 0}
+            disabled={disabled || (!messageInput.trim() && attachments.length === 0)}
             className="h-12 px-6"
           >
             <Send className="h-5 w-5" />
