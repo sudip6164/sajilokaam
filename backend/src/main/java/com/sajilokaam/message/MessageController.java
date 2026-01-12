@@ -72,7 +72,7 @@ public class MessageController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Message> messagesPage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
-        List<Message> messages = messagesPage.getContent();
+        List<Message> messages = new java.util.ArrayList<>(messagesPage.getContent());
         java.util.Collections.reverse(messages);
         return ResponseEntity.ok(messages);
     }

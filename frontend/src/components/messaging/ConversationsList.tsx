@@ -143,15 +143,15 @@ export function ConversationsList({
               </div>
 
               {/* Actions */}
-              <button
+              <div
                 onClick={(e) => {
                   e.stopPropagation();
                   // Handle actions menu
                 }}
-                className="flex-shrink-0 p-1 hover:bg-muted rounded transition-colors"
+                className="flex-shrink-0 p-1 hover:bg-muted rounded transition-colors cursor-pointer"
               >
                 <MoreVertical className="h-4 w-4 text-muted-foreground" />
-              </button>
+              </div>
             </button>
           ))
         )}
