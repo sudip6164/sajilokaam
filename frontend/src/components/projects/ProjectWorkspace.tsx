@@ -41,8 +41,8 @@ interface ProjectWorkspaceProps {
   project: {
     id: number;
     title?: string;
-    client?: string;
-    freelancer?: string;
+    client?: string | { id: number; fullName: string; email: string };
+    freelancer?: string | { id: number; fullName: string; email: string };
     clientId?: number;
     freelancerId?: number;
     status?: string;
@@ -147,9 +147,9 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div>
             <h1 className="text-2xl font-bold mb-2">{project.title || 'Untitled Project'}</h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Client ID: {project.clientId || project.client || 'N/A'}</span>
+              <span>Client: {typeof project.client === 'object' ? project.client?.fullName : project.client || 'N/A'}</span>
               <span>•</span>
-              <span>Freelancer ID: {project.freelancerId || project.freelancer || 'N/A'}</span>
+              <span>Freelancer: {typeof project.freelancer === 'object' ? project.freelancer?.fullName : project.freelancer || 'N/A'}</span>
             </div>
           </div>
           <Badge className={
