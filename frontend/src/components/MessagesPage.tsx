@@ -135,23 +135,28 @@ export function MessagesPage() {
       console.log('Messages array length:', messagesArray.length);
       
       // Transform API data to match Message interface
-      const transformedMessages: Message[] = messagesArray.map((msg: any) => ({
-        id: msg.id,
-        senderId: msg.sender?.id.toString() || 'unknown',
-        senderName: msg.sender?.fullName || 'Unknown',
-        senderAvatar: msg.profilePictureUrl, // Profile picture URL is directly on message object
-        content: msg.content || msg.richContent || '',
-        timestamp: msg.createdAt,
-        isRead: true, // Can be enhanced with read receipts
-        attachments: msg.attachments?.map((att: any) => ({
-          type: att.contentType?.startsWith('image/') ? 'image' : 'file',
-          url: att.fileUrl,
-          name: att.fileName,
-          size: undefined,
-        })),
-      }));
+      const transformedMessages: Message[] = messagesArray.map((msg: any) => {
+        console.log('Raw message:', msg);
+        console.log('Profile picture URL:', msg.profilePictureUrl);
+        return {
+          id: msg.id,
+          senderId: msg.sender?.id.toString() || 'unknown',
+          senderName: msg.sender?.fullName || 'Unknown',
+          senderAvatar: msg.profilePictureUrl, // Profile picture URL is directly on message object
+          content: msg.content || msg.richContent || '',
+          timestamp: msg.createdAt,
+          isRead: true, // Can be enhanced with read receipts
+          attachments: msg.attachments?.map((att: any) => ({
+            type: att.contentType?.startsWith('image/') ? 'image' : 'file',
+            url: att.fileUrl,
+            name: att.fileName,
+            size: undefined,
+          })),
+        };
+      });
 
       console.log('Transformed messages:', transformedMessages.length);
+      console.log('First transformed message:', transformedMessages[0]);
 
       setMessages(prev => ({
         ...prev,
