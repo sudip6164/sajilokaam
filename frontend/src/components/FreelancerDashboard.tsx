@@ -421,41 +421,84 @@ function ProjectsContent({ navigate }: { navigate: any }) {
         <div className="grid gap-6">
           {projects.map((project: any) => {
             const deadline = project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline';
+            const createdAt = project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recently';
+            // Calculate days until deadline
+            const daysUntilDeadline = project.deadline ? Math.ceil((new Date(project.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+            const isOverdue = daysUntilDeadline !== null && daysUntilDeadline < 0;
+            
             return (
-              <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('project-detail', { projectId: project.id })}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback>{project.title[0]}</AvatarFallback>
+              <Card key={project.id} className="hover:shadow-lg transition-shadow border-2 hover:border-primary/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3 flex-1">
+                      <Avatar className="h-14 w-14 border-2 border-primary/20">
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20 text-lg font-bold">
+                          {project.title[0]}
+                        </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <CardTitle className="mb-1">{project.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground">Project #{project.id}</p>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-xl mb-2">{project.title}</CardTitle>
+                        {project.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                            {project.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>Started {createdAt}</span>
+                        </div>
                       </div>
                     </div>
-                    <Badge variant={project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : "secondary"}>
+                    <Badge 
+                      variant={project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : "secondary"}
+                      className="ml-2 flex-shrink-0"
+                    >
                       {project.status}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-6 text-sm">
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-primary" />
-                        <span className="font-semibold">Rs. {project.budget?.toLocaleString() || '0'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>Due: {deadline}</span>
-                      </div>
+                <CardContent className="space-y-4">
+                  {/* Key Metrics */}
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="text-center">
+                      <DollarSign className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      <p className="text-sm font-semibold">Rs. {project.budget?.toLocaleString() || '0'}</p>
+                      <p className="text-xs text-muted-foreground">Budget</p>
                     </div>
-                    <Button className="w-full" onClick={(e) => {
-                      e.stopPropagation();
-                      navigate('project-detail', { projectId: project.id });
-                    }}>
-                      View Project Details
+                    <div className="text-center border-x">
+                      <Calendar className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                      <p className={`text-sm font-semibold ${isOverdue ? 'text-destructive' : ''}`}>
+                        {daysUntilDeadline !== null ? `${Math.abs(daysUntilDeadline)}d` : 'N/A'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {isOverdue ? 'Overdue' : 'Remaining'}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <Star className="h-5 w-5 mx-auto mb-1 text-yellow-500" />
+                      <p className="text-sm font-semibold">Ongoing</p>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      className="flex-1 bg-gradient-to-r from-primary to-secondary"
+                      onClick={() => navigate('project-detail', { projectId: project.id })}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toast.info('Messaging feature coming soon');
+                      }}
+                    >
+                      Contact Client
                     </Button>
                   </div>
                 </CardContent>
