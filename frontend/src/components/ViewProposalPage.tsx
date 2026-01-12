@@ -106,7 +106,7 @@ export function ViewProposalPage() {
     }
 
     try {
-      await bidsApi.delete(proposal.jobId, proposal.id);
+      await bidsApi.withdraw(proposal.jobId, proposal.id);
       toast.success('Proposal withdrawn successfully');
       navigate(getDashboardRoute());
     } catch (error: any) {
