@@ -122,7 +122,7 @@ export interface Payment {
 }
 
 export interface PaymentInitiateRequest {
-  gateway: "KHALTI" | "ESEWA";
+  gateway: "ESEWA";
   returnUrl?: string;
   cancelUrl?: string;
 }

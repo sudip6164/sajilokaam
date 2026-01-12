@@ -9,8 +9,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { CreditCard, Wallet, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2 } from 'lucide-react';
 import { paymentsApi } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -22,7 +21,6 @@ interface PaymentModalProps {
 }
 
 export function PaymentModal({ open, onClose, invoice, onPaymentSuccess }: PaymentModalProps) {
-  const [paymentMethod, setPaymentMethod] = useState<'khalti' | 'esewa'>('khalti');
   const [amount, setAmount] = useState(invoice?.totalAmount - (invoice?.paidAmount || 0));
   const [loading, setLoading] = useState(false);
 
@@ -45,13 +43,13 @@ export function PaymentModal({ open, onClose, invoice, onPaymentSuccess }: Payme
       const payment = await paymentsApi.create({
         invoiceId: invoice.id,
         amount: amount,
-        paymentMethod: paymentMethod.toUpperCase(),
+        paymentMethod: 'ESEWA',
         status: 'PENDING',
       });
 
-      // Initiate payment gateway
+      // Initiate eSewa payment gateway
       const initiationResponse = await paymentsApi.initiate(payment.id, {
-        gateway: paymentMethod,
+        gateway: 'esewa',
         returnUrl: `${window.location.origin}/payment-success`,
         cancelUrl: `${window.location.origin}/payment-cancel`,
       });
@@ -122,54 +120,18 @@ export function PaymentModal({ open, onClose, invoice, onPaymentSuccess }: Payme
             </p>
           </div>
 
-          {/* Payment Method Selection */}
+          {/* Payment Method - eSewa Only */}
           <div>
             <Label className="mb-3 block">Payment Method</Label>
-            <RadioGroup value={paymentMethod} onValueChange={(value: any) => setPaymentMethod(value)}>
-              <div className="space-y-3">
-                {/* Khalti */}
-                <label
-                  htmlFor="khalti"
-                  className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                    paymentMethod === 'khalti'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <RadioGroupItem value="khalti" id="khalti" />
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="bg-purple-100 p-2 rounded">
-                      <Wallet className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">Khalti</p>
-                      <p className="text-xs text-gray-600">Digital Wallet</p>
-                    </div>
-                  </div>
-                </label>
-
-                {/* eSewa */}
-                <label
-                  htmlFor="esewa"
-                  className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                    paymentMethod === 'esewa'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <RadioGroupItem value="esewa" id="esewa" />
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="bg-green-100 p-2 rounded">
-                      <CreditCard className="h-6 w-6 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">eSewa</p>
-                      <p className="text-xs text-gray-600">Digital Payment</p>
-                    </div>
-                  </div>
-                </label>
+            <div className="flex items-center gap-4 p-4 border-2 border-primary bg-primary/5 rounded-lg">
+              <div className="bg-green-100 p-3 rounded-lg">
+                <CreditCard className="h-8 w-8 text-green-600" />
               </div>
-            </RadioGroup>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900 text-lg">eSewa</p>
+                <p className="text-sm text-gray-600">Nepal's Digital Payment Solution</p>
+              </div>
+            </div>
           </div>
 
           {/* Payment Info */}
