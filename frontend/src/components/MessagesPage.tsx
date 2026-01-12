@@ -32,7 +32,8 @@ export function MessagesPage() {
           const conversationMessages = prev[selectedConversationId] || [];
           
           // Check if message already exists (prevents duplicates from optimistic updates)
-          const exists = conversationMessages.some(m => m.id === wsMessage.id);
+          // Compare both as numbers to handle type mismatches
+          const exists = conversationMessages.some(m => Number(m.id) === Number(wsMessage.id));
           if (exists) {
             console.log('Message already exists, skipping:', wsMessage.id);
             return prev;
