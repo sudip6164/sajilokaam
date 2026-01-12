@@ -147,6 +147,22 @@ public class ConversationController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+    
+    private String getProfilePictureUrl(Long userId) {
+        // Try to find freelancer profile first
+        Optional<FreelancerProfile> freelancerProfile = freelancerProfileRepository.findByUserId(userId);
+        if (freelancerProfile.isPresent() && freelancerProfile.get().getProfilePictureUrl() != null) {
+            return freelancerProfile.get().getProfilePictureUrl();
+        }
+        
+        // Try to find client profile
+        Optional<ClientProfile> clientProfile = clientProfileRepository.findByUserId(userId);
+        if (clientProfile.isPresent() && clientProfile.get().getProfilePictureUrl() != null) {
+            return clientProfile.get().getProfilePictureUrl();
+        }
+        
+        return null;
+    }
 
     public static class ConversationCreateRequest {
         private String title;
