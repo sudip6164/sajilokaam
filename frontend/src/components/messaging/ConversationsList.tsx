@@ -91,7 +91,7 @@ export function ConversationsList({
               <div className="relative flex-shrink-0">
                 {conversation.participant.avatar ? (
                   <img
-                    src={`http://localhost:8080${conversation.participant.avatar}`}
+                    src={conversation.participant.avatar}
                     alt={conversation.participant.name}
                     className="w-12 h-12 rounded-full object-cover"
                     onError={(e) => {

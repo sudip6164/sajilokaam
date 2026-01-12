@@ -96,7 +96,7 @@ export function MessageThread({
           <div className="relative">
             {recipientAvatar ? (
               <img
-                src={`http://localhost:8080${recipientAvatar}`}
+                src={recipientAvatar}
                 alt={recipientName}
                 className="w-10 h-10 rounded-full object-cover"
                 onError={(e) => {
@@ -154,7 +154,7 @@ export function MessageThread({
               {showAvatar ? (
                 message.senderAvatar ? (
                   <img
-                    src={`http://localhost:8080${message.senderAvatar}`}
+                    src={message.senderAvatar}
                     alt={message.senderName}
                     className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                     onError={(e) => {
