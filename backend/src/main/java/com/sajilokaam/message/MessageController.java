@@ -4,6 +4,10 @@ import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.conversation.Conversation;
 import com.sajilokaam.conversation.ConversationRepository;
 import com.sajilokaam.notification.NotificationService;
+import com.sajilokaam.profile.ClientProfile;
+import com.sajilokaam.profile.ClientProfileRepository;
+import com.sajilokaam.profile.FreelancerProfile;
+import com.sajilokaam.profile.FreelancerProfileRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -33,6 +37,8 @@ public class MessageController {
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
     private final MessageAttachmentRepository attachmentRepository;
+    private final FreelancerProfileRepository freelancerProfileRepository;
+    private final ClientProfileRepository clientProfileRepository;
 
     public MessageController(MessageRepository messageRepository,
                              ConversationRepository conversationRepository,
@@ -40,7 +46,9 @@ public class MessageController {
                              JwtService jwtService,
                              SimpMessagingTemplate messagingTemplate,
                              NotificationService notificationService,
-                             MessageAttachmentRepository attachmentRepository) {
+                             MessageAttachmentRepository attachmentRepository,
+                             FreelancerProfileRepository freelancerProfileRepository,
+                             ClientProfileRepository clientProfileRepository) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
@@ -48,6 +56,8 @@ public class MessageController {
         this.messagingTemplate = messagingTemplate;
         this.notificationService = notificationService;
         this.attachmentRepository = attachmentRepository;
+        this.freelancerProfileRepository = freelancerProfileRepository;
+        this.clientProfileRepository = clientProfileRepository;
     }
 
     @GetMapping("/{conversationId}/messages")
@@ -74,6 +84,15 @@ public class MessageController {
         Page<Message> messagesPage = messageRepository.findByConversationIdOrderByCreatedAtDesc(conversationId, pageable);
         List<Message> messages = new java.util.ArrayList<>(messagesPage.getContent());
         java.util.Collections.reverse(messages);
+        
+        // Populate profile picture URLs
+        for (Message message : messages) {
+            if (message.getSender() != null) {
+                String profilePicUrl = getProfilePictureUrl(message.getSender().getId());
+                message.setProfilePictureUrl(profilePicUrl);
+            }
+        }
+        
         return ResponseEntity.ok(messages);
     }
 
@@ -142,6 +161,10 @@ public class MessageController {
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
+        // Populate profile picture URL before sending via WebSocket
+        String profilePicUrl = getProfilePictureUrl(sender.getId());
+        created.setProfilePictureUrl(profilePicUrl);
+        
         // Send via WebSocket
         messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, created);
 

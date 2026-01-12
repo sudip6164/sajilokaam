@@ -26,8 +26,12 @@ public class Message {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sender_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles", "resetToken", "resetTokenExpiresAt", "verificationToken", "verificationTokenExpiresAt"})
     private User sender;
+    
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("profilePictureUrl")
+    private String profilePictureUrl; // This will be populated dynamically
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -129,6 +133,14 @@ public class Message {
 
     public void setAttachments(List<MessageAttachment> attachments) {
         this.attachments = attachments;
+    }
+    
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+    
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }
 
