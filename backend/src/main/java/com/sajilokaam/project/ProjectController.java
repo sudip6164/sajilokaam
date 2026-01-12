@@ -3,6 +3,8 @@ package com.sajilokaam.project;
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.bid.Bid;
 import com.sajilokaam.bid.BidRepository;
+import com.sajilokaam.conversation.Conversation;
+import com.sajilokaam.conversation.ConversationRepository;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.job.JobRepository;
 import com.sajilokaam.user.User;
@@ -11,8 +13,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -24,15 +28,17 @@ public class ProjectController {
     private final BidRepository bidRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final ConversationRepository conversationRepository;
 
     public ProjectController(ProjectRepository projectRepository, JobRepository jobRepository,
                             BidRepository bidRepository, UserRepository userRepository,
-                            JwtService jwtService) {
+                            JwtService jwtService, ConversationRepository conversationRepository) {
         this.projectRepository = projectRepository;
         this.jobRepository = jobRepository;
         this.bidRepository = bidRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.conversationRepository = conversationRepository;
     }
 
     @GetMapping
@@ -162,6 +168,25 @@ public class ProjectController {
         project.setStatus("ACTIVE");
 
         Project created = projectRepository.save(project);
+        
+        // Automatically create a conversation for this project
+        try {
+            Conversation conversation = new Conversation();
+            conversation.setProject(created);
+            conversation.setTitle("Project: " + created.getTitle());
+            
+            // Add both client and freelancer as participants
+            Set<User> participants = new HashSet<>();
+            participants.add(job.getClient());
+            participants.add(bid.getFreelancer());
+            conversation.setParticipants(participants);
+            
+            conversationRepository.save(conversation);
+        } catch (Exception e) {
+            // Log error but don't fail the project creation
+            System.err.println("Failed to create conversation for project " + created.getId() + ": " + e.getMessage());
+        }
+        
         URI location = URI.create("/api/projects/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
