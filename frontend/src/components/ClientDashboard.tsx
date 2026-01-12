@@ -546,7 +546,7 @@ function ProjectsContent({ navigate }: { navigate: any }) {
                       className="flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toast.info('Messaging feature coming soon');
+                        navigate('messages');
                       }}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />

@@ -463,7 +463,7 @@ export function FindFreelancersPage() {
                   <Button 
                     size="sm" 
                     className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
-                    onClick={() => toast.info('Messaging feature coming soon!')}
+                    onClick={() => navigate('messages')}
                   >
                     <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
                     Contact

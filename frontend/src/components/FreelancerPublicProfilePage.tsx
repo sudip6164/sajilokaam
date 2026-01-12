@@ -139,7 +139,7 @@ export function FreelancerPublicProfilePage() {
                     <Button 
                       size="lg" 
                       className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
-                      onClick={() => toast.info('Messaging feature coming soon!')}
+                      onClick={() => navigate('messages')}
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Contact Me
