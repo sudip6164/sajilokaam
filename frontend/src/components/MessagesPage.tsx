@@ -23,6 +23,13 @@ export function MessagesPage() {
   useEffect(() => {
     if (selectedConversationId) {
       fetchMessages(selectedConversationId);
+      
+      // Poll for new messages every 3 seconds
+      const interval = setInterval(() => {
+        fetchMessages(selectedConversationId);
+      }, 3000);
+      
+      return () => clearInterval(interval);
     }
   }, [selectedConversationId]);
 
@@ -109,29 +116,8 @@ export function MessagesPage() {
         // Attachments can be handled separately if needed
       });
 
-      // Transform and add to local state
-      const transformedMessage: Message = {
-        id: newMessage.id,
-        senderId: user?.id.toString() || 'user-1',
-        senderName: user?.fullName || 'You',
-        content: newMessage.content,
-        timestamp: newMessage.createdAt,
-        isRead: true,
-        attachments: attachments?.map(file => ({
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          url: URL.createObjectURL(file),
-          name: file.name,
-          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        })),
-      };
-
-      setMessages(prev => ({
-        ...prev,
-        [selectedConversationId]: [
-          ...(prev[selectedConversationId] || []),
-          transformedMessage,
-        ],
-      }));
+      // Refresh messages to get the new one from server
+      await fetchMessages(selectedConversationId);
 
       // Update conversation last message
       setConversations(prev =>
