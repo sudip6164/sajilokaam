@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface JobRepository extends JpaRepository<Job, Long>, JpaSpecificationExecutor<Job> {
     List<Job> findByClient_Id(Long clientId);
+    Long countByStatus(String status);
     
     @EntityGraph(attributePaths = {"client", "category", "requiredSkills"})
     Optional<Job> findById(Long id);

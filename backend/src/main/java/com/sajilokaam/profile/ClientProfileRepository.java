@@ -8,6 +8,9 @@ import java.util.Optional;
 public interface ClientProfileRepository extends JpaRepository<ClientProfile, Long> {
     Optional<ClientProfile> findByUserId(Long userId);
     List<ClientProfile> findByStatus(ProfileStatus status);
+    List<ClientProfile> findByStatus(String status);
+    Long countByStatus(String status);
     boolean existsByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }
 

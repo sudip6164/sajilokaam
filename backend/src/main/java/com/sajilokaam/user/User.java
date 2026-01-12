@@ -50,6 +50,9 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
 
+    @Column(name = "status", length = 50)
+    private String status = "ACTIVE"; // ACTIVE, SUSPENDED, DELETED
+
     @Column(name = "verification_token", length = 255)
     @JsonIgnore
     private String verificationToken;
@@ -76,6 +79,8 @@ public class User {
     public void setResetTokenExpiresAt(Instant resetTokenExpiresAt) { this.resetTokenExpiresAt = resetTokenExpiresAt; }
     public Boolean getEmailVerified() { return emailVerified; }
     public void setEmailVerified(Boolean emailVerified) { this.emailVerified = emailVerified; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public String getVerificationToken() { return verificationToken; }
     public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
     public Instant getVerificationTokenExpiresAt() { return verificationTokenExpiresAt; }
