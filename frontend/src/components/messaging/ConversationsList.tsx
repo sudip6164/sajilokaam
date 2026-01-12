@@ -8,7 +8,7 @@ export interface Conversation {
     name: string;
     avatar?: string;
   };
-  lastMessage: {
+  lastMessage?: {
     content: string;
     timestamp: string;
     isRead: boolean;
@@ -107,7 +107,7 @@ export function ConversationsList({
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`font-semibold truncate ${
-                      !conversation.lastMessage.isRead ? 'text-foreground' : 'text-muted-foreground'
+                      conversation.lastMessage && !conversation.lastMessage.isRead ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
                       {conversation.participant.name}
                     </span>
@@ -115,9 +115,11 @@ export function ConversationsList({
                       <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                    {formatTime(conversation.lastMessage.timestamp)}
-                  </span>
+                  {conversation.lastMessage && (
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {formatTime(conversation.lastMessage.timestamp)}
+                    </span>
+                  )}
                 </div>
 
                 {conversation.projectName && (
@@ -128,9 +130,9 @@ export function ConversationsList({
 
                 <div className="flex items-center justify-between gap-2">
                   <p className={`text-sm truncate ${
-                    !conversation.lastMessage.isRead ? 'font-medium text-foreground' : 'text-muted-foreground'
+                    conversation.lastMessage && !conversation.lastMessage.isRead ? 'font-medium text-foreground' : 'text-muted-foreground'
                   }`}>
-                    {conversation.lastMessage.content}
+                    {conversation.lastMessage?.content || 'No messages yet'}
                   </p>
                   {conversation.unreadCount > 0 && (
                     <Badge className="bg-primary text-white flex-shrink-0 min-w-[20px] h-5 flex items-center justify-center">
