@@ -91,7 +91,7 @@ export function FreelancerDashboard() {
           </Sidebar>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto ml-32 pt-16 pr-6 pb-6 pl-3">
+          <main className="flex-1 overflow-y-auto ml-36 pt-16 pr-6 pb-6 pl-3">
             {renderContent()}
           </main>
         </SidebarProvider>
