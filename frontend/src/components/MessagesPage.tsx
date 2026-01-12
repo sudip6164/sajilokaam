@@ -24,12 +24,48 @@ export function MessagesPage() {
     if (selectedConversationId) {
       fetchMessages(selectedConversationId);
       
-      // Poll for new messages every 3 seconds
-      const interval = setInterval(() => {
-        fetchMessages(selectedConversationId);
-      }, 3000);
+      // Connect to WebSocket for real-time messages
+      const cleanup = connectWebSocket(selectedConversationId, (wsMessage: WebSocketMessage) => {
+        // Transform WebSocket message to UI format
+        const transformedMessage: Message = {
+          id: wsMessage.id,
+          senderId: wsMessage.sender.id.toString(),
+          senderName: wsMessage.sender.fullName,
+          content: wsMessage.content,
+          timestamp: wsMessage.createdAt,
+          isRead: true,
+        };
+
+        // Add message to state if it's not already there
+        setMessages(prev => {
+          const conversationMessages = prev[selectedConversationId] || [];
+          const exists = conversationMessages.some(m => m.id === transformedMessage.id);
+          if (exists) return prev;
+
+          return {
+            ...prev,
+            [selectedConversationId]: [...conversationMessages, transformedMessage],
+          };
+        });
+
+        // Update conversation last message
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === selectedConversationId
+              ? {
+                  ...conv,
+                  lastMessage: {
+                    content: wsMessage.content,
+                    timestamp: wsMessage.createdAt,
+                    isRead: true,
+                  },
+                }
+              : conv
+          )
+        );
+      });
       
-      return () => clearInterval(interval);
+      return cleanup;
     }
   }, [selectedConversationId]);
 
