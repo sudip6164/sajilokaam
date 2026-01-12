@@ -56,6 +56,7 @@ interface ProjectWorkspaceProps {
 }
 
 export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
+  const { navigate } = useRouter();
   const [activeTab, setActiveTab] = useState<'overview' | 'milestones' | 'files' | 'time' | 'activity'>('overview');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -144,7 +145,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
       {/* Project Header */}
       <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-start justify-between mb-6">
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold mb-2">{project.title || 'Untitled Project'}</h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>Client: {typeof project.client === 'object' ? project.client?.fullName : project.client || 'N/A'}</span>
@@ -152,6 +153,10 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
               <span>Freelancer: {typeof project.freelancer === 'object' ? project.freelancer?.fullName : project.freelancer || 'N/A'}</span>
             </div>
           </div>
+          <Button onClick={() => navigate('messages')} className="bg-gradient-to-r from-primary to-secondary">
+            <Send className="h-4 w-4 mr-2" />
+            Message
+          </Button>
           <Badge className={
             project.status === 'active' || project.status === 'ACTIVE' || project.status === 'IN_PROGRESS' ? 'bg-success' :
             project.status === 'completed' || project.status === 'COMPLETED' ? 'bg-primary' : 'bg-yellow-500'
