@@ -4,9 +4,17 @@ import { ProjectWorkspace } from './projects/ProjectWorkspace';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from './Router';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ProjectDetailPage() {
   const { navigate } = useRouter();
+  const { hasRole } = useAuth();
+  
+  const getDashboardRoute = () => {
+    if (hasRole('CLIENT')) return 'client-dashboard';
+    if (hasRole('FREELANCER')) return 'freelancer-dashboard';
+    return 'home';
+  };
 
   const project = {
     id: 1,
@@ -28,7 +36,7 @@ export function ProjectDetailPage() {
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate('freelancer-dashboard')}
+          onClick={() => navigate(getDashboardRoute())}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />

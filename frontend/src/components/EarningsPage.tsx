@@ -4,9 +4,17 @@ import { EarningsDashboard } from './analytics/EarningsDashboard';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { useRouter } from './Router';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function EarningsPage() {
   const { navigate } = useRouter();
+  const { hasRole } = useAuth();
+  
+  // Earnings page is primarily for freelancers, but could also be used by clients
+  const getDashboardRoute = () => {
+    if (hasRole('CLIENT')) return 'client-dashboard';
+    return 'freelancer-dashboard';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -16,7 +24,7 @@ export function EarningsPage() {
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate('freelancer-dashboard')}
+          onClick={() => navigate(getDashboardRoute())}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />

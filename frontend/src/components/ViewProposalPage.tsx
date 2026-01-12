@@ -25,11 +25,17 @@ import {
 
 export function ViewProposalPage() {
   const { navigate, pageParams } = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasRole } = useAuth();
   const [loading, setLoading] = useState(true);
   const [proposal, setProposal] = useState<any>(null);
   const [job, setJob] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  const getDashboardRoute = () => {
+    if (hasRole('CLIENT')) return 'client-dashboard';
+    if (hasRole('FREELANCER')) return 'freelancer-dashboard';
+    return 'home';
+  };
 
   useEffect(() => {
     console.log('ViewProposalPage - useEffect triggered');
@@ -47,7 +53,7 @@ export function ViewProposalPage() {
     if (!bidId || typeof bidId !== 'number' || isNaN(bidId)) {
       console.error('Invalid bid ID:', bidId, 'Type:', typeof bidId);
       toast.error('Invalid proposal ID');
-      navigate('freelancer-dashboard');
+      navigate(getDashboardRoute());
       return;
     }
 
@@ -94,7 +100,7 @@ export function ViewProposalPage() {
     try {
       await bidsApi.delete(proposal.jobId, proposal.id);
       toast.success('Proposal withdrawn successfully');
-      navigate('freelancer-dashboard');
+      navigate(getDashboardRoute());
     } catch (error: any) {
       console.error('Error withdrawing proposal:', error);
       toast.error(error.response?.data?.message || 'Failed to withdraw proposal');
@@ -157,7 +163,7 @@ export function ViewProposalPage() {
                 <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Proposal Not Found</h2>
                 <p className="text-muted-foreground mb-6">{error || 'The proposal you are looking for does not exist.'}</p>
-                <Button onClick={() => navigate('freelancer-dashboard')}>
+                <Button onClick={() => navigate(getDashboardRoute())}>
                   Back to Dashboard
                 </Button>
               </CardContent>
@@ -181,7 +187,7 @@ export function ViewProposalPage() {
           {/* Back Button */}
           <Button
             variant="ghost"
-            onClick={() => navigate('freelancer-dashboard')}
+            onClick={() => navigate(getDashboardRoute())}
             className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
