@@ -294,7 +294,7 @@ export function PostJobPage() {
 
   const steps = [
     { number: 1, title: 'Job Details', icon: Briefcase },
-    { number: 2, title: 'Budget & Timeline', icon: DollarSign },
+    { number: 2, title: 'Budget & Timeline', icon: Wallet },
     { number: 3, title: 'Skills & Requirements', icon: Tag },
     { number: 4, title: 'Review & Post', icon: FileText }
   ];
