@@ -47,6 +47,11 @@ import { AccessDeniedPage } from "./components/AccessDeniedPage";
 import { SuccessPage } from "./components/SuccessPage";
 import { FailurePage } from "./components/FailurePage";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { AdminDashboardPage } from "./components/admin/AdminDashboardPage";
+import { FreelancerManagementPage } from "./components/admin/FreelancerManagementPage";
+import { ClientManagementPage } from "./components/admin/ClientManagementPage";
+import { AdminManagementPage } from "./components/admin/AdminManagementPage";
+import { VerificationQueuePage } from "./components/admin/VerificationQueuePage";
 
 const queryClient = new QueryClient();
 
@@ -142,7 +147,21 @@ function AppContent() {
     case 'privacy':
       return <PrivacyPage />;
     case 'admin-dashboard':
-      return <AdminDashboard />;
+      return <AdminDashboardPage />;
+    case 'admin-freelancers':
+      return <FreelancerManagementPage />;
+    case 'admin-clients':
+      return <ClientManagementPage />;
+    case 'admin-admins':
+      return <AdminManagementPage />;
+    case 'admin-verification':
+      return <VerificationQueuePage />;
+    case 'admin-payments':
+      return <div>Payment Analytics - Coming Soon</div>;
+    case 'admin-analytics':
+      return <div>Platform Analytics - Coming Soon</div>;
+    case 'admin-settings':
+      return <div>System Settings - Coming Soon</div>;
     case '404':
       return <NotFoundPage />;
     case 'access-denied':

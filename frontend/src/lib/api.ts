@@ -938,11 +938,32 @@ export const adminApi = {
     await api.delete(`/admin/users/${id}`);
   },
 
+  updateUserStatus: async (userId: number, status: string) => {
+    const response = await api.patch(`/admin/users/${userId}/status`, { status });
+    return response.data;
+  },
+
   getRoles: async () => {
     const response = await api.get<Array<{
       id: number;
       name: string;
     }>>("/admin/users/roles");
+    return response.data;
+  },
+
+  // Get users by role
+  getFreelancers: async () => {
+    const response = await api.get<Array<any>>("/admin/users/freelancers");
+    return response.data;
+  },
+
+  getClients: async () => {
+    const response = await api.get<Array<any>>("/admin/users/clients");
+    return response.data;
+  },
+
+  getAdmins: async () => {
+    const response = await api.get<Array<any>>("/admin/users/admins");
     return response.data;
   },
 
@@ -957,6 +978,27 @@ export const adminApi = {
       submittedAt?: string;
       status: string;
     }>>("/admin/profiles/pending");
+    return response.data;
+  },
+
+  getPendingFreelancers: async () => {
+    const response = await api.get<Array<any>>("/admin/profiles/freelancers/pending");
+    return response.data;
+  },
+
+  getPendingClients: async () => {
+    const response = await api.get<Array<any>>("/admin/profiles/clients/pending");
+    return response.data;
+  },
+
+  updateProfileVerification: async (profileId: number, profileType: string, data: {
+    status: string;
+    notes?: string;
+  }) => {
+    const endpoint = profileType === 'freelancer' 
+      ? `/admin/profiles/freelancers/${profileId}/verification`
+      : `/admin/profiles/clients/${profileId}/verification`;
+    const response = await api.patch(endpoint, data);
     return response.data;
   },
 

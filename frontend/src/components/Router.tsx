@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -48,6 +48,13 @@ const pathToPage: Record<string, Page> = {
   '/freelancer-dashboard': 'freelancer-dashboard',
   '/client-dashboard': 'client-dashboard',
   '/admin-dashboard': 'admin-dashboard',
+  '/admin-freelancers': 'admin-freelancers',
+  '/admin-clients': 'admin-clients',
+  '/admin-admins': 'admin-admins',
+  '/admin-verification': 'admin-verification',
+  '/admin-payments': 'admin-payments',
+  '/admin-analytics': 'admin-analytics',
+  '/admin-settings': 'admin-settings',
   '/freelancer-profile': 'freelancer-profile',
   '/client-profile': 'client-profile',
   '/view-freelancer': 'view-freelancer',
@@ -86,6 +93,13 @@ const pageToPath: Record<Page, string> = {
   'freelancer-dashboard': '/freelancer-dashboard',
   'client-dashboard': '/client-dashboard',
   'admin-dashboard': '/admin-dashboard',
+  'admin-freelancers': '/admin-freelancers',
+  'admin-clients': '/admin-clients',
+  'admin-admins': '/admin-admins',
+  'admin-verification': '/admin-verification',
+  'admin-payments': '/admin-payments',
+  'admin-analytics': '/admin-analytics',
+  'admin-settings': '/admin-settings',
   'freelancer-profile': '/freelancer-profile',
   'client-profile': '/client-profile',
   'view-freelancer': '/view-freelancer',
