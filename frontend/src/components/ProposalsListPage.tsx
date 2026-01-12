@@ -177,8 +177,8 @@ export function ProposalsListPage() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8">
-        <div className="max-w-6xl mx-auto">
+      <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-8 overflow-hidden">
+        <div className="max-w-6xl mx-auto overflow-hidden">
           {/* Header */}
           <div className="mb-8">
             <Button
@@ -206,25 +206,25 @@ export function ProposalsListPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-6 overflow-hidden">
               {proposals.map((proposal) => (
-                <Card key={proposal.id} className="border-2 hover:border-primary/50 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <Avatar className="h-12 w-12">
+                <Card key={proposal.id} className="border-2 hover:border-primary/50 transition-colors overflow-hidden">
+                  <CardContent className="p-6 overflow-hidden">
+                    <div className="flex items-start justify-between gap-4 mb-4 overflow-hidden">
+                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                        <Avatar className="h-12 w-12 flex-shrink-0">
                           <AvatarFallback>
                             {proposal.freelancerName?.charAt(0) || 'F'}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-xl font-semibold">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex items-center gap-2 mb-1 overflow-hidden">
+                            <h3 className="text-xl font-semibold truncate">
                               {proposal.freelancerName || 'Freelancer'}
                             </h3>
-                            <span className="text-sm text-muted-foreground">• Proposal #{proposal.id}</span>
+                            <span className="text-sm text-muted-foreground flex-shrink-0">• Proposal #{proposal.id}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
+                          <p className="text-sm text-muted-foreground mb-2 break-words overflow-wrap-anywhere">
                             {proposal.freelancerEmail}
                           </p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -254,7 +254,7 @@ export function ProposalsListPage() {
                     {/* Proposal Text */}
                     <div className="mb-4 p-4 bg-muted rounded-lg overflow-hidden">
                       <p className="text-sm font-semibold mb-2">Cover Letter:</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line break-words overflow-wrap-anywhere">
+                      <p className="text-sm text-muted-foreground whitespace-pre-line break-words overflow-wrap-anywhere" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', maxWidth: '100%' }}>
                         {proposal.message || proposal.proposal || 'No cover letter provided'}
                       </p>
                     </div>
