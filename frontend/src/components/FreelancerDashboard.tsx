@@ -20,10 +20,18 @@ import {
   Calendar,
   Eye,
   ArrowUpRight,
-  Plus
+  Plus,
+  MessageSquare,
+  User
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const sidebarItems = [
+const sidebarItems: Array<{
+  title: string;
+  icon: any;
+  id: string;
+  badge?: string | number;
+}> = [
   { title: "Dashboard", icon: Home, id: "overview" },
   { title: "Active Projects", icon: Briefcase, id: "projects" },
   { title: "Proposals", icon: FileText, id: "proposals" },
