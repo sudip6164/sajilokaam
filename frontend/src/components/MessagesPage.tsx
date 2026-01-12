@@ -121,10 +121,16 @@ export function MessagesPage() {
 
   const fetchMessages = async (conversationId: string) => {
     try {
+      console.log('Fetching messages for conversation:', conversationId);
       const data = await messagesApi.list(parseInt(conversationId));
+      console.log('Raw messages data:', data);
+      
+      // Handle both paginated response (data.content) and direct array
+      const messagesArray = Array.isArray(data) ? data : (data.content || []);
+      console.log('Messages array length:', messagesArray.length);
       
       // Transform API data to match Message interface
-      const transformedMessages: Message[] = (data.content || []).map((msg: any) => ({
+      const transformedMessages: Message[] = messagesArray.map((msg: any) => ({
         id: msg.id,
         senderId: msg.sender?.id.toString() || 'unknown',
         senderName: msg.sender?.fullName || 'Unknown',
@@ -138,6 +144,8 @@ export function MessagesPage() {
           size: undefined,
         })),
       }));
+
+      console.log('Transformed messages:', transformedMessages.length);
 
       setMessages(prev => ({
         ...prev,
