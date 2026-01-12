@@ -4,7 +4,7 @@ import com.sajilokaam.profile.ClientProfile;
 import com.sajilokaam.profile.ClientProfileRepository;
 import com.sajilokaam.profile.FreelancerProfile;
 import com.sajilokaam.profile.FreelancerProfileRepository;
-import com.sajilokaam.security.JwtUtil;
+import com.sajilokaam.profile.ProfileStatus;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import com.sajilokaam.role.Role;
@@ -16,7 +16,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@CrossOrigin(origins = "http://localhost:5173")
 public class AdminController {
 
     @Autowired
@@ -184,8 +183,7 @@ public class AdminController {
         List<FreelancerProfile> pendingProfiles = freelancerProfileRepository.findByStatus("PENDING");
         
         List<Map<String, Object>> result = pendingProfiles.stream().map(profile -> {
-            User user = userRepository.findById(profile.getUserId())
-                    .orElse(null);
+            User user = profile.getUser();
             
             Map<String, Object> profileMap = new HashMap<>();
             profileMap.put("id", user != null ? user.getId() : null);
@@ -205,8 +203,7 @@ public class AdminController {
         List<ClientProfile> pendingProfiles = clientProfileRepository.findByStatus("PENDING");
         
         List<Map<String, Object>> result = pendingProfiles.stream().map(profile -> {
-            User user = userRepository.findById(profile.getUserId())
-                    .orElse(null);
+            User user = profile.getUser();
             
             Map<String, Object> profileMap = new HashMap<>();
             profileMap.put("id", user != null ? user.getId() : null);
@@ -236,7 +233,7 @@ public class AdminController {
         String status = request.get("status");
         String notes = request.get("notes");
         
-        profile.setStatus(status);
+        profile.setStatus(ProfileStatus.valueOf(status));
         if ("REJECTED".equals(status)) {
             profile.setRejectionReason(notes);
         } else if ("NEEDS_UPDATE".equals(status)) {
@@ -265,7 +262,7 @@ public class AdminController {
         String status = request.get("status");
         String notes = request.get("notes");
         
-        profile.setStatus(status);
+        profile.setStatus(ProfileStatus.valueOf(status));
         if ("REJECTED".equals(status)) {
             profile.setRejectionReason(notes);
         } else if ("NEEDS_UPDATE".equals(status)) {
