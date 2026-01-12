@@ -174,8 +174,8 @@ export function JobDetailPage() {
         experienceLevel: experienceLevelMap[jobData.experienceLevel || ''] || jobData.experienceLevel || 'Not specified',
         projectType: jobData.jobType === 'HOURLY' ? 'Hourly rate' : 'Fixed price project',
         location: jobData.location || 'Not specified',
-        proposals: 0, // Would need separate API call
-        hires: 0, // Would need separate API call
+        proposals: proposalsCount,
+        hires: 0, // Would need separate API call or backend field
         client: {
           name: clientName,
           rating: 4.5, // Would need client profile API
@@ -197,18 +197,22 @@ export function JobDetailPage() {
         setJobClientId(jobData.clientId);
       }
 
-      // Check if user has already submitted a bid for this job
-      if (isAuthenticated && hasRole('FREELANCER')) {
-        try {
-          const bidsResponse = await bidsApi.listByJob(jobId);
+      // Fetch bids/proposals count for this job
+      let proposalsCount = 0;
+      try {
+        const bidsResponse = await bidsApi.listByJob(jobId);
+        proposalsCount = bidsResponse.length;
+        
+        // Check if user has already submitted a bid for this job
+        if (isAuthenticated && hasRole('FREELANCER')) {
           const myBid = bidsResponse.find((bid: any) => bid.freelancerId === authUser?.id);
           if (myBid) {
             setUserBid(myBid);
           }
-        } catch (err) {
-          console.error('Error fetching user bid:', err);
-          // Ignore error - user may not have bid yet
         }
+      } catch (err) {
+        console.error('Error fetching bids:', err);
+        // Ignore error - continue with 0 proposals
       }
 
       // Fetch similar jobs (same category)
@@ -547,12 +551,12 @@ export function JobDetailPage() {
                   <span className="font-semibold">{job.proposals}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Last Viewed</span>
-                  <span className="font-semibold">2 hours ago</span>
+                  <span className="text-sm text-muted-foreground">Posted</span>
+                  <span className="font-semibold">{job.posted}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Interviewing</span>
-                  <span className="font-semibold">3 freelancers</span>
+                  <span className="text-sm text-muted-foreground">Job Type</span>
+                  <span className="font-semibold">{job.budget.type}</span>
                 </div>
               </CardContent>
             </Card>
