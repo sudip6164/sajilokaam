@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, DollarSign, FileText, MessageSquare, Upload, 
   CheckCircle, Circle, AlertCircle, Download, Eye, Trash2,
@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { milestonesApi, timeTrackingApi, filesApi } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface Milestone {
   id: number;
@@ -58,93 +60,55 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
 
-  const [milestones] = useState<Milestone[]>([
-    {
-      id: 1,
-      title: 'Initial Design & Wireframes',
-      description: 'Create wireframes and initial design mockups for the main pages',
-      amount: 1500,
-      dueDate: '2024-02-15',
-      status: 'approved',
-      submittedDate: '2024-02-13',
-      approvedDate: '2024-02-14',
-    },
-    {
-      id: 2,
-      title: 'Frontend Development',
-      description: 'Implement the React frontend with all core features',
-      amount: 3000,
-      dueDate: '2024-03-01',
-      status: 'in-progress',
-    },
-    {
-      id: 3,
-      title: 'Backend API Integration',
-      description: 'Connect frontend to backend APIs and implement authentication',
-      amount: 2500,
-      dueDate: '2024-03-15',
-      status: 'pending',
-    },
-    {
-      id: 4,
-      title: 'Testing & Deployment',
-      description: 'Complete testing, bug fixes, and deploy to production',
-      amount: 1500,
-      dueDate: '2024-03-30',
-      status: 'pending',
-    },
-  ]);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [files, setFiles] = useState<ProjectFile[]>([]);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [files] = useState<ProjectFile[]>([
-    {
-      id: 1,
-      name: 'Design-Mockups-v2.fig',
-      size: '12.4 MB',
-      uploadedBy: 'Sarah Johnson',
-      uploadedAt: '2 hours ago',
-      type: 'document',
-    },
-    {
-      id: 2,
-      name: 'Project-Requirements.pdf',
-      size: '2.1 MB',
-      uploadedBy: 'Client',
-      uploadedAt: '1 day ago',
-      type: 'document',
-    },
-    {
-      id: 3,
-      name: 'Logo-Assets.zip',
-      size: '8.7 MB',
-      uploadedBy: 'Client',
-      uploadedAt: '3 days ago',
-      type: 'archive',
-    },
-  ]);
+  useEffect(() => {
+    if (project.id) {
+      fetchProjectData();
+    }
+  }, [project.id]);
 
-  const [timeEntries] = useState<TimeEntry[]>([
-    {
-      id: 1,
-      date: '2024-01-15',
-      hours: 6.5,
-      description: 'Working on frontend components and routing',
-      status: 'approved',
-    },
-    {
-      id: 2,
-      date: '2024-01-16',
-      hours: 8,
-      description: 'Implementing authentication and user management',
-      status: 'approved',
-    },
-    {
-      id: 3,
-      date: '2024-01-17',
-      hours: 5,
-      description: 'Bug fixes and code review',
-      status: 'pending',
-    },
-  ]);
+  const fetchProjectData = async () => {
+    try {
+      setLoading(true);
+      const [milestonesData, filesData] = await Promise.all([
+        milestonesApi.list(project.id).catch(() => []),
+        filesApi.list(project.id).catch(() => []),
+      ]);
+
+      // Transform API data to match component interface
+      setMilestones(milestonesData.map((m: any) => ({
+        id: m.id,
+        title: m.title || 'Untitled Milestone',
+        description: m.description || '',
+        amount: m.amount || 0,
+        dueDate: m.dueDate || '',
+        status: m.status?.toLowerCase() || 'pending',
+        submittedDate: m.submittedDate,
+        approvedDate: m.approvedDate,
+      })));
+
+      setFiles(filesData.map((f: any) => ({
+        id: f.id,
+        name: f.fileName || 'Unknown File',
+        size: f.fileSize || 'N/A',
+        uploadedBy: f.uploadedBy || 'Unknown',
+        uploadedAt: f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString() : 'Recently',
+        type: f.fileType || 'document',
+      })));
+
+      // Note: Time tracking might not be implemented yet in backend
+      setTimeEntries([]);
+    } catch (error) {
+      console.error('Error fetching project data:', error);
+      toast.error('Failed to load some project data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const totalPaid = milestones.filter(m => m.status === 'paid').reduce((sum, m) => sum + m.amount, 0);
   const totalPending = milestones.filter(m => m.status === 'submitted').reduce((sum, m) => sum + m.amount, 0);
@@ -262,38 +226,58 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="space-y-6">
             <div>
               <h3 className="font-semibold mb-3">Project Description</h3>
-              <p className="text-muted-foreground">
-                Build a modern, responsive e-commerce platform with React and Node.js. The platform should include 
-                product listings, shopping cart, checkout process, user authentication, and an admin dashboard for 
-                managing products and orders.
-              </p>
+              {project.description ? (
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {project.description}
+                </p>
+              ) : (
+                <p className="text-muted-foreground italic">
+                  No description provided for this project.
+                </p>
+              )}
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-3">Deliverables</h3>
-              <ul className="space-y-2">
-                {[
-                  'Fully responsive React frontend',
-                  'RESTful API with Node.js and Express',
-                  'PostgreSQL database design and implementation',
-                  'Payment gateway integration (Stripe)',
-                  'Admin dashboard for product and order management',
-                  'Comprehensive documentation',
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 rounded-lg border">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-success" />
+                  Project Status
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  This project is currently {project.status?.toLowerCase().replace('_', ' ') || 'active'}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg border">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Timeline
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {project.deadline ? `Due: ${new Date(project.deadline).toLocaleDateString()}` : 'No deadline set'}
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-3">Technologies</h3>
-              <div className="flex flex-wrap gap-2">
-                {['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Stripe', 'AWS', 'Docker'].map(tech => (
-                  <Badge key={tech} variant="outline">{tech}</Badge>
-                ))}
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <h3 className="font-semibold mb-2">Project Summary</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Total Milestones</p>
+                  <p className="font-semibold">{milestones.length}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Project Files</p>
+                  <p className="font-semibold">{files.length}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Budget</p>
+                  <p className="font-semibold">Rs. {project.budget?.toLocaleString() || '0'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <p className="font-semibold capitalize">{project.status?.toLowerCase().replace('_', ' ') || 'Active'}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -304,14 +288,32 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Project Milestones</h3>
-              <Button size="sm">
+              <Button size="sm" onClick={() => toast.info('Milestone management coming soon')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Milestone
               </Button>
             </div>
 
-            <div className="space-y-3">
-              {milestones.map(milestone => (
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                  <p className="text-sm text-muted-foreground">Loading milestones...</p>
+                </div>
+              </div>
+            ) : milestones.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <h3 className="font-semibold mb-2">No milestones yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Start by adding your first project milestone</p>
+                <Button size="sm" onClick={() => toast.info('Milestone management coming soon')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add First Milestone
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {milestones.map(milestone => (
                 <div key={milestone.id} className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors">
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex items-start gap-3 flex-1">
@@ -325,25 +327,28 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <DollarSign className="h-3 w-3" />
-                            ${milestone.amount.toLocaleString()}
+                            Rs. {milestone.amount.toLocaleString()}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Due: {new Date(milestone.dueDate).toLocaleDateString()}
-                          </span>
+                          {milestone.dueDate && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Due: {new Date(milestone.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     {milestone.status === 'in-progress' && (
-                      <Button size="sm">Submit for Review</Button>
+                      <Button size="sm" onClick={() => toast.info('Feature coming soon')}>Submit for Review</Button>
                     )}
                     {milestone.status === 'approved' && (
-                      <Button size="sm" variant="outline">Request Payment</Button>
+                      <Button size="sm" variant="outline" onClick={() => toast.info('Feature coming soon')}>Request Payment</Button>
                     )}
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -352,14 +357,32 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Project Files</h3>
-              <Button size="sm">
+              <Button size="sm" onClick={() => toast.info('File upload coming soon')}>
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Files
               </Button>
             </div>
 
-            <div className="space-y-2">
-              {files.map(file => (
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                  <p className="text-sm text-muted-foreground">Loading files...</p>
+                </div>
+              </div>
+            ) : files.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <h3 className="font-semibold mb-2">No files uploaded yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Share project files with your team</p>
+                <Button size="sm" onClick={() => toast.info('File upload coming soon')}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload First File
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {files.map(file => (
                 <div key={file.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
@@ -373,19 +396,20 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => toast.info('Preview coming soon')}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => toast.info('Download coming soon')}>
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => toast.info('Delete coming soon')}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -426,8 +450,26 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             {/* Time Entries */}
             <div>
               <h3 className="font-semibold mb-3">Time Entries</h3>
-              <div className="space-y-2">
-                {timeEntries.map(entry => (
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                    <p className="text-sm text-muted-foreground">Loading time entries...</p>
+                  </div>
+                </div>
+              ) : timeEntries.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <h3 className="font-semibold mb-2">No time entries yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Start tracking your time to log hours on this project</p>
+                  <Button size="sm" onClick={() => toast.info('Time tracking coming soon')}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Tracking
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {timeEntries.map(entry => (
                   <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
@@ -441,11 +483,13 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Summary */}
-            <div className="grid grid-cols-3 gap-4">
+            {timeEntries.length > 0 && (
+              <div className="grid grid-cols-3 gap-4">
               <div className="p-4 rounded-lg bg-background text-center">
                 <p className="text-sm text-muted-foreground mb-1">Total Hours</p>
                 <p className="text-2xl font-bold">{timeEntries.reduce((sum, e) => sum + e.hours, 0)}h</p>
@@ -462,7 +506,8 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                   {timeEntries.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.hours, 0)}h
                 </p>
               </div>
-            </div>
+              </div>
+            )}
           </div>
         )}
 
