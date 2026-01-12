@@ -10,7 +10,7 @@ import { useRouter } from './Router';
 import { bidsApi, projectsApi } from '@/lib/api';
 import { toast } from 'sonner';
 import {
-  DollarSign,
+  Wallet,
   Clock,
   Calendar,
   User,
@@ -247,7 +247,7 @@ export function ProposalsListPage() {
                       </div>
                       <div className="text-right">
                         <div className="flex items-center gap-1 text-2xl font-bold text-primary mb-1">
-                          <DollarSign className="h-6 w-6" />
+                          <Wallet className="h-6 w-6" />
                           <span>Rs. {proposal.amount.toLocaleString()}</span>
                         </div>
                         <p className="text-sm text-muted-foreground">Bid Amount</p>
@@ -283,7 +283,7 @@ export function ProposalsListPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => setSelectedProposal(proposal)}
+                          onClick={() => navigate('view-proposal', { jobId: pageParams?.jobId, bidId: proposal.id })}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
