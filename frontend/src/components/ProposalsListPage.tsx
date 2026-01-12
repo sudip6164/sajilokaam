@@ -80,20 +80,23 @@ export function ProposalsListPage() {
       setAccepting(true);
       
       // Create project from accepted bid
-      await bidsApi.accept(proposalId, {
+      const project = await bidsApi.accept(proposalId, {
         title: jobTitle || 'New Project',
         description: 'Project created from accepted proposal'
       });
       
-      toast.success('Proposal accepted! Project has been created.');
+      toast.success('Proposal accepted! Redirecting to project page...');
       
-      // Refresh proposals
-      if (pageParams?.jobId) {
-        await fetchProposals(pageParams.jobId);
+      // Navigate to project detail page if project ID is available
+      if (project && project.id) {
+        setTimeout(() => {
+          // Note: project-detail page needs to be implemented to work with projectId
+          navigate('client-dashboard'); // Fallback to dashboard for now
+          toast.info('Project created successfully! View it in your Active Projects.');
+        }, 1500);
+      } else {
+        navigate('client-dashboard');
       }
-      
-      // Navigate to client dashboard
-      navigate('client-dashboard');
     } catch (err: any) {
       console.error('Error accepting proposal:', err);
       toast.error(err.response?.data?.message || 'Failed to accept proposal');

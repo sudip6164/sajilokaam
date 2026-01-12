@@ -490,6 +490,15 @@ export const bidsApi = {
     const response = await api.delete(`/jobs/${jobId}/bids/${bidId}`);
     return response.data;
   },
+
+  update: async (jobId: number, bidId: number, data: {
+    amount?: number;
+    message?: string;
+    estimatedCompletionDate?: string;
+  }) => {
+    const response = await api.patch(`/jobs/${jobId}/bids/${bidId}`, data);
+    return response.data;
+  },
 };
 
 // Projects API

@@ -30,6 +30,10 @@ export function ViewProposalPage() {
   const [proposal, setProposal] = useState<any>(null);
   const [job, setJob] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editCoverLetter, setEditCoverLetter] = useState('');
+  const [editBidAmount, setEditBidAmount] = useState(0);
+  const [updating, setUpdating] = useState(false);
   
   const getDashboardRoute = () => {
     if (hasRole('CLIENT')) return 'client-dashboard';
@@ -74,6 +78,10 @@ export function ViewProposalPage() {
       console.log('Bid data received:', bidData);
       console.log('Job ID from bid:', bidData.jobId);
       setProposal(bidData);
+      
+      // Initialize edit form with current values
+      setEditCoverLetter(bidData.message || '');
+      setEditBidAmount(bidData.amount || 0);
 
       // Fetch job details
       if (!bidData.jobId) {
@@ -104,6 +112,47 @@ export function ViewProposalPage() {
     } catch (error: any) {
       console.error('Error withdrawing proposal:', error);
       toast.error(error.response?.data?.message || 'Failed to withdraw proposal');
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!proposal) return;
+
+    if (editCoverLetter.trim().length < 100) {
+      toast.error('Cover letter must be at least 100 characters');
+      return;
+    }
+
+    if (editBidAmount <= 0) {
+      toast.error('Please enter a valid bid amount');
+      return;
+    }
+
+    if (job?.budgetMax && editBidAmount > job.budgetMax) {
+      toast.error(`Your bid (Rs. ${editBidAmount.toLocaleString()}) exceeds the client's maximum budget (Rs. ${job.budgetMax.toLocaleString()})`);
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      await bidsApi.update(proposal.jobId, proposal.id, {
+        amount: editBidAmount,
+        message: editCoverLetter
+      });
+      
+      toast.success('Proposal updated successfully!');
+      setIsEditing(false);
+      
+      // Refresh proposal data
+      const bidData = await bidsApi.get(proposal.id);
+      setProposal(bidData);
+      setEditCoverLetter(bidData.message || '');
+      setEditBidAmount(bidData.amount || 0);
+    } catch (error: any) {
+      console.error('Error updating proposal:', error);
+      toast.error(error.response?.data?.message || 'Failed to update proposal');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -203,7 +252,7 @@ export function ViewProposalPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-2xl">Your Proposal</CardTitle>
+                        <CardTitle className="text-2xl">{isEditing ? 'Edit Proposal' : 'Your Proposal'}</CardTitle>
                         <Badge className={`${getStatusColor(proposal.status)} flex items-center gap-1`}>
                           {getStatusIcon(proposal.status)}
                           {proposal.status}
@@ -222,28 +271,48 @@ export function ViewProposalPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-muted-foreground" />
+                  {isEditing ? (
+                    <div className="space-y-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Bid Amount</p>
-                        <p className="font-semibold text-lg">Rs. {proposal.amount?.toLocaleString()}</p>
+                        <label className="block text-sm font-medium mb-2">Bid Amount (Rs.)</label>
+                        <input
+                          type="number"
+                          value={editBidAmount}
+                          onChange={(e) => setEditBidAmount(Number(e.target.value))}
+                          className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
+                          min="0"
+                        />
+                        {job?.budgetMax && editBidAmount > job.budgetMax && (
+                          <p className="text-sm text-destructive mt-1">
+                            Exceeds client's maximum budget of Rs. {job.budgetMax.toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Submitted</p>
-                        <p className="font-semibold">
-                          {new Date(proposal.createdAt).toLocaleDateString()}
-                        </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Bid Amount</p>
+                          <p className="font-semibold text-lg">Rs. {proposal.amount?.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Submitted</p>
+                          <p className="font-semibold">
+                            {new Date(proposal.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Cover Letter */}
+              {/* Cover Letter / Edit Form */}
               <Card className="border-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -252,11 +321,46 @@ export function ViewProposalPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose max-w-none overflow-hidden">
-                    <p className="whitespace-pre-wrap text-muted-foreground break-words overflow-wrap-anywhere">
-                      {proposal.message || proposal.proposal || 'No cover letter provided.'}
-                    </p>
-                  </div>
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      <textarea
+                        value={editCoverLetter}
+                        onChange={(e) => setEditCoverLetter(e.target.value)}
+                        className="w-full min-h-[300px] p-4 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none resize-none"
+                        placeholder="Describe why you're the best fit for this job..."
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        {editCoverLetter.length} / 100 characters minimum
+                      </p>
+                      <div className="flex gap-3 pt-4">
+                        <Button
+                          className="flex-1 bg-gradient-to-r from-primary to-secondary"
+                          onClick={handleUpdate}
+                          disabled={updating || editCoverLetter.length < 100 || editBidAmount <= 0}
+                        >
+                          {updating ? 'Updating...' : 'Save Changes'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setEditCoverLetter(proposal.message || '');
+                            setEditBidAmount(proposal.amount || 0);
+                          }}
+                          disabled={updating}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="prose max-w-none overflow-hidden">
+                      <p className="whitespace-pre-wrap text-muted-foreground break-words overflow-wrap-anywhere">
+                        {proposal.message || proposal.proposal || 'No cover letter provided.'}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -326,7 +430,7 @@ export function ViewProposalPage() {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => toast.info('Edit functionality coming soon')}
+                      onClick={() => setIsEditing(true)}
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Proposal

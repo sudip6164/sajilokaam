@@ -13,9 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -222,6 +225,62 @@ public class BidController {
         }
 
         bid.setStatus("REJECTED");
+        Bid updated = bidRepository.save(bid);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{jobId}/bids/{bidId}")
+    public ResponseEntity<Bid> updateBid(
+            @PathVariable Long jobId,
+            @PathVariable Long bidId,
+            @RequestBody Map<String, Object> updates,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Bid> bidOpt = bidRepository.findById(bidId);
+        if (bidOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Bid bid = bidOpt.get();
+        if (!bid.getJob().getId().equals(jobId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Verify user is the freelancer who owns the bid
+        if (!bid.getFreelancer().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // Only allow updates to pending bids
+        if (!"PENDING".equals(bid.getStatus())) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Update allowed fields
+        if (updates.containsKey("amount")) {
+            Object amountObj = updates.get("amount");
+            if (amountObj instanceof Number) {
+                bid.setAmount(new BigDecimal(amountObj.toString()));
+            }
+        }
+        if (updates.containsKey("message")) {
+            bid.setMessage((String) updates.get("message"));
+        }
+
         Bid updated = bidRepository.save(bid);
         return ResponseEntity.ok(updated);
     }
