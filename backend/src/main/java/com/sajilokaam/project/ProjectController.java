@@ -142,11 +142,24 @@ public class ProjectController {
         bid.setStatus("ACCEPTED");
         bidRepository.save(bid);
 
-        // Create project
+        // Reject all other pending bids for this job
+        List<Bid> otherBids = bidRepository.findByJobId(job.getId());
+        for (Bid otherBid : otherBids) {
+            if (!otherBid.getId().equals(bidId) && "PENDING".equals(otherBid.getStatus())) {
+                otherBid.setStatus("REJECTED");
+                bidRepository.save(otherBid);
+            }
+        }
+
+        // Create project with freelancer and client associated
         Project project = new Project();
         project.setJob(job);
+        project.setFreelancer(bid.getFreelancer());
+        project.setClient(job.getClient());
         project.setTitle(request.getTitle());
         project.setDescription(request.getDescription());
+        project.setBudget(bid.getAmount());
+        project.setStatus("ACTIVE");
 
         Project created = projectRepository.save(project);
         URI location = URI.create("/api/projects/" + created.getId());

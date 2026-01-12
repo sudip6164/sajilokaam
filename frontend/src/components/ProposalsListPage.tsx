@@ -283,10 +283,10 @@ export function ProposalsListPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => navigate('view-proposal', { jobId: pageParams?.jobId, bidId: proposal.id })}
+                          onClick={() => navigate('view-freelancer', { freelancerId: proposal.freelancerId })}
                         >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
+                          <User className="h-4 w-4 mr-2" />
+                          View Profile
                         </Button>
                       </div>
                     )}
