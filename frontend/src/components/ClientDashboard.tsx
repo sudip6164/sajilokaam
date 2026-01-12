@@ -196,7 +196,7 @@ export function ClientDashboard() {
           </Sidebar>
 
           {/* Main Content - Scrollable */}
-          <main className="flex-1 overflow-y-auto pt-16 pr-6 pb-6 pl-3" style={{ marginLeft: '156px' }}>
+          <main className="flex-1 overflow-y-auto pt-16 pr-6 pb-6 pl-3" style={{ marginLeft: '144px' }}>
             {renderContent()}
           </main>
         </SidebarProvider>
