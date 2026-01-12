@@ -22,7 +22,8 @@ import {
   ArrowUpRight,
   Plus,
   MessageSquare,
-  User
+  User,
+  Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -207,7 +208,7 @@ function OverviewContent({ navigate }: { navigate: any }) {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-primary" />
+              <TrendingUp className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent>
@@ -295,7 +296,7 @@ function OverviewContent({ navigate }: { navigate: any }) {
                     <p className="text-sm text-muted-foreground mb-2">{project.clientName || 'Client'}</p>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4 text-primary" />
+                        <Wallet className="h-4 w-4 text-primary" />
                         <span className="font-medium">Rs. {(project.budget || 0).toLocaleString()}</span>
                       </div>
                       {project.deadline && (
@@ -461,7 +462,7 @@ function ProjectsContent({ navigate }: { navigate: any }) {
                   {/* Key Metrics */}
                   <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
                     <div className="text-center">
-                      <DollarSign className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      <Wallet className="h-5 w-5 mx-auto mb-1 text-primary" />
                       <p className="text-sm font-semibold">Rs. {project.budget?.toLocaleString() || '0'}</p>
                       <p className="text-xs text-muted-foreground">Budget</p>
                     </div>
@@ -588,29 +589,33 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-semibold text-lg">{bid.jobTitle || `Job #${bid.jobId}`}</h3>
-                        <span className="text-xs text-muted-foreground">• Proposal #{bid.id}</span>
+                        <Badge variant="outline" className="text-xs">Proposal #{bid.id}</Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          Submitted {submittedAt}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />
-                          Rs. {bid.amount?.toLocaleString() || '0'}
-                        </span>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Your Bid</p>
+                          <p className="font-semibold text-primary">Rs. {bid.amount?.toLocaleString() || '0'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Submitted</p>
+                          <p className="font-medium text-sm">{submittedAt}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Status</p>
+                          <Badge variant={
+                            bid.status === "PENDING" || bid.status === "UNDER_REVIEW" ? "default" :
+                            bid.status === "ACCEPTED" ? "secondary" :
+                            "destructive"
+                          }>
+                            {bid.status}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Job ID</p>
+                          <p className="font-medium text-sm">#{bid.jobId}</p>
+                        </div>
                       </div>
-                      {(bid.proposal || bid.message) && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2 break-words overflow-hidden">{bid.proposal || bid.message}</p>
-                      )}
                     </div>
-                    <Badge variant={
-                      bid.status === "PENDING" || bid.status === "UNDER_REVIEW" ? "default" :
-                      bid.status === "ACCEPTED" ? "secondary" :
-                      "destructive"
-                    }>
-                      {bid.status}
-                    </Badge>
                   </div>
                   <div className="flex gap-2">
                     <Button 
@@ -745,7 +750,7 @@ function EarningsContent({ navigate }: { navigate: any }) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">Rs. {earnings.total.toLocaleString()}</div>

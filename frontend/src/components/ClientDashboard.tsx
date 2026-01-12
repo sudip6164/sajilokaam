@@ -25,7 +25,8 @@ import {
   Eye,
   MessageSquare,
   Tag,
-  MapPin
+  MapPin,
+  Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -280,7 +281,7 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
             <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <DollarSign className="h-4 w-4 text-green-500" />
+              <TrendingUp className="h-4 w-4 text-green-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -326,7 +327,7 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
                       <p className="text-sm text-muted-foreground mb-2">Project #{project.id}</p>
                       <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-primary" />
+                          <Wallet className="h-4 w-4 text-primary" />
                           <span className="font-medium">Rs. {project.budget?.toLocaleString() || '0'}</span>
                         </div>
                         <div className="flex items-center gap-1">
@@ -511,7 +512,7 @@ function ProjectsContent({ navigate }: { navigate: any }) {
                   {/* Key Metrics */}
                   <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
                     <div className="text-center">
-                      <DollarSign className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      <Wallet className="h-5 w-5 mx-auto mb-1 text-primary" />
                       <p className="text-sm font-semibold">Rs. {project.budget?.toLocaleString() || '0'}</p>
                       <p className="text-xs text-muted-foreground">Budget</p>
                     </div>
@@ -685,7 +686,7 @@ function JobsContent({ navigate }: { navigate: any }) {
                   {/* Job Details */}
                   <div className="flex flex-wrap items-center gap-4 text-sm">
                     <div className="flex items-center gap-1.5 text-primary font-medium">
-                      <DollarSign className="h-4 w-4" />
+                      <Wallet className="h-4 w-4" />
                       {budget}
                     </div>
                     <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -1020,7 +1021,7 @@ function PaymentsContent({ navigate }: { navigate: any }) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Rs. {stats.totalPaid.toLocaleString()}</div>
@@ -1100,7 +1101,7 @@ function PaymentsContent({ navigate }: { navigate: any }) {
         <CardContent>
           {payments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <Wallet className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>No payments yet</p>
             </div>
           ) : (
