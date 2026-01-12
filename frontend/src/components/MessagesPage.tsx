@@ -27,21 +27,28 @@ export function MessagesPage() {
       
       // Connect to WebSocket for real-time messages
       const cleanup = connectWebSocket(selectedConversationId, (wsMessage: WebSocketMessage) => {
-        // Transform WebSocket message to UI format
-        const transformedMessage: Message = {
-          id: wsMessage.id,
-          senderId: wsMessage.sender.id.toString(),
-          senderName: wsMessage.sender.fullName,
-          content: wsMessage.content,
-          timestamp: wsMessage.createdAt,
-          isRead: true,
-        };
-
         // Add message to state if it's not already there
         setMessages(prev => {
           const conversationMessages = prev[selectedConversationId] || [];
-          const exists = conversationMessages.some(m => m.id === transformedMessage.id);
-          if (exists) return prev;
+          
+          // Check if message already exists (prevents duplicates from optimistic updates)
+          const exists = conversationMessages.some(m => m.id === wsMessage.id);
+          if (exists) {
+            console.log('Message already exists, skipping:', wsMessage.id);
+            return prev;
+          }
+
+          // Transform WebSocket message to UI format
+          const transformedMessage: Message = {
+            id: wsMessage.id,
+            senderId: wsMessage.sender.id.toString(),
+            senderName: wsMessage.sender.fullName,
+            content: wsMessage.content,
+            timestamp: wsMessage.createdAt,
+            isRead: true,
+          };
+
+          console.log('Adding message from WebSocket:', wsMessage.id, 'from user:', wsMessage.sender.id);
 
           return {
             ...prev,
