@@ -160,6 +160,24 @@ export function JobDetailPage() {
         }
       }
 
+      // Fetch bids/proposals count for this job
+      let proposalsCount = 0;
+      try {
+        const bidsResponse = await bidsApi.listByJob(jobId);
+        proposalsCount = bidsResponse.length;
+        
+        // Check if user has already submitted a bid for this job
+        if (isAuthenticated && hasRole('FREELANCER')) {
+          const myBid = bidsResponse.find((bid: any) => bid.freelancerId === authUser?.id);
+          if (myBid) {
+            setUserBid(myBid);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching bids:', err);
+        // Ignore error - continue with 0 proposals
+      }
+
       const transformedJob: JobData = {
         id: jobData.id,
         title: jobData.title,
@@ -195,24 +213,6 @@ export function JobDetailPage() {
       // Store job client ID for validation
       if (jobData.clientId) {
         setJobClientId(jobData.clientId);
-      }
-
-      // Fetch bids/proposals count for this job
-      let proposalsCount = 0;
-      try {
-        const bidsResponse = await bidsApi.listByJob(jobId);
-        proposalsCount = bidsResponse.length;
-        
-        // Check if user has already submitted a bid for this job
-        if (isAuthenticated && hasRole('FREELANCER')) {
-          const myBid = bidsResponse.find((bid: any) => bid.freelancerId === authUser?.id);
-          if (myBid) {
-            setUserBid(myBid);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching bids:', err);
-        // Ignore error - continue with 0 proposals
       }
 
       // Fetch similar jobs (same category)
