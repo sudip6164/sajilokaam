@@ -252,9 +252,9 @@ export function ProposalsListPage() {
                     </div>
 
                     {/* Proposal Text */}
-                    <div className="mb-4 p-4 bg-muted rounded-lg">
+                    <div className="mb-4 p-4 bg-muted rounded-lg overflow-hidden">
                       <p className="text-sm font-semibold mb-2">Cover Letter:</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      <p className="text-sm text-muted-foreground whitespace-pre-line break-words overflow-wrap-anywhere">
                         {proposal.message || proposal.proposal || 'No cover letter provided'}
                       </p>
                     </div>

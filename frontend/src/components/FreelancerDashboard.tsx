@@ -550,7 +550,7 @@ function ProposalsContent({ navigate }: { navigate: any }) {
                         </span>
                       </div>
                       {(bid.proposal || bid.message) && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{bid.proposal || bid.message}</p>
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2 break-words overflow-hidden">{bid.proposal || bid.message}</p>
                       )}
                     </div>
                     <Badge variant={

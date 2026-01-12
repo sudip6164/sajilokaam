@@ -246,8 +246,8 @@ export function ViewProposalPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="prose max-w-none">
-                    <p className="whitespace-pre-wrap text-muted-foreground">
+                  <div className="prose max-w-none overflow-hidden">
+                    <p className="whitespace-pre-wrap text-muted-foreground break-words overflow-wrap-anywhere">
                       {proposal.message || proposal.proposal || 'No cover letter provided.'}
                     </p>
                   </div>
