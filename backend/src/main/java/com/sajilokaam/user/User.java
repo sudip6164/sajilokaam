@@ -60,6 +60,10 @@ public class User {
     @Column(name = "verification_token_expires_at")
     @JsonIgnore
     private Instant verificationTokenExpiresAt;
+    
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("profilePictureUrl")
+    private String profilePictureUrl; // This will be populated dynamically
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -85,6 +89,8 @@ public class User {
     public void setVerificationToken(String verificationToken) { this.verificationToken = verificationToken; }
     public Instant getVerificationTokenExpiresAt() { return verificationTokenExpiresAt; }
     public void setVerificationTokenExpiresAt(Instant verificationTokenExpiresAt) { this.verificationTokenExpiresAt = verificationTokenExpiresAt; }
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }
 
 

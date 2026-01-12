@@ -1,6 +1,10 @@
 package com.sajilokaam.conversation;
 
 import com.sajilokaam.auth.JwtService;
+import com.sajilokaam.profile.ClientProfile;
+import com.sajilokaam.profile.ClientProfileRepository;
+import com.sajilokaam.profile.FreelancerProfile;
+import com.sajilokaam.profile.FreelancerProfileRepository;
 import com.sajilokaam.project.Project;
 import com.sajilokaam.project.ProjectRepository;
 import com.sajilokaam.user.User;
@@ -25,17 +29,23 @@ public class ConversationController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final FreelancerProfileRepository freelancerProfileRepository;
+    private final ClientProfileRepository clientProfileRepository;
 
     public ConversationController(ConversationRepository conversationRepository,
                                  ProjectRepository projectRepository,
                                  UserRepository userRepository,
                                  JwtService jwtService,
-                                 SimpMessagingTemplate messagingTemplate) {
+                                 SimpMessagingTemplate messagingTemplate,
+                                 FreelancerProfileRepository freelancerProfileRepository,
+                                 ClientProfileRepository clientProfileRepository) {
         this.conversationRepository = conversationRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.messagingTemplate = messagingTemplate;
+        this.freelancerProfileRepository = freelancerProfileRepository;
+        this.clientProfileRepository = clientProfileRepository;
     }
 
     @GetMapping
@@ -66,6 +76,15 @@ public class ConversationController {
         }
 
         List<Conversation> conversations = conversationRepository.findByParticipantsContaining(userOpt.get());
+        
+        // Enrich participants with profile pictures
+        for (Conversation conversation : conversations) {
+            for (User participant : conversation.getParticipants()) {
+                String profilePicUrl = getProfilePictureUrl(participant.getId());
+                participant.setProfilePictureUrl(profilePicUrl);
+            }
+        }
+        
         return ResponseEntity.ok(conversations);
     }
 
