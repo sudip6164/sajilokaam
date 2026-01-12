@@ -433,36 +433,20 @@ export const bidsApi = {
   },
 
   get: async (id: number, jobId?: number) => {
-    // If jobId is provided, use the specific endpoint
-    if (jobId) {
-      const response = await api.get<{
-        id: number;
-        jobId: number;
-        freelancerId: number;
-        amount: number;
-        message: string;
-        proposal: string;
-        status: string;
-        createdAt: string;
-      }>(`/jobs/${jobId}/bids/${id}`);
-      return response.data;
-    }
-    // Otherwise, get from my-bids list and filter
-    const myBids = await api.get<Array<{
+    // Use the direct /api/bids/{id} endpoint
+    const response = await api.get<{
       id: number;
       jobId: number;
+      jobTitle: string;
       freelancerId: number;
+      freelancerName: string;
+      freelancerEmail: string;
       amount: number;
       message: string;
-      proposal: string;
       status: string;
       createdAt: string;
-    }>>('/jobs/my-bids');
-    const bid = myBids.data.find((b: any) => b.id === id);
-    if (!bid) {
-      throw new Error('Bid not found');
-    }
-    return bid;
+    }>(`/bids/${id}`);
+    return response.data;
   },
 
   create: async (data: {
