@@ -65,10 +65,16 @@ export function ViewProposalPage() {
       
       // First try to get bid from my-bids to get jobId
       const bidData = await bidsApi.get(bidId);
+      console.log('Bid data received:', bidData);
+      console.log('Job ID from bid:', bidData.jobId);
       setProposal(bidData);
 
       // Fetch job details
+      if (!bidData.jobId) {
+        throw new Error('No job ID in bid data');
+      }
       const jobData = await jobsApi.get(bidData.jobId);
+      console.log('Job data received:', jobData);
       setJob(jobData);
     } catch (error: any) {
       console.error('Error fetching proposal:', error);

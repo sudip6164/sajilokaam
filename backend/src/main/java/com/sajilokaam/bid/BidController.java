@@ -355,6 +355,7 @@ public class BidController {
         Job job = bid.getJob();
         User freelancer = bid.getFreelancer();
         
+        Long jobId = job != null ? job.getId() : null;
         String jobTitle = job != null ? job.getTitle() : null;
         String freelancerName = freelancer != null ? freelancer.getFullName() : null;
         String freelancerEmail = freelancer != null ? freelancer.getEmail() : null;
@@ -362,7 +363,7 @@ public class BidController {
 
         return ResponseEntity.ok(new BidResponse(
             bid.getId(),
-            job.getId(),
+            jobId,
             jobTitle,
             freelancerId,
             freelancerName,
