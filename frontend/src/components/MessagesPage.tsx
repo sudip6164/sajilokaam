@@ -4,6 +4,7 @@ import { Footer } from './Footer';
 import { ConversationsList, Conversation } from './messaging/ConversationsList';
 import { MessageThread, Message } from './messaging/MessageThread';
 import { MessageSquare } from 'lucide-react';
+import { connectWebSocket, WebSocketMessage } from '../lib/websocket';
 import { conversationsApi, messagesApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
