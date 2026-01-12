@@ -519,6 +519,7 @@ function JobsContent({ navigate }: { navigate: any }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [proposalCounts, setProposalCounts] = useState<Record<number, number>>({});
 
   useEffect(() => {
     if (user?.id) {
@@ -531,19 +532,24 @@ function JobsContent({ navigate }: { navigate: any }) {
       setLoading(true);
       const jobsData = await jobsApi.list({ clientId: user?.id });
       setJobs(jobsData || []);
+      
+      // Fetch proposal counts for all jobs
+      const counts: Record<number, number> = {};
+      await Promise.all(
+        (jobsData || []).map(async (job: any) => {
+          try {
+            const bids = await bidsApi.listByJob(job.id);
+            counts[job.id] = bids?.length || 0;
+          } catch (err) {
+            counts[job.id] = 0;
+          }
+        })
+      );
+      setProposalCounts(counts);
     } catch (err) {
       console.error('Error fetching jobs:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getProposalCount = async (jobId: number) => {
-    try {
-      const bids = await bidsApi.list({ jobId, status: 'PENDING' });
-      return bids?.length || 0;
-    } catch (err) {
-      return 0;
     }
   };
 
@@ -604,7 +610,14 @@ function JobsContent({ navigate }: { navigate: any }) {
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">{job.title}</h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-lg">{job.title}</h3>
+                        {proposalCounts[job.id] > 0 && (
+                          <Badge variant="default" className="bg-primary">
+                            {proposalCounts[job.id]} New
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
@@ -630,10 +643,10 @@ function JobsContent({ navigate }: { navigate: any }) {
                     </Button>
                     <Button variant="outline" className="flex-1" onClick={(e) => {
                       e.stopPropagation();
-                      // TODO: Implement edit job functionality
-                      navigate('job-detail', { jobId: job.id });
+                      navigate('proposals-list', { jobId: job.id });
                     }}>
-                      View Proposals
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      View Proposals ({proposalCounts[job.id] || 0})
                     </Button>
                   </div>
                 </CardContent>
