@@ -22,10 +22,16 @@ import {
   ArrowUpRight,
   TrendingUp,
   CheckCircle2,
-  Eye
+  Eye,
+  MessageSquare
 } from 'lucide-react';
 
-const sidebarItems = [
+const sidebarItems: Array<{
+  title: string;
+  icon: any;
+  id: string;
+  badge?: string | number;
+}> = [
   { title: "Dashboard", icon: Home, id: "overview" },
   { title: "Active Projects", icon: Briefcase, id: "projects" },
   { title: "Posted Jobs", icon: FileText, id: "jobs" },
@@ -50,7 +56,7 @@ export function ClientDashboard() {
       case 'payments':
         return <PaymentsContent navigate={navigate} />;
       default:
-        return <OverviewContent navigate={navigate} />;
+        return <OverviewContent navigate={navigate} setActiveSection={setActiveSection} />;
     }
   };
 
