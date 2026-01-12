@@ -162,6 +162,8 @@ export function Router({ children }: { children: React.ReactNode }) {
       url = `${path}?freelancerId=${params.freelancerId}`;
     } else if (params?.bidId && page === 'view-proposal') {
       url = `${path}?bidId=${params.bidId}`;
+    } else if (params?.projectId && page === 'project-detail') {
+      url = `${path}?projectId=${params.projectId}`;
     }
     window.history.pushState({ page, params }, '', url);
   };
@@ -179,6 +181,7 @@ export function Router({ children }: { children: React.ReactNode }) {
     const jobId = urlParams.get('jobId');
     const freelancerId = urlParams.get('freelancerId');
     const bidId = urlParams.get('bidId');
+    const projectId = urlParams.get('projectId');
     if (token && page === 'reset-password') {
       setPageParams({ token });
     } else if (jobId && (page === 'job-detail' || page === 'proposals-list' || page === 'submit-proposal')) {
@@ -187,6 +190,8 @@ export function Router({ children }: { children: React.ReactNode }) {
       setPageParams({ freelancerId: parseInt(freelancerId, 10) });
     } else if (bidId && page === 'view-proposal') {
       setPageParams({ bidId: parseInt(bidId, 10) });
+    } else if (projectId && page === 'project-detail') {
+      setPageParams({ projectId: parseInt(projectId, 10) });
     }
 
     // Handle browser back/forward buttons
@@ -200,6 +205,7 @@ export function Router({ children }: { children: React.ReactNode }) {
       const jobId = urlParams.get('jobId');
       const freelancerId = urlParams.get('freelancerId');
       const bidId = urlParams.get('bidId');
+      const projectId = urlParams.get('projectId');
       if (token && page === 'reset-password') {
         setPageParams({ token });
       } else if (jobId && (page === 'job-detail' || page === 'proposals-list' || page === 'submit-proposal')) {
@@ -208,6 +214,8 @@ export function Router({ children }: { children: React.ReactNode }) {
         setPageParams({ freelancerId: parseInt(freelancerId, 10) });
       } else if (bidId && page === 'view-proposal') {
         setPageParams({ bidId: parseInt(bidId, 10) });
+      } else if (projectId && page === 'project-detail') {
+        setPageParams({ projectId: parseInt(projectId, 10) });
       } else {
         setPageParams(null);
       }
