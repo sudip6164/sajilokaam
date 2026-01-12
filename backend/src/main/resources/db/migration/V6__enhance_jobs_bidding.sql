@@ -79,7 +79,7 @@ INSERT INTO job_categories (name, description) VALUES
 ('Other', 'Other job categories');
 
 -- Insert default skills
-INSERT INTO job_skills (name, category_id) VALUES
+INSERT IGNORE INTO job_skills (name, category_id) VALUES
 -- Web Development
 ('React', 1), ('Vue.js', 1), ('Angular', 1), ('Node.js', 1), ('Python', 1), ('Java', 1), ('PHP', 1),
 -- Mobile Development

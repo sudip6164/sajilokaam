@@ -1,23 +1,21 @@
-ALTER TABLE messages
-    ADD COLUMN rich_content TEXT;
+-- Add rich_content column to messages if not exists
+-- Note: message_attachments table is already created in V8__add_messaging_notifications.sql
 
-CREATE TABLE message_attachments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    conversation_id BIGINT NOT NULL,
-    uploader_id BIGINT NOT NULL,
-    message_id BIGINT NULL,
-    original_filename VARCHAR(255),
-    stored_filename VARCHAR(255),
-    content_type VARCHAR(255),
-    size_bytes BIGINT,
-    file_path VARCHAR(512),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_message_attachment_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id),
-    CONSTRAINT fk_message_attachment_uploader FOREIGN KEY (uploader_id) REFERENCES users(id),
-    CONSTRAINT fk_message_attachment_message FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL
-);
-
-CREATE INDEX idx_message_attachments_conversation ON message_attachments(conversation_id);
-CREATE INDEX idx_message_attachments_message ON message_attachments(message_id);
-
-
+-- Check and add rich_content column
+SET @dbname = DATABASE();
+SET @tablename = 'messages';
+SET @columnname = 'rich_content';
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      TABLE_SCHEMA = @dbname
+      AND TABLE_NAME = @tablename
+      AND COLUMN_NAME = @columnname
+  ) > 0,
+  'SELECT 1',
+  CONCAT('ALTER TABLE ', @tablename, ' ADD COLUMN ', @columnname, ' TEXT')
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
