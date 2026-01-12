@@ -105,11 +105,15 @@ export function MessagesPage() {
         };
       });
 
+      console.log('Fetched conversations:', transformedConversations.length);
       setConversations(transformedConversations);
       
       // Auto-select first conversation if available
       if (transformedConversations.length > 0 && !selectedConversationId) {
+        console.log('Auto-selecting first conversation:', transformedConversations[0].id);
         setSelectedConversationId(transformedConversations[0].id);
+      } else {
+        console.log('Not auto-selecting. Already selected:', selectedConversationId);
       }
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
