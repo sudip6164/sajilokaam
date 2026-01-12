@@ -153,8 +153,30 @@ export function MessagesPage() {
         // Attachments can be handled separately if needed
       });
 
-      // Refresh messages to get the new one from server
-      await fetchMessages(selectedConversationId);
+      // Transform and add to local state immediately (optimistic update)
+      const transformedMessage: Message = {
+        id: newMessage.id,
+        senderId: user?.id.toString() || 'user-1',
+        senderName: user?.fullName || 'You',
+        content: newMessage.content,
+        timestamp: newMessage.createdAt,
+        isRead: true,
+        attachments: attachments?.map(file => ({
+          type: file.type.startsWith('image/') ? 'image' : 'file',
+          url: URL.createObjectURL(file),
+          name: file.name,
+          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        })),
+      };
+
+      // Add message to state (don't wait for WebSocket)
+      setMessages(prev => ({
+        ...prev,
+        [selectedConversationId]: [
+          ...(prev[selectedConversationId] || []),
+          transformedMessage,
+        ],
+      }));
 
       // Update conversation last message
       setConversations(prev =>
@@ -164,7 +186,7 @@ export function MessagesPage() {
                 ...conv,
                 lastMessage: {
                   content,
-                  timestamp: new Date().toISOString(),
+                  timestamp: newMessage.createdAt,
                   isRead: true,
                 },
               }
