@@ -75,6 +75,34 @@ public class BidController {
         return ResponseEntity.ok(responses);
     }
 
+    @GetMapping("/{jobId}/bids/{bidId}")
+    @Transactional(readOnly = true)
+    public ResponseEntity<BidResponse> getBid(@PathVariable Long jobId, @PathVariable Long bidId) {
+        Optional<Bid> bidOpt = bidRepository.findById(bidId);
+        if (bidOpt.isEmpty() || !bidOpt.get().getJob().getId().equals(jobId)) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Bid bid = bidOpt.get();
+        User freelancer = bid.getFreelancer();
+        Job job = bid.getJob();
+        
+        BidResponse response = new BidResponse(
+            bid.getId(),
+            job.getId(),
+            job.getTitle(),
+            freelancer != null ? freelancer.getId() : null,
+            freelancer != null ? freelancer.getFullName() : null,
+            freelancer != null ? freelancer.getEmail() : null,
+            bid.getAmount(),
+            bid.getMessage(),
+            bid.getStatus(),
+            bid.getCreatedAt()
+        );
+        
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{jobId}/bids")
     public ResponseEntity<Bid> createBid(
             @PathVariable Long jobId,

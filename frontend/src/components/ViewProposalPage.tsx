@@ -50,6 +50,7 @@ export function ViewProposalPage() {
   const fetchProposal = async (bidId: number) => {
     try {
       setLoading(true);
+      // First try to get bid from my-bids to get jobId
       const bidData = await bidsApi.get(bidId);
       setProposal(bidData);
 
@@ -58,6 +59,7 @@ export function ViewProposalPage() {
       setJob(jobData);
     } catch (error: any) {
       console.error('Error fetching proposal:', error);
+      console.error('Error details:', error.response?.data);
       setError('Failed to load proposal details');
       toast.error('Failed to load proposal details');
     } finally {

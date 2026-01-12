@@ -432,18 +432,37 @@ export const bidsApi = {
     return response.data;
   },
 
-  get: async (id: number) => {
-    const response = await api.get<{
+  get: async (id: number, jobId?: number) => {
+    // If jobId is provided, use the specific endpoint
+    if (jobId) {
+      const response = await api.get<{
+        id: number;
+        jobId: number;
+        freelancerId: number;
+        amount: number;
+        message: string;
+        proposal: string;
+        status: string;
+        createdAt: string;
+      }>(`/jobs/${jobId}/bids/${id}`);
+      return response.data;
+    }
+    // Otherwise, get from my-bids list and filter
+    const myBids = await api.get<Array<{
       id: number;
       jobId: number;
       freelancerId: number;
       amount: number;
+      message: string;
       proposal: string;
       status: string;
-      estimatedCompletionDate?: string;
       createdAt: string;
-    }>(`/bids/${id}`);
-    return response.data;
+    }>>('/jobs/my-bids');
+    const bid = myBids.data.find((b: any) => b.id === id);
+    if (!bid) {
+      throw new Error('Bid not found');
+    }
+    return bid;
   },
 
   create: async (data: {
