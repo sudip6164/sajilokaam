@@ -229,8 +229,11 @@ export function MessageThread({
             variant="ghost" 
             size="icon"
             onClick={() => {
+              console.log('Info clicked - recipientId:', recipientId, 'recipientRole:', recipientRole);
               // Navigate to recipient's profile based on their role
-              const isFreelancer = recipientRole?.includes('FREELANCER');
+              const isFreelancer = recipientRole?.toUpperCase().includes('FREELANCER') || 
+                                  recipientRole?.toUpperCase().includes('ROLE_FREELANCER');
+              console.log('Is freelancer?', isFreelancer);
               if (isFreelancer) {
                 navigate('view-freelancer', { freelancerId: recipientId.toString() });
               } else {
