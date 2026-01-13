@@ -25,7 +25,7 @@ interface AdminDashboardLayoutProps {
 export function AdminDashboardLayout({ children, activePage }: AdminDashboardLayoutProps) {
   const { navigate } = useRouter();
   const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, page: 'admin-dashboard' },
@@ -114,11 +114,13 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
       </aside>
 
       {/* Main Content */}
-      <main className="min-h-screen pt-16 ml-0 lg:ml-64 transition-all duration-300">
-        <div className="p-8">
-          {children}
-        </div>
-      </main>
+      <div className="lg:pl-64">
+        <main className="min-h-screen pt-16">
+          <div className="p-8">
+            {children}
+          </div>
+        </main>
+      </div>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
