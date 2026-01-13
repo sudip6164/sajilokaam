@@ -48,6 +48,15 @@ public class ClientProfileController {
         return ResponseEntity.ok(ProfileMapper.toClientResponse(profile));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<ClientProfileResponse> getProfileByUserId(@PathVariable Long userId) {
+        Optional<ClientProfile> profileOpt = clientProfileRepository.findByUserId(userId);
+        if (profileOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ProfileMapper.toClientResponse(profileOpt.get()));
+    }
+
     @PutMapping
     public ResponseEntity<ClientProfileResponse> updateProfile(
             @RequestBody ClientProfileRequest request,

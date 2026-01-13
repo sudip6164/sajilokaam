@@ -49,6 +49,15 @@ public class FreelancerProfileController {
         return ResponseEntity.ok(ProfileMapper.toFreelancerResponse(profile));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<FreelancerProfileResponse> getProfileByUserId(@PathVariable Long userId) {
+        Optional<FreelancerProfile> profileOpt = freelancerProfileRepository.findByUserId(userId);
+        if (profileOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ProfileMapper.toFreelancerResponse(profileOpt.get()));
+    }
+
     @PutMapping
     public ResponseEntity<FreelancerProfileResponse> updateProfile(
             @RequestBody FreelancerProfileRequest request,
