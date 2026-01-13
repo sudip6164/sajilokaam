@@ -1,6 +1,7 @@
 package com.sajilokaam.conversation;
 
 import com.sajilokaam.auth.JwtService;
+import com.sajilokaam.auth.UserContextService;
 import com.sajilokaam.message.Message;
 import com.sajilokaam.message.MessageRepository;
 import com.sajilokaam.profile.ClientProfile;
@@ -13,14 +14,13 @@ import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/conversations")
@@ -34,6 +34,7 @@ public class ConversationController {
     private final FreelancerProfileRepository freelancerProfileRepository;
     private final ClientProfileRepository clientProfileRepository;
     private final MessageRepository messageRepository;
+    private final UserContextService userContextService;
 
     public ConversationController(ConversationRepository conversationRepository,
                                  ProjectRepository projectRepository,
@@ -42,7 +43,8 @@ public class ConversationController {
                                  SimpMessagingTemplate messagingTemplate,
                                  FreelancerProfileRepository freelancerProfileRepository,
                                  ClientProfileRepository clientProfileRepository,
-                                 MessageRepository messageRepository) {
+                                 MessageRepository messageRepository,
+                                 UserContextService userContextService) {
         this.conversationRepository = conversationRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -51,6 +53,7 @@ public class ConversationController {
         this.freelancerProfileRepository = freelancerProfileRepository;
         this.clientProfileRepository = clientProfileRepository;
         this.messageRepository = messageRepository;
+        this.userContextService = userContextService;
     }
 
     @GetMapping
