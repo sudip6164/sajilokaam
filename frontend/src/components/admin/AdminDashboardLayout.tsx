@@ -127,7 +127,7 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
         className="flex-1 overflow-y-auto pb-6" 
         style={{ 
           marginLeft: isDesktop ? '256px' : '0px',
-          marginRight: '24px',
+          marginRight: '72px',
           paddingTop: '64px' 
         }}
       >
