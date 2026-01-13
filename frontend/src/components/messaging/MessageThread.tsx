@@ -21,6 +21,7 @@ export interface Message {
   }>;
   isRead: boolean;
   isEdited?: boolean;
+  isDeleted?: boolean;
 }
 
 interface MessageThreadProps {
@@ -357,7 +358,11 @@ export function MessageThread({
                           second: '2-digit'
                         })}
                       >
-                        {searchQuery ? (
+                        {message.isDeleted ? (
+                          <p className="text-sm italic opacity-60">
+                            This message was deleted
+                          </p>
+                        ) : searchQuery ? (
                           <p 
                             className="text-sm whitespace-pre-wrap break-words"
                             dangerouslySetInnerHTML={{ __html: highlightText(message.content) }}
@@ -367,12 +372,12 @@ export function MessageThread({
                             {message.content}
                           </p>
                         )}
-                        {message.isEdited && (
+                        {message.isEdited && !message.isDeleted && (
                           <span className="text-xs opacity-70 italic"> (edited)</span>
                         )}
                       </div>
                       
-                      {isCurrentUser && (
+                      {isCurrentUser && !message.isDeleted && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

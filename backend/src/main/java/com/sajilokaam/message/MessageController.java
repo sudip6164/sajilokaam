@@ -271,13 +271,19 @@ public class MessageController {
             return ResponseEntity.status(403).build();
         }
 
-        messageRepository.delete(message);
+        // Mark as deleted instead of actually deleting
+        message.setIsDeleted(true);
+        message.setDeletedAt(Instant.now());
+        message.setContent("This message was deleted");
+        
+        Message deleted = messageRepository.save(message);
+        
+        // Populate profile picture URL
+        String profilePicUrl = getProfilePictureUrl(userOpt.get().getId());
+        deleted.setProfilePictureUrl(profilePicUrl);
         
         // Broadcast delete via WebSocket
-        java.util.Map<String, Object> deleteEvent = new java.util.HashMap<>();
-        deleteEvent.put("messageId", messageId);
-        deleteEvent.put("action", "delete");
-        messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, deleteEvent);
+        messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, deleted);
         
         return ResponseEntity.noContent().build();
     }

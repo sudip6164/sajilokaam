@@ -27,16 +27,7 @@ export function MessagesPage() {
       
       // Connect to WebSocket for real-time messages
       const cleanup = connectWebSocket(selectedConversationId, (wsMessage: any) => {
-        // Handle delete events
-        if (wsMessage.action === 'delete' && wsMessage.messageId) {
-          setMessages(prev => ({
-            ...prev,
-            [selectedConversationId]: prev[selectedConversationId].filter(m => m.id !== wsMessage.messageId),
-          }));
-          return;
-        }
-
-        // Handle new/edited messages
+        // Handle new/edited/deleted messages
         setMessages(prev => {
           const conversationMessages = prev[selectedConversationId] || [];
           
@@ -53,10 +44,11 @@ export function MessagesPage() {
             timestamp: wsMessage.createdAt,
             isRead: true,
             isEdited: wsMessage.isEdited || false,
+            isDeleted: wsMessage.isDeleted || false,
           };
 
           if (existingIndex >= 0) {
-            // Update existing message (edit)
+            // Update existing message (edit or delete)
             console.log('Updating message from WebSocket:', wsMessage.id);
             const updatedMessages = [...conversationMessages];
             updatedMessages[existingIndex] = transformedMessage;
@@ -75,7 +67,7 @@ export function MessagesPage() {
         });
 
         // Update conversation last message
-        if (wsMessage.content) {
+        if (wsMessage.content && !wsMessage.isDeleted) {
           setConversations(prev =>
             prev.map(conv =>
               conv.id === selectedConversationId
