@@ -125,6 +125,11 @@ export function ConversationsList({
                     {conversation.isPinned && (
                       <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                     )}
+                    {conversation.unreadCount > 0 && (
+                      <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex-shrink-0">
+                        {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                      </span>
+                    )}
                   </div>
                   {conversation.lastMessage && (
                     <span className="text-xs text-muted-foreground flex-shrink-0">

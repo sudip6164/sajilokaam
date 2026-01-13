@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Image, Smile, MoreVertical, Search, Phone, Video, Info } from 'lucide-react';
+import { Send, Paperclip, Image, Smile, MoreVertical, Search, Phone, Video, Info, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Input } from '../ui/input';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 export interface Message {
   id: number;
@@ -42,8 +44,12 @@ export function MessageThread({
 }: MessageThreadProps) {
   const [messageInput, setMessageInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,6 +58,18 @@ export function MessageThread({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSend = () => {
     if (messageInput.trim() || attachments.length > 0) {
@@ -74,6 +92,11 @@ export function MessageThread({
     }
   };
 
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setMessageInput(prev => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -87,6 +110,14 @@ export function MessageThread({
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   };
+
+  // Filter messages based on search query
+  const filteredMessages = searchQuery.trim()
+    ? messages.filter(msg => 
+        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.senderName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : messages;
 
   return (
     <div className="flex flex-col h-full bg-card rounded-xl border border-border overflow-hidden">
@@ -124,7 +155,11 @@ export function MessageThread({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setShowSearch(!showSearch)}
+          >
             <Search className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon">
@@ -139,11 +174,60 @@ export function MessageThread({
         </div>
       </div>
 
+      {/* Search Bar */}
+      {showSearch && (
+        <div className="px-4 py-2 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search messages..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+              autoFocus
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            {filteredMessages.length !== messages.length && (
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {filteredMessages.length} of {messages.length}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message, index) => {
-          const isCurrentUser = message.senderId === currentUserId;
-          const showAvatar = index === 0 || messages[index - 1].senderId !== message.senderId;
+        {filteredMessages.length === 0 && searchQuery ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No messages found matching "{searchQuery}"</p>
+          </div>
+        ) : (
+          filteredMessages.map((message, index) => {
+            const isCurrentUser = message.senderId === currentUserId;
+            const showAvatar = index === 0 || filteredMessages[index - 1].senderId !== message.senderId;
+            
+            // Highlight search matches
+            const highlightText = (text: string) => {
+              if (!searchQuery.trim()) return text;
+              const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+              return parts.map((part, i) => 
+                part.toLowerCase() === searchQuery.toLowerCase() 
+                  ? `<mark key=${i} class="bg-yellow-300 text-black">${part}</mark>`
+                  : part
+              ).join('');
+            };
 
           return (
             <div
@@ -184,12 +268,28 @@ export function MessageThread({
                   </div>
                 )}
 
-                <div className={`rounded-2xl px-4 py-2 ${
-                  isCurrentUser
-                    ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                    : 'bg-muted'
-                }`}>
-                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                <div 
+                  className={`rounded-2xl px-4 py-2 ${
+                    isCurrentUser
+                      ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                      : 'bg-muted'
+                  }`}
+                  title={new Date(message.timestamp).toLocaleString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  })}
+                >
+                  <p 
+                    className="text-sm whitespace-pre-wrap break-words"
+                    dangerouslySetInnerHTML={searchQuery ? { __html: highlightText(message.content) } : undefined}
+                  >
+                    {!searchQuery && message.content}
+                  </p>
                 </div>
 
                 {/* Attachments */}
@@ -226,7 +326,8 @@ export function MessageThread({
               </div>
             </div>
           );
-        })}
+        })
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -273,6 +374,27 @@ export function MessageThread({
             <Button variant="ghost" size="icon">
               <Image className="h-5 w-5" />
             </Button>
+            
+            <div className="relative" ref={emojiPickerRef}>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              >
+                <Smile className="h-5 w-5" />
+              </Button>
+              
+              {showEmojiPicker && (
+                <div className="absolute bottom-12 left-0 z-50">
+                  <EmojiPicker 
+                    onEmojiClick={handleEmojiClick}
+                    searchDisabled={false}
+                    width={350}
+                    height={400}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 relative">
