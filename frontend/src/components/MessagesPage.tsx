@@ -183,6 +183,29 @@ export function MessagesPage() {
     }
   };
 
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      await conversationsApi.delete(Number(conversationId));
+      toast.success('Conversation deleted');
+      
+      // Remove from local state
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      
+      // If currently viewing this conversation, clear selection
+      if (selectedConversationId === conversationId) {
+        setSelectedConversationId(null);
+        setMessages(prev => {
+          const updated = { ...prev };
+          delete updated[conversationId];
+          return updated;
+        });
+      }
+    } catch (error: any) {
+      console.error('Error deleting conversation:', error);
+      toast.error('Failed to delete conversation');
+    }
+  };
+
   const handleSendMessage = async (content: string, attachments?: File[]) => {
     if (!selectedConversationId || !content.trim()) return;
 
