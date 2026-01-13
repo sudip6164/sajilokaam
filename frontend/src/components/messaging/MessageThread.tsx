@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Image, Smile, MoreVertical, Search, Phone, Video, Info, X } from 'lucide-react';
+import { Send, Paperclip, Image, Smile, MoreVertical, Search, Phone, Video, Info, X, Edit2, Trash2, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 export interface Message {
@@ -19,6 +20,7 @@ export interface Message {
     size?: string;
   }>;
   isRead: boolean;
+  isEdited?: boolean;
 }
 
 interface MessageThreadProps {
@@ -30,6 +32,10 @@ interface MessageThreadProps {
   currentUserId: string;
   projectName?: string;
   disabled?: boolean;
+  isTyping?: boolean;
+  onTyping?: () => void;
+  onEditMessage?: (messageId: number, newContent: string) => void;
+  onDeleteMessage?: (messageId: number) => void;
 }
 
 export function MessageThread({
@@ -41,15 +47,22 @@ export function MessageThread({
   currentUserId,
   projectName,
   disabled = false,
+  isTyping = false,
+  onTyping,
+  onEditMessage,
+  onDeleteMessage,
 }: MessageThreadProps) {
   const [messageInput, setMessageInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -95,6 +108,49 @@ export function MessageThread({
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setMessageInput(prev => prev + emojiData.emoji);
     setShowEmojiPicker(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageInput(e.target.value);
+    
+    // Trigger typing indicator
+    if (onTyping) {
+      onTyping();
+      
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Set new timeout to stop typing indicator after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        // In a real implementation, you would send a "stopped typing" event here
+      }, 2000);
+    }
+  };
+
+  const handleEditStart = (message: Message) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content);
+  };
+
+  const handleEditSave = () => {
+    if (editingMessageId && onEditMessage && editContent.trim()) {
+      onEditMessage(editingMessageId, editContent.trim());
+      setEditingMessageId(null);
+      setEditContent('');
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const handleDelete = (messageId: number) => {
+    if (onDeleteMessage && confirm('Are you sure you want to delete this message?')) {
+      onDeleteMessage(messageId);
+    }
   };
 
   const formatTime = (timestamp: string) => {
@@ -268,28 +324,79 @@ export function MessageThread({
                   </div>
                 )}
 
-                <div 
-                  className={`rounded-2xl px-4 py-2 ${
-                    isCurrentUser
-                      ? 'bg-gradient-to-r from-primary to-secondary text-white'
-                      : 'bg-muted'
-                  }`}
-                  title={new Date(message.timestamp).toLocaleString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                  })}
-                >
-                  <p 
-                    className="text-sm whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={searchQuery ? { __html: highlightText(message.content) } : undefined}
-                  >
-                    {!searchQuery && message.content}
-                  </p>
+                <div className="relative group">
+                  {editingMessageId === message.id ? (
+                    <div className="flex items-center gap-2 bg-muted rounded-2xl p-2">
+                      <Input
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="flex-1"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={handleEditSave}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={handleEditCancel}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div 
+                        className={`rounded-2xl px-4 py-2 ${
+                          isCurrentUser
+                            ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                            : 'bg-muted'
+                        }`}
+                        title={new Date(message.timestamp).toLocaleString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit'
+                        })}
+                      >
+                        <p 
+                          className="text-sm whitespace-pre-wrap break-words"
+                          dangerouslySetInnerHTML={searchQuery ? { __html: highlightText(message.content) } : undefined}
+                        >
+                          {!searchQuery && message.content}
+                        </p>
+                        {message.isEdited && (
+                          <span className="text-xs opacity-70 italic"> (edited)</span>
+                        )}
+                      </div>
+                      
+                      {isCurrentUser && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditStart(message)}>
+                              <Edit2 className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(message.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 {/* Attachments */}
@@ -400,13 +507,18 @@ export function MessageThread({
           <div className="flex-1 relative">
             <textarea
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
               rows={1}
               className="w-full px-4 py-3 pr-12 rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
               style={{ minHeight: '48px', maxHeight: '120px' }}
             />
+            {isTyping && (
+              <div className="absolute -top-6 left-2 text-xs text-muted-foreground italic">
+                {recipientName} is typing...
+              </div>
+            )}
             <button
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
