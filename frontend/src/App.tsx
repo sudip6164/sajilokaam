@@ -48,6 +48,7 @@ import { AccessDeniedPage } from "./components/AccessDeniedPage";
 import { SuccessPage } from "./components/SuccessPage";
 import { FailurePage } from "./components/FailurePage";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { AdminLoginPage } from "./components/admin/AdminLoginPage";
 import { AdminDashboardPage } from "./components/admin/AdminDashboardPage";
 import { FreelancerManagementPage } from "./components/admin/FreelancerManagementPage";
 import { ClientManagementPage } from "./components/admin/ClientManagementPage";
@@ -170,8 +171,10 @@ function AppContent() {
       return <TermsPage />;
     case 'privacy':
       return <PrivacyPage />;
-    case 'admin-dashboard':
-      return <AdminDashboardPage />;
+      case 'admin-login':
+        return <AdminLoginPage />;
+      case 'admin-dashboard':
+        return <AdminDashboardPage />;
     case 'admin-freelancers':
       return <FreelancerManagementPage />;
     case 'admin-clients':

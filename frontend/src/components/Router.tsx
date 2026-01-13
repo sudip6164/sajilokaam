@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment-success' | 'payment-cancel';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-login' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment-success' | 'payment-cancel';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -40,6 +40,7 @@ const pathToPage: Record<string, Page> = {
   '/home': 'home',
   '/login': 'login',
   '/signup': 'signup',
+  '/admin': 'admin-login',
   '/forgot-password': 'forgot-password',
   '/reset-password': 'reset-password',
   '/verify-email': 'verify-email',
@@ -93,6 +94,7 @@ const pageToPath: Record<Page, string> = {
   'home': '/',
   'login': '/login',
   'signup': '/signup',
+  'admin-login': '/admin',
   'forgot-password': '/forgot-password',
   'reset-password': '/reset-password',
   'verify-email': '/verify-email',
