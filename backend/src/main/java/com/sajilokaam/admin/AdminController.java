@@ -165,13 +165,23 @@ public class AdminController {
     }
 
     @DeleteMapping("/users/{userId}")
+    @Transactional
     public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Delete associated profiles
-        freelancerProfileRepository.deleteByUserId(userId);
-        clientProfileRepository.deleteByUserId(userId);
+        // Delete associated profiles first
+        try {
+            freelancerProfileRepository.deleteByUserId(userId);
+        } catch (Exception e) {
+            // No freelancer profile
+        }
+        
+        try {
+            clientProfileRepository.deleteByUserId(userId);
+        } catch (Exception e) {
+            // No client profile
+        }
         
         // Delete user
         userRepository.delete(user);
