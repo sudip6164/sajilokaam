@@ -26,53 +26,71 @@ export function MessagesPage() {
       fetchMessages(selectedConversationId);
       
       // Connect to WebSocket for real-time messages
-      const cleanup = connectWebSocket(selectedConversationId, (wsMessage: WebSocketMessage) => {
-        // Add message to state if it's not already there
+      const cleanup = connectWebSocket(selectedConversationId, (wsMessage: any) => {
+        // Handle delete events
+        if (wsMessage.action === 'delete' && wsMessage.messageId) {
+          setMessages(prev => ({
+            ...prev,
+            [selectedConversationId]: prev[selectedConversationId].filter(m => m.id !== wsMessage.messageId),
+          }));
+          return;
+        }
+
+        // Handle new/edited messages
         setMessages(prev => {
           const conversationMessages = prev[selectedConversationId] || [];
           
-          // Check if message already exists (prevents duplicates from optimistic updates)
-          // Compare both as numbers to handle type mismatches
-          const exists = conversationMessages.some(m => Number(m.id) === Number(wsMessage.id));
-          if (exists) {
-            console.log('Message already exists, skipping:', wsMessage.id);
-            return prev;
-          }
-
+          // Check if message already exists
+          const existingIndex = conversationMessages.findIndex(m => Number(m.id) === Number(wsMessage.id));
+          
           // Transform WebSocket message to UI format
           const transformedMessage: Message = {
             id: wsMessage.id,
-            senderId: wsMessage.sender.id.toString(),
-            senderName: wsMessage.sender.fullName,
-            senderAvatar: (wsMessage as any).profilePictureUrl, // Profile picture URL is on message, not sender
+            senderId: wsMessage.sender?.id.toString() || 'unknown',
+            senderName: wsMessage.sender?.fullName || 'Unknown',
+            senderAvatar: wsMessage.profilePictureUrl,
             content: wsMessage.content,
             timestamp: wsMessage.createdAt,
             isRead: true,
+            isEdited: wsMessage.isEdited || false,
           };
 
-          console.log('Adding message from WebSocket:', wsMessage.id, 'from user:', wsMessage.sender.id);
-
-          return {
-            ...prev,
-            [selectedConversationId]: [...conversationMessages, transformedMessage],
-          };
+          if (existingIndex >= 0) {
+            // Update existing message (edit)
+            console.log('Updating message from WebSocket:', wsMessage.id);
+            const updatedMessages = [...conversationMessages];
+            updatedMessages[existingIndex] = transformedMessage;
+            return {
+              ...prev,
+              [selectedConversationId]: updatedMessages,
+            };
+          } else {
+            // Add new message
+            console.log('Adding message from WebSocket:', wsMessage.id);
+            return {
+              ...prev,
+              [selectedConversationId]: [...conversationMessages, transformedMessage],
+            };
+          }
         });
 
         // Update conversation last message
-        setConversations(prev =>
-          prev.map(conv =>
-            conv.id === selectedConversationId
-              ? {
-                  ...conv,
-                  lastMessage: {
-                    content: wsMessage.content,
-                    timestamp: wsMessage.createdAt,
-                    isRead: true,
-                  },
-                }
-              : conv
-          )
-        );
+        if (wsMessage.content) {
+          setConversations(prev =>
+            prev.map(conv =>
+              conv.id === selectedConversationId
+                ? {
+                    ...conv,
+                    lastMessage: {
+                      content: wsMessage.content,
+                      timestamp: wsMessage.createdAt,
+                      isRead: true,
+                    },
+                  }
+                : conv
+            )
+          );
+        }
       });
       
       return cleanup;
