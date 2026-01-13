@@ -357,12 +357,16 @@ export function MessageThread({
                           second: '2-digit'
                         })}
                       >
-                        <p 
-                          className="text-sm whitespace-pre-wrap break-words"
-                          dangerouslySetInnerHTML={searchQuery ? { __html: highlightText(message.content) } : undefined}
-                        >
-                          {!searchQuery && message.content}
-                        </p>
+                        {searchQuery ? (
+                          <p 
+                            className="text-sm whitespace-pre-wrap break-words"
+                            dangerouslySetInnerHTML={{ __html: highlightText(message.content) }}
+                          />
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                        )}
                         {message.isEdited && (
                           <span className="text-xs opacity-70 italic"> (edited)</span>
                         )}
