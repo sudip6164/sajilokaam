@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment-success' | 'payment-cancel';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment-success' | 'payment-cancel';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -58,6 +58,7 @@ const pathToPage: Record<string, Page> = {
   '/freelancer-profile': 'freelancer-profile',
   '/client-profile': 'client-profile',
   '/view-freelancer': 'view-freelancer',
+  '/view-client': 'view-client',
   '/job-detail': 'job-detail',
   '/proposals-list': 'proposals-list',
   '/submit-proposal': 'submit-proposal',
@@ -110,6 +111,7 @@ const pageToPath: Record<Page, string> = {
   'freelancer-profile': '/freelancer-profile',
   'client-profile': '/client-profile',
   'view-freelancer': '/view-freelancer',
+  'view-client': '/view-client',
   'job-detail': '/job-detail',
   'proposals-list': '/proposals-list',
   'submit-proposal': '/submit-proposal',

@@ -234,8 +234,7 @@ export function MessageThread({
               if (isFreelancer) {
                 navigate('view-freelancer', { freelancerId: recipientId.toString() });
               } else {
-                // For client profile view - you may need to create this page if it doesn't exist
-                navigate('view-freelancer', { freelancerId: recipientId.toString() });
+                navigate('view-client', { clientId: recipientId.toString() });
               }
             }}
           >
