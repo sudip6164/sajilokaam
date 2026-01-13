@@ -53,7 +53,7 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-30 h-16">
         <div className="flex items-center justify-between h-full px-4">
@@ -94,54 +94,56 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
         </div>
       </header>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 transition-transform duration-300 z-20 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
-      >
-        <nav className="p-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activePage === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.page)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  isActive
-                    ? 'bg-primary text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+      {/* Dashboard Layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside
+          className={`fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 transition-transform duration-300 z-20 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0`}
+        >
+          <nav className="p-4 space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activePage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.page)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                    isActive
+                      ? 'bg-primary text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-      {/* Main Content */}
-      <main 
-        className="overflow-y-auto pb-6 pl-8 pr-8" 
-        style={{ 
-          marginLeft: isDesktop ? '256px' : '0px',
-          marginRight: '72px',
-          paddingTop: '72px',
-          minHeight: '100vh'
-        }}
-      >
-        {children}
-      </main>
+        {/* Main Content */}
+        <main 
+          className="flex-1 overflow-y-auto pb-6 pl-3 pr-3" 
+          style={{ 
+            marginLeft: '72px',
+            marginRight: '72px',
+            paddingTop: '72px'
+          }}
+        >
+          {children}
+        </main>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-10 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-10 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </div>
     </div>
   );
 }
