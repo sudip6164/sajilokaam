@@ -2122,6 +2122,21 @@ export const freelancersApi = {
     }>(`/users/freelancers?page=${page}&size=${size}`);
     return response.data;
   },
+  getById: async (id: number) => {
+    const response = await api.get(`/profile/freelancer/user/${id}`);
+    return response.data;
+  },
+};
+
+export const clientsApi = {
+  list: async (page: number = 0, size: number = 100) => {
+    const response = await api.get(`/users/clients?page=${page}&size=${size}`);
+    return response.data;
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/profile/client/user/${id}`);
+    return response.data;
+  },
 };
 
 // Export the axios instance for custom requests
