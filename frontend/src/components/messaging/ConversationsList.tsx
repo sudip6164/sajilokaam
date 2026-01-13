@@ -84,10 +84,10 @@ export function ConversationsList({
           </div>
         ) : (
           conversations.map((conversation) => (
-            <button
+            <div
               key={conversation.id}
               onClick={() => onSelectConversation(conversation.id)}
-              className={`group w-full flex items-start gap-3 p-4 border-b border-border hover:bg-muted/50 transition-colors ${
+              className={`group w-full flex items-start gap-3 p-4 border-b border-border hover:bg-muted/50 transition-colors cursor-pointer ${
                 selectedConversationId === conversation.id ? 'bg-muted' : ''
               }`}
             >
@@ -178,7 +178,7 @@ export function ConversationsList({
                   )}
                 </div>
               </div>
-            </button>
+            </div>
           ))
         )}
       </div>
