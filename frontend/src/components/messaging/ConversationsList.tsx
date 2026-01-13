@@ -120,7 +120,7 @@ export function ConversationsList({
               {/* Content */}
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className={`font-semibold truncate ${
                       conversation.lastMessage && !conversation.lastMessage.isRead ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
@@ -135,11 +135,28 @@ export function ConversationsList({
                       </span>
                     )}
                   </div>
-                  {conversation.lastMessage && (
-                    <span className="text-xs text-muted-foreground flex-shrink-0">
-                      {formatTime(conversation.lastMessage.timestamp)}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {conversation.lastMessage && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatTime(conversation.lastMessage.timestamp)}
+                      </span>
+                    )}
+                    {onDeleteConversation && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm('Delete this conversation? All messages will be permanently removed.')) {
+                            onDeleteConversation(conversation.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {conversation.projectName && (
