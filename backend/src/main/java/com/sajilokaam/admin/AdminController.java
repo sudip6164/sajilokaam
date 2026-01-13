@@ -65,14 +65,14 @@ public class AdminController {
         analytics.put("totalClients", clientProfileRepository.count());
         analytics.put("activeJobs", jobRepository.countByStatus("OPEN"));
         analytics.put("pendingVerifications", 
-            freelancerProfileRepository.countByStatus("SUBMITTED") + 
-            clientProfileRepository.countByStatus("SUBMITTED"));
+            freelancerProfileRepository.countByStatus(ProfileStatus.SUBMITTED) + 
+            clientProfileRepository.countByStatus(ProfileStatus.SUBMITTED));
         analytics.put("approvedProfiles",
-            freelancerProfileRepository.countByStatus("APPROVED") + 
-            clientProfileRepository.countByStatus("APPROVED"));
+            freelancerProfileRepository.countByStatus(ProfileStatus.APPROVED) + 
+            clientProfileRepository.countByStatus(ProfileStatus.APPROVED));
         analytics.put("rejectedProfiles",
-            freelancerProfileRepository.countByStatus("REJECTED") + 
-            clientProfileRepository.countByStatus("REJECTED"));
+            freelancerProfileRepository.countByStatus(ProfileStatus.REJECTED) + 
+            clientProfileRepository.countByStatus(ProfileStatus.REJECTED));
         analytics.put("totalRevenue", 0);
         
         return ResponseEntity.ok(analytics);
@@ -182,7 +182,7 @@ public class AdminController {
     // Verification Queue Endpoints
     @GetMapping("/profiles/freelancers/pending")
     public ResponseEntity<?> getPendingFreelancers() {
-        List<FreelancerProfile> pendingProfiles = freelancerProfileRepository.findByStatus("SUBMITTED");
+        List<FreelancerProfile> pendingProfiles = freelancerProfileRepository.findByStatus(ProfileStatus.SUBMITTED);
         
         List<Map<String, Object>> result = pendingProfiles.stream().map(profile -> {
             User user = profile.getUser();
@@ -202,7 +202,7 @@ public class AdminController {
 
     @GetMapping("/profiles/clients/pending")
     public ResponseEntity<?> getPendingClients() {
-        List<ClientProfile> pendingProfiles = clientProfileRepository.findByStatus("SUBMITTED");
+        List<ClientProfile> pendingProfiles = clientProfileRepository.findByStatus(ProfileStatus.SUBMITTED);
         
         List<Map<String, Object>> result = pendingProfiles.stream().map(profile -> {
             User user = profile.getUser();

@@ -8,8 +8,7 @@ import java.util.Optional;
 public interface FreelancerProfileRepository extends JpaRepository<FreelancerProfile, Long> {
     Optional<FreelancerProfile> findByUserId(Long userId);
     List<FreelancerProfile> findByStatus(ProfileStatus status);
-    List<FreelancerProfile> findByStatus(String status);
-    Long countByStatus(String status);
+    Long countByStatus(ProfileStatus status);
     boolean existsByUserId(Long userId);
     void deleteByUserId(Long userId);
 }
