@@ -149,43 +149,51 @@ export function ClientPublicProfilePage() {
 
             <div className="mt-6">
               <TabsContent value="overview" className="space-y-6">
-                {client.bio && (
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle>About</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>About</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {client.bio ? (
                       <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                         {client.bio}
                       </p>
-                    </CardContent>
-                  </Card>
-                )}
+                    ) : (
+                      <p className="text-muted-foreground italic">
+                        This client hasn't added a bio yet.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {client.industry && (
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>Industry</CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle>Industry</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {client.industry ? (
                         <Badge variant="secondary" className="px-3 py-1">
                           {client.industry}
                         </Badge>
-                      </CardContent>
-                    </Card>
-                  )}
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not specified</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                  {client.companySize && (
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle>Company Size</CardTitle>
-                      </CardHeader>
-                      <CardContent>
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle>Company Size</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {client.companySize ? (
                         <p className="text-lg font-semibold">{client.companySize} employees</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Not specified</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {client.preferredPaymentMethod && (
                     <Card className="border-2">
