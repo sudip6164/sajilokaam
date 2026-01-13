@@ -5,8 +5,9 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useRouter } from './Router';
-import { MapPin, Briefcase, Calendar, MessageSquare, Building2, Globe, Mail, Phone } from 'lucide-react';
+import { MapPin, Star, Briefcase, Calendar, MessageSquare, Building2, Globe, Mail, Phone, Award } from 'lucide-react';
 import { clientsApi } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -14,6 +15,7 @@ export function ClientPublicProfilePage() {
   const { navigate, pageParams } = useRouter();
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -74,7 +76,7 @@ export function ClientPublicProfilePage() {
     : undefined;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
       <Header />
       <main className="w-full px-4 md:px-8 lg:px-12 pt-24 pb-16">
         {/* Profile Header Card */}
@@ -112,6 +114,10 @@ export function ClientPublicProfilePage() {
                           Member since {new Date(client.user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                         </div>
                       )}
+                      <Badge className="bg-primary text-white">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        Client
+                      </Badge>
                     </div>
                   </div>
 
@@ -132,88 +138,150 @@ export function ClientPublicProfilePage() {
           </CardContent>
         </Card>
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {client.bio && (
-              <Card className="border-2">
-                <CardHeader>
-                  <CardTitle>About</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {client.bio}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+        {/* Tabs */}
+        <div className="mt-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
+              <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="contact" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+                Contact Info
+              </TabsTrigger>
+            </TabsList>
 
-            {client.industry && (
-              <Card className="border-2">
-                <CardHeader>
-                  <CardTitle>Industry</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant="secondary" className="px-3 py-1">
-                    {client.industry}
-                  </Badge>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+            <div className="mt-6">
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Main Content */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {client.bio && (
+                      <Card className="border-2">
+                        <CardHeader>
+                          <CardTitle>About</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                            {client.bio}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle>Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {client.user?.email && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm break-all">{client.user.email}</span>
+                    {client.industry && (
+                      <Card className="border-2">
+                        <CardHeader>
+                          <CardTitle>Industry</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Badge variant="secondary" className="px-3 py-1">
+                            {client.industry}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
-                )}
-                {client.phoneNumber && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{client.phoneNumber}</span>
-                  </div>
-                )}
-                {client.website && (
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <a 
-                      href={client.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline break-all"
-                    >
-                      {client.website}
-                    </a>
-                  </div>
-                )}
-                {client.companySize && (
-                  <div className="flex items-center gap-3">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{client.companySize} employees</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
-            {client.preferredPaymentMethod && (
-              <Card className="border-2">
-                <CardHeader>
-                  <CardTitle>Preferred Payment</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant="outline">{client.preferredPaymentMethod}</Badge>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle>Quick Stats</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {client.user?.createdAt && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Member Since</span>
+                            <span className="font-semibold">
+                              {new Date(client.user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                            </span>
+                          </div>
+                        )}
+                        {client.companySize && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Company Size</span>
+                            <span className="font-semibold">{client.companySize} employees</span>
+                          </div>
+                        )}
+                        {client.location && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Location</span>
+                            <span className="font-semibold">{client.location}</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {client.preferredPaymentMethod && (
+                      <Card className="border-2">
+                        <CardHeader>
+                          <CardTitle>Payment Method</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Badge variant="outline" className="px-3 py-1">
+                            {client.preferredPaymentMethod}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="contact" className="space-y-6">
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>Contact Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {client.user?.email && (
+                      <div className="flex items-start gap-3">
+                        <Mail className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Email</p>
+                          <p className="text-sm text-muted-foreground break-all">{client.user.email}</p>
+                        </div>
+                      </div>
+                    )}
+                    {client.phoneNumber && (
+                      <div className="flex items-start gap-3">
+                        <Phone className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Phone</p>
+                          <p className="text-sm text-muted-foreground">{client.phoneNumber}</p>
+                        </div>
+                      </div>
+                    )}
+                    {client.website && (
+                      <div className="flex items-start gap-3">
+                        <Globe className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Website</p>
+                          <a 
+                            href={client.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline break-all"
+                          >
+                            {client.website}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {client.location && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Location</p>
+                          <p className="text-sm text-muted-foreground">{client.location}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
       </main>
       <Footer />
