@@ -18,7 +18,7 @@ export function ClientPublicProfilePage() {
   useEffect(() => {
     const fetchClient = async () => {
       try {
-        if (!pageParams.clientId) {
+        if (!pageParams?.clientId) {
           toast.error('Client ID not provided');
           navigate('home');
           return;
@@ -35,7 +35,7 @@ export function ClientPublicProfilePage() {
     };
 
     fetchClient();
-  }, [pageParams.clientId]);
+  }, [pageParams?.clientId]);
 
   if (loading) {
     return (
