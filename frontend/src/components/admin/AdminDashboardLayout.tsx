@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from '../Router';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -26,6 +26,15 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
   const { navigate } = useRouter();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, page: 'admin-dashboard' },
@@ -114,13 +123,17 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
       </aside>
 
       {/* Main Content */}
-      <div className="lg:pl-64">
-        <main className="min-h-screen pt-16">
-          <div className="p-8">
-            {children}
-          </div>
-        </main>
-      </div>
+      <main 
+        className="flex-1 overflow-y-auto pb-6" 
+        style={{ 
+          marginLeft: isDesktop ? '256px' : '0px', 
+          paddingTop: '64px' 
+        }}
+      >
+        <div className="p-8">
+          {children}
+        </div>
+      </main>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
