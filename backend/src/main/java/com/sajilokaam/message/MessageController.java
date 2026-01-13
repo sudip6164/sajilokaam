@@ -226,8 +226,60 @@ public class MessageController {
         message.setEditedAt(Instant.now());
 
         Message updated = messageRepository.save(message);
+        
+        // Populate profile picture URL
+        String profilePicUrl = getProfilePictureUrl(userOpt.get().getId());
+        updated.setProfilePictureUrl(profilePicUrl);
+        
+        // Broadcast edit via WebSocket
         messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, updated);
+        
         return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{conversationId}/messages/{messageId}")
+    public ResponseEntity<Void> deleteMessage(
+            @PathVariable Long conversationId,
+            @PathVariable Long messageId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Message> messageOpt = messageRepository.findById(messageId);
+        if (messageOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Message message = messageOpt.get();
+        if (!message.getConversation().getId().equals(conversationId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (!message.getSender().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        messageRepository.delete(message);
+        
+        // Broadcast delete via WebSocket
+        java.util.Map<String, Object> deleteEvent = new java.util.HashMap<>();
+        deleteEvent.put("messageId", messageId);
+        deleteEvent.put("action", "delete");
+        messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, deleteEvent);
+        
+        return ResponseEntity.noContent().build();
     }
 
     public static class MessageCreateRequest {
