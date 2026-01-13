@@ -241,6 +241,48 @@ export function MessagesPage() {
     }
   };
 
+  const handleEditMessage = async (messageId: number, newContent: string) => {
+    if (!selectedConversationId) return;
+
+    try {
+      await messagesApi.edit(parseInt(selectedConversationId), messageId, newContent);
+      
+      // Update local state
+      setMessages(prev => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].map(msg =>
+          msg.id === messageId
+            ? { ...msg, content: newContent, isEdited: true }
+            : msg
+        ),
+      }));
+
+      toast.success('Message edited');
+    } catch (error: any) {
+      console.error('Error editing message:', error);
+      toast.error('Failed to edit message');
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!selectedConversationId) return;
+
+    try {
+      await messagesApi.delete(parseInt(selectedConversationId), messageId);
+      
+      // Remove from local state
+      setMessages(prev => ({
+        ...prev,
+        [selectedConversationId]: prev[selectedConversationId].filter(msg => msg.id !== messageId),
+      }));
+
+      toast.success('Message deleted');
+    } catch (error: any) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
   const currentMessages = selectedConversationId ? messages[selectedConversationId] || [] : [];
 
@@ -289,6 +331,8 @@ export function MessagesPage() {
                 recipientStatus={selectedConversation.status}
                 messages={currentMessages}
                 onSendMessage={handleSendMessage}
+                onEditMessage={handleEditMessage}
+                onDeleteMessage={handleDeleteMessage}
                 currentUserId={user?.id.toString() || 'user-1'}
                 projectName={selectedConversation.projectName}
                 disabled={sendingMessage}

@@ -481,9 +481,6 @@ export function MessageThread({
             >
               <Paperclip className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon">
-              <Image className="h-5 w-5" />
-            </Button>
             
             <div className="relative" ref={emojiPickerRef}>
               <Button 
