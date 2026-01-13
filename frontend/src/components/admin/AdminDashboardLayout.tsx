@@ -124,11 +124,11 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
 
       {/* Main Content */}
       <main 
-        className="flex-1 overflow-y-auto pb-6" 
+        className="flex-1 overflow-y-auto pb-6 pl-3 pr-3" 
         style={{ 
           marginLeft: isDesktop ? '256px' : '0px',
-          marginRight: '256px',
-          paddingTop: '64px' 
+          marginRight: '72px',
+          paddingTop: '72px' 
         }}
       >
         <div className="p-8">
