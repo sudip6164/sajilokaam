@@ -1,6 +1,7 @@
 package com.sajilokaam.conversation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.sajilokaam.message.Message;
 import com.sajilokaam.project.Project;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -38,6 +39,15 @@ public class Conversation {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
+
+    @Transient
+    private Message lastMessage;
+
+    @Transient
+    private Integer unreadCount = 0;
+
+    @Transient
+    private Boolean isPinned = false;
 
     public Long getId() {
         return id;
@@ -85,6 +95,30 @@ public class Conversation {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Message getLastMessage() {
+        return lastMessage;
+    }
+
+    public void setLastMessage(Message lastMessage) {
+        this.lastMessage = lastMessage;
+    }
+
+    public Integer getUnreadCount() {
+        return unreadCount;
+    }
+
+    public void setUnreadCount(Integer unreadCount) {
+        this.unreadCount = unreadCount;
+    }
+
+    public Boolean getIsPinned() {
+        return isPinned;
+    }
+
+    public void setIsPinned(Boolean isPinned) {
+        this.isPinned = isPinned;
     }
 }
 

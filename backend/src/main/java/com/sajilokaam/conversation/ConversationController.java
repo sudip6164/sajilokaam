@@ -1,6 +1,8 @@
 package com.sajilokaam.conversation;
 
 import com.sajilokaam.auth.JwtService;
+import com.sajilokaam.message.Message;
+import com.sajilokaam.message.MessageRepository;
 import com.sajilokaam.profile.ClientProfile;
 import com.sajilokaam.profile.ClientProfileRepository;
 import com.sajilokaam.profile.FreelancerProfile;
@@ -31,6 +33,7 @@ public class ConversationController {
     private final SimpMessagingTemplate messagingTemplate;
     private final FreelancerProfileRepository freelancerProfileRepository;
     private final ClientProfileRepository clientProfileRepository;
+    private final MessageRepository messageRepository;
 
     public ConversationController(ConversationRepository conversationRepository,
                                  ProjectRepository projectRepository,
@@ -38,7 +41,8 @@ public class ConversationController {
                                  JwtService jwtService,
                                  SimpMessagingTemplate messagingTemplate,
                                  FreelancerProfileRepository freelancerProfileRepository,
-                                 ClientProfileRepository clientProfileRepository) {
+                                 ClientProfileRepository clientProfileRepository,
+                                 MessageRepository messageRepository) {
         this.conversationRepository = conversationRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -46,6 +50,7 @@ public class ConversationController {
         this.messagingTemplate = messagingTemplate;
         this.freelancerProfileRepository = freelancerProfileRepository;
         this.clientProfileRepository = clientProfileRepository;
+        this.messageRepository = messageRepository;
     }
 
     @GetMapping
@@ -77,11 +82,17 @@ public class ConversationController {
 
         List<Conversation> conversations = conversationRepository.findByParticipantsContaining(userOpt.get());
         
-        // Enrich participants with profile pictures
+        // Enrich participants with profile pictures and populate lastMessage
         for (Conversation conversation : conversations) {
             for (User participant : conversation.getParticipants()) {
                 String profilePicUrl = getProfilePictureUrl(participant.getId());
                 participant.setProfilePictureUrl(profilePicUrl);
+            }
+            
+            // Populate last message
+            Message lastMessage = messageRepository.findFirstByConversationIdOrderByCreatedAtDesc(conversation.getId());
+            if (lastMessage != null) {
+                conversation.setLastMessage(lastMessage);
             }
         }
         

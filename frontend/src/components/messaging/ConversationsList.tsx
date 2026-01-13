@@ -1,4 +1,4 @@
-import { Search, MoreVertical, Archive, Trash2, Star } from 'lucide-react';
+import { Search, Archive, Trash2, Star } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 
@@ -156,17 +156,6 @@ export function ConversationsList({
                     </Badge>
                   )}
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Handle actions menu
-                }}
-                className="flex-shrink-0 p-1 hover:bg-muted rounded transition-colors cursor-pointer"
-              >
-                <MoreVertical className="h-4 w-4 text-muted-foreground" />
               </div>
             </button>
           ))
