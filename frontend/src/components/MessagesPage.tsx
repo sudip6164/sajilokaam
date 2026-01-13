@@ -104,7 +104,7 @@ export function MessagesPage() {
             id: otherParticipant?.id,
             name: otherParticipant?.fullName || 'Unknown User',
             avatar: otherParticipant?.profilePictureUrl,
-            role: otherParticipant?.roles?.[0]?.authority || otherParticipant?.roles?.[0] || 'USER',
+            role: otherParticipant?.roles?.[0]?.name || otherParticipant?.roles?.[0]?.authority || otherParticipant?.roles?.[0] || 'USER',
           },
           lastMessage: conv.lastMessage ? {
             content: conv.lastMessage.content,
@@ -119,6 +119,7 @@ export function MessagesPage() {
       });
 
       console.log('Fetched conversations:', transformedConversations.length);
+      console.log('Sample conversation participant:', transformedConversations[0]?.participant);
       setConversations(transformedConversations);
       
       // Auto-select first conversation if available
