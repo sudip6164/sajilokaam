@@ -315,6 +315,7 @@ export function ClientManagementPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Client Details</DialogTitle>
+            <DialogDescription>View complete information about this client</DialogDescription>
           </DialogHeader>
           {selectedClient && (
             <div className="space-y-4">
@@ -392,10 +393,10 @@ export function ClientManagementPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Client</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedClient?.fullName}? This action cannot be undone.
-            </DialogDescription>
           </DialogHeader>
+          <DialogDescription>
+            Are you sure you want to delete {selectedClient?.fullName}? This action cannot be undone.
+          </DialogDescription>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
               Cancel

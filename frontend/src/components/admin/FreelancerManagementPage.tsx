@@ -313,6 +313,7 @@ export function FreelancerManagementPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Freelancer Details</DialogTitle>
+            <DialogDescription>View complete information about this freelancer</DialogDescription>
           </DialogHeader>
           {selectedFreelancer && (
             <div className="space-y-4">
@@ -382,10 +383,10 @@ export function FreelancerManagementPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Freelancer</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedFreelancer?.fullName}? This action cannot be undone.
-            </DialogDescription>
           </DialogHeader>
+          <DialogDescription>
+            Are you sure you want to delete {selectedFreelancer?.fullName}? This action cannot be undone.
+          </DialogDescription>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
               Cancel
