@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from '../Router';
+import { useRouter, Page } from '../Router';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
@@ -36,7 +36,7 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const menuItems = [
+  const menuItems: Array<{ id: string; label: string; icon: any; page: Page }> = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, page: 'admin-dashboard' },
     { id: 'freelancers', label: 'Freelancers', icon: Users, page: 'admin-freelancers' },
     { id: 'clients', label: 'Clients', icon: Briefcase, page: 'admin-clients' },
@@ -127,7 +127,7 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
         className="flex-1 overflow-y-auto pb-6" 
         style={{ 
           marginLeft: isDesktop ? '256px' : '0px',
-          marginRight: '72px',
+          marginRight: '256px',
           paddingTop: '64px' 
         }}
       >
