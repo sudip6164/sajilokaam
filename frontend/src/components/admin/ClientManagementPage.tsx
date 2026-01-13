@@ -265,7 +265,9 @@ export function ClientManagementPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() => {
+                                  console.log('View clicked for client:', client);
                                   setSelectedClient(client);
+                                  console.log('Setting viewModalOpen to true');
                                   setViewModalOpen(true);
                                 }}
                               >

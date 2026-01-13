@@ -263,7 +263,9 @@ export function FreelancerManagementPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() => {
+                                  console.log('View clicked for:', freelancer);
                                   setSelectedFreelancer(freelancer);
+                                  console.log('Setting viewModalOpen to true');
                                   setViewModalOpen(true);
                                 }}
                               >
@@ -288,7 +290,9 @@ export function FreelancerManagementPage() {
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => {
+                                  console.log('Delete clicked for:', freelancer);
                                   setSelectedFreelancer(freelancer);
+                                  console.log('Setting deleteModalOpen to true');
                                   setDeleteModalOpen(true);
                                 }}
                               >
@@ -315,6 +319,10 @@ export function FreelancerManagementPage() {
             <DialogTitle>Freelancer Details</DialogTitle>
             <DialogDescription>View complete information about this freelancer</DialogDescription>
           </DialogHeader>
+          {(() => {
+            console.log('View modal rendering - open:', viewModalOpen, 'selected:', selectedFreelancer);
+            return null;
+          })()}
           {selectedFreelancer && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
