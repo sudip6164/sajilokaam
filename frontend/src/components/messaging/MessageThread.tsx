@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Image, Smile, MoreVertical, Search, Phone, Video, Info, X, Edit2, Trash2, Check } from 'lucide-react';
+import { Send, Paperclip, Image, Smile, MoreVertical, Search, Info, X, Edit2, Trash2, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
@@ -218,12 +218,6 @@ export function MessageThread({
             onClick={() => setShowSearch(!showSearch)}
           >
             <Search className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Video className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon">
             <Info className="h-5 w-5" />
@@ -500,7 +494,7 @@ export function MessageThread({
                 <div className="absolute bottom-12 left-0 z-50">
                   <EmojiPicker 
                     onEmojiClick={handleEmojiClick}
-                    searchDisabled={false}
+                    searchDisabled={true}
                     width={350}
                     height={400}
                   />

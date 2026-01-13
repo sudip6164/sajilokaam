@@ -156,6 +156,8 @@ export function MessagesPage() {
           content: msg.content || msg.richContent || '',
           timestamp: msg.createdAt,
           isRead: true, // Can be enhanced with read receipts
+          isEdited: msg.isEdited || false,
+          isDeleted: msg.isDeleted || false,
           attachments: msg.attachments?.map((att: any) => ({
             type: att.contentType?.startsWith('image/') ? 'image' : 'file',
             url: att.fileUrl,
