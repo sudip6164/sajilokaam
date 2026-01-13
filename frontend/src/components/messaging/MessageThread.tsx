@@ -470,7 +470,7 @@ export function MessageThread({
         )}
 
         {/* Input */}
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           <div className="flex gap-2">
             <input
               ref={fileInputRef}
@@ -516,7 +516,7 @@ export function MessageThread({
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
               rows={1}
-              className="w-full px-4 py-3 pr-12 rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-4 py-3 rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
               style={{ minHeight: '48px', maxHeight: '120px' }}
             />
             {isTyping && (
@@ -524,11 +524,6 @@ export function MessageThread({
                 {recipientName} is typing...
               </div>
             )}
-            <button
-              className="absolute right-3 top-1/2 -translate-y-1/2"
-            >
-              <Smile className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
-            </button>
           </div>
 
           <Button
