@@ -114,9 +114,11 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
       </aside>
 
       {/* Main Content */}
-      <main className="pt-16 lg:ml-64 transition-all duration-300 min-h-screen">
-        <div className="p-6 max-w-7xl">
-          {children}
+      <main className="min-h-screen bg-gray-50">
+        <div className="pt-16 pl-0 lg:pl-64 transition-all duration-300">
+          <div className="p-8">
+            {children}
+          </div>
         </div>
       </main>
 
