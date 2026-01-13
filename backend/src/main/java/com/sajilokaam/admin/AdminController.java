@@ -182,7 +182,7 @@ public class AdminController {
     // Verification Queue Endpoints
     @GetMapping("/profiles/freelancers/pending")
     public ResponseEntity<?> getPendingFreelancers() {
-        List<FreelancerProfile> pendingProfiles = freelancerProfileRepository.findByStatus(ProfileStatus.PENDING);
+        List<FreelancerProfile> pendingProfiles = freelancerProfileRepository.findByStatus("PENDING");
         
         List<Map<String, Object>> result = pendingProfiles.stream().map(profile -> {
             User user = profile.getUser();
@@ -202,7 +202,7 @@ public class AdminController {
 
     @GetMapping("/profiles/clients/pending")
     public ResponseEntity<?> getPendingClients() {
-        List<ClientProfile> pendingProfiles = clientProfileRepository.findByStatus(ProfileStatus.PENDING);
+        List<ClientProfile> pendingProfiles = clientProfileRepository.findByStatus("PENDING");
         
         List<Map<String, Object>> result = pendingProfiles.stream().map(profile -> {
             User user = profile.getUser();
