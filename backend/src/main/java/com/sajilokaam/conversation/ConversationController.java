@@ -140,19 +140,24 @@ public class ConversationController {
         }
 
         // Check if conversation already exists between these two users
-        List<Conversation> existingConvs = conversationRepository.findByParticipantsContaining(userOpt.get());
-        for (Conversation conv : existingConvs) {
+        List<Conversation> allConversations = conversationRepository.findAll();
+        for (Conversation conv : allConversations) {
             // Only consider direct conversations (no project)
             if (conv.getProject() == null) {
-                // Check if the other user is the recipient by comparing IDs
                 Set<User> participants = conv.getParticipants();
                 if (participants.size() == 2) {
-                    boolean hasCurrentUser = participants.stream().anyMatch(p -> p.getId().equals(userOpt.get().getId()));
-                    boolean hasRecipient = participants.stream().anyMatch(p -> p.getId().equals(recipientId));
+                    List<Long> participantIds = participants.stream()
+                        .map(User::getId)
+                        .sorted()
+                        .collect(java.util.stream.Collectors.toList());
                     
-                    if (hasCurrentUser && hasRecipient) {
-                        // Conversation already exists
-                        System.out.println("Found existing conversation: " + conv.getId());
+                    List<Long> targetIds = java.util.Arrays.asList(
+                        Math.min(userOpt.get().getId(), recipientId),
+                        Math.max(userOpt.get().getId(), recipientId)
+                    );
+                    
+                    if (participantIds.equals(targetIds)) {
+                        System.out.println("Found existing conversation " + conv.getId() + " between users " + targetIds);
                         return ResponseEntity.ok(conv);
                     }
                 }
@@ -221,6 +226,40 @@ public class ConversationController {
         return conversationRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteConversation(
+            @PathVariable Long id,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        
+        Optional<User> userOpt = userContextService.resolveUser(authorization);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Conversation> conversationOpt = conversationRepository.findById(id);
+        if (conversationOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Conversation conversation = conversationOpt.get();
+        
+        // Check if user is a participant
+        boolean isParticipant = conversation.getParticipants().stream()
+                .anyMatch(p -> p.getId().equals(userOpt.get().getId()));
+        
+        if (!isParticipant) {
+            return ResponseEntity.status(403).body("You are not a participant in this conversation");
+        }
+
+        // Delete all messages in the conversation first
+        messageRepository.deleteByConversationId(id);
+        
+        // Then delete the conversation
+        conversationRepository.deleteById(id);
+        
+        return ResponseEntity.ok().body(Map.of("message", "Conversation deleted successfully"));
     }
     
     private String getProfilePictureUrl(Long userId) {

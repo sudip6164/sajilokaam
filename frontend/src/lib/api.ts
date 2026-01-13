@@ -1925,6 +1925,9 @@ export const conversationsApi = {
     const response = await api.post<{ id: number }>(`/conversations/direct/${recipientId}`);
     return response.data;
   },
+  delete: async (conversationId: number) => {
+    await api.delete(`/conversations/${conversationId}`);
+  },
   getMessages: async (conversationId: number, page: number = 0, size: number = 50) => {
     const response = await api.get<{
       content: Array<{

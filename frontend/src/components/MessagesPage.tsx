@@ -335,6 +335,7 @@ export function MessagesPage() {
                 conversations={conversations}
                 selectedConversationId={selectedConversationId || ''}
                 onSelectConversation={setSelectedConversationId}
+                onDeleteConversation={handleDeleteConversation}
               />
             </div>
 
@@ -370,6 +371,7 @@ export function MessagesPage() {
                 conversations={conversations}
                 selectedConversationId={selectedConversationId || ''}
                 onSelectConversation={setSelectedConversationId}
+                onDeleteConversation={handleDeleteConversation}
               />
             </div>
           </div>

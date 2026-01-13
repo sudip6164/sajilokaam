@@ -9,5 +9,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
     Page<Message> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
     Message findFirstByConversationIdOrderByCreatedAtDesc(Long conversationId);
+    void deleteByConversationId(Long conversationId);
 }
 

@@ -25,12 +25,14 @@ interface ConversationsListProps {
   conversations: Conversation[];
   selectedConversationId?: string;
   onSelectConversation: (id: string) => void;
+  onDeleteConversation?: (id: string) => void;
 }
 
 export function ConversationsList({
   conversations,
   selectedConversationId,
   onSelectConversation,
+  onDeleteConversation,
 }: ConversationsListProps) {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -85,7 +87,7 @@ export function ConversationsList({
             <button
               key={conversation.id}
               onClick={() => onSelectConversation(conversation.id)}
-              className={`w-full flex items-start gap-3 p-4 border-b border-border hover:bg-muted/50 transition-colors ${
+              className={`group w-full flex items-start gap-3 p-4 border-b border-border hover:bg-muted/50 transition-colors ${
                 selectedConversationId === conversation.id ? 'bg-muted' : ''
               }`}
             >
