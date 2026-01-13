@@ -1,5 +1,6 @@
 package com.sajilokaam.admin;
 
+import com.sajilokaam.auth.RequiresAdmin;
 import com.sajilokaam.profile.ClientProfile;
 import com.sajilokaam.profile.ClientProfileRepository;
 import com.sajilokaam.profile.FreelancerProfile;
