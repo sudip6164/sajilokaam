@@ -491,7 +491,7 @@ export function MessageThread({
               </Button>
               
               {showEmojiPicker && (
-                <div className="absolute bottom-12 left-0 z-50">
+                <div className="fixed bottom-20 left-4 z-[9999] shadow-2xl">
                   <EmojiPicker 
                     onEmojiClick={handleEmojiClick}
                     searchDisabled={true}
