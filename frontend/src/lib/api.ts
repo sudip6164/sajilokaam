@@ -1921,6 +1921,10 @@ export const conversationsApi = {
     }>(`/conversations/${id}`);
     return response.data;
   },
+  createDirect: async (recipientId: number) => {
+    const response = await api.post<{ id: number }>(`/conversations/direct/${recipientId}`);
+    return response.data;
+  },
   getMessages: async (conversationId: number, page: number = 0, size: number = 50) => {
     const response = await api.get<{
       content: Array<{
