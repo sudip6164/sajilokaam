@@ -114,10 +114,6 @@ export function ClientPublicProfilePage() {
                           Member since {new Date(client.user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                         </div>
                       )}
-                      <Badge className="bg-primary text-white">
-                        <Building2 className="h-3 w-3 mr-1" />
-                        Client
-                      </Badge>
                     </div>
                   </div>
 
@@ -152,79 +148,56 @@ export function ClientPublicProfilePage() {
 
             <div className="mt-6">
               <TabsContent value="overview" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Main Content */}
-                  <div className="lg:col-span-2 space-y-6">
-                    {client.bio && (
-                      <Card className="border-2">
-                        <CardHeader>
-                          <CardTitle>About</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                            {client.bio}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
+                {client.bio && (
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle>About</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {client.bio}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
 
-                    {client.industry && (
-                      <Card className="border-2">
-                        <CardHeader>
-                          <CardTitle>Industry</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <Badge variant="secondary" className="px-3 py-1">
-                            {client.industry}
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-
-                  {/* Sidebar */}
-                  <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {client.industry && (
                     <Card className="border-2">
                       <CardHeader>
-                        <CardTitle>Quick Stats</CardTitle>
+                        <CardTitle>Industry</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        {client.user?.createdAt && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Member Since</span>
-                            <span className="font-semibold">
-                              {new Date(client.user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                            </span>
-                          </div>
-                        )}
-                        {client.companySize && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Company Size</span>
-                            <span className="font-semibold">{client.companySize} employees</span>
-                          </div>
-                        )}
-                        {client.location && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Location</span>
-                            <span className="font-semibold">{client.location}</span>
-                          </div>
-                        )}
+                      <CardContent>
+                        <Badge variant="secondary" className="px-3 py-1">
+                          {client.industry}
+                        </Badge>
                       </CardContent>
                     </Card>
+                  )}
 
-                    {client.preferredPaymentMethod && (
-                      <Card className="border-2">
-                        <CardHeader>
-                          <CardTitle>Payment Method</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <Badge variant="outline" className="px-3 py-1">
-                            {client.preferredPaymentMethod}
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
+                  {client.companySize && (
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle>Company Size</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-lg font-semibold">{client.companySize} employees</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {client.preferredPaymentMethod && (
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle>Payment Method</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Badge variant="outline" className="px-3 py-1">
+                          {client.preferredPaymentMethod}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </TabsContent>
 
