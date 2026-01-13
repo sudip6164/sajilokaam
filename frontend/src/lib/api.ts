@@ -1884,6 +1884,16 @@ export const messagesApi = {
     }>(`/conversations/${id}`);
     return response.data;
   },
+
+  edit: async (conversationId: number, messageId: number, content: string) => {
+    const response = await api.patch(`/conversations/${conversationId}/messages/${messageId}`, { content });
+    return response.data;
+  },
+
+  delete: async (conversationId: number, messageId: number) => {
+    const response = await api.delete(`/conversations/${conversationId}/messages/${messageId}`);
+    return response.data;
+  },
 };
 
 // Conversations API (enhanced)
