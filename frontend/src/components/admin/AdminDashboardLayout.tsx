@@ -114,11 +114,7 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
       </aside>
 
       {/* Main Content */}
-      <main
-        className={`pt-16 transition-all duration-300 ${
-          sidebarOpen ? 'lg:pl-64' : ''
-        }`}
-      >
+      <main className="pt-16 lg:pl-64 transition-all duration-300">
         <div className="p-6">
           {children}
         </div>
