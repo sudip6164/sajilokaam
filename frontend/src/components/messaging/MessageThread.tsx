@@ -481,26 +481,16 @@ export function MessageThread({
               <Paperclip className="h-5 w-5" />
             </Button>
             
-            <div className="relative" ref={emojiPickerRef}>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              >
-                <Smile className="h-5 w-5" />
-              </Button>
-              
-              {showEmojiPicker && (
-                <div className="fixed bottom-20 left-4 z-[9999] shadow-2xl">
-                  <EmojiPicker 
-                    onEmojiClick={handleEmojiClick}
-                    searchDisabled={true}
-                    width={350}
-                    height={400}
-                  />
-                </div>
-              )}
-            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEmojiPicker(!showEmojiPicker);
+              }}
+            >
+              <Smile className="h-5 w-5" />
+            </Button>
           </div>
 
           <div className="flex-1 relative">
@@ -529,6 +519,22 @@ export function MessageThread({
           </Button>
         </div>
       </div>
+      
+      {/* Emoji Picker - render at root level to avoid z-index issues */}
+      {showEmojiPicker && (
+        <div 
+          ref={emojiPickerRef}
+          className="fixed bottom-24 left-6 shadow-2xl border border-border rounded-lg overflow-hidden bg-background"
+          style={{ zIndex: 99999 }}
+        >
+          <EmojiPicker 
+            onEmojiClick={handleEmojiClick}
+            searchDisabled={true}
+            width={350}
+            height={400}
+          />
+        </div>
+      )}
     </div>
   );
 }
