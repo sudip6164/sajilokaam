@@ -54,6 +54,7 @@ import { FreelancerManagementPage } from "./components/admin/FreelancerManagemen
 import { ClientManagementPage } from "./components/admin/ClientManagementPage";
 import { AdminManagementPage } from "./components/admin/AdminManagementPage";
 import { VerificationQueuePage } from "./components/admin/VerificationQueuePage";
+import { AnalyticsPage } from "./components/admin/AnalyticsPage";
 import { InvoicesListPage } from "./components/payments/InvoicesListPage";
 import { CreateInvoicePage } from "./components/payments/CreateInvoicePage";
 import { InvoiceDetailPage } from "./components/payments/InvoiceDetailPage";
@@ -186,7 +187,7 @@ function AppContent() {
     case 'admin-payments':
       return <div>Payment Analytics - Coming Soon</div>;
     case 'admin-analytics':
-      return <div>Platform Analytics - Coming Soon</div>;
+      return <AnalyticsPage />;
     case 'admin-settings':
       return <div>System Settings - Coming Soon</div>;
     case '404':
