@@ -104,7 +104,7 @@ export function MessagesPage() {
             id: otherParticipant?.id,
             name: otherParticipant?.fullName || 'Unknown User',
             avatar: otherParticipant?.profilePictureUrl,
-            role: otherParticipant?.roles?.[0]?.name || otherParticipant?.roles?.[0]?.authority || otherParticipant?.roles?.[0] || 'USER',
+            role: otherParticipant?.userType || 'USER',
           },
           lastMessage: conv.lastMessage ? {
             content: conv.lastMessage.content,

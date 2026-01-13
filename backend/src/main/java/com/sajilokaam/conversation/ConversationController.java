@@ -90,11 +90,9 @@ public class ConversationController {
                 
                 // Determine user type by checking if they have freelancer or client profile
                 if (freelancerProfileRepository.findByUserId(participant.getId()).isPresent()) {
-                    // Add FREELANCER role for frontend to detect
-                    participant.getRoles().add(new com.sajilokaam.role.Role("ROLE_FREELANCER"));
+                    participant.setUserType("FREELANCER");
                 } else if (clientProfileRepository.findByUserId(participant.getId()).isPresent()) {
-                    // Add CLIENT role for frontend to detect
-                    participant.getRoles().add(new com.sajilokaam.role.Role("ROLE_CLIENT"));
+                    participant.setUserType("CLIENT");
                 }
             }
             

@@ -65,6 +65,10 @@ public class User {
     @com.fasterxml.jackson.annotation.JsonProperty("profilePictureUrl")
     private String profilePictureUrl; // This will be populated dynamically
 
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("userType")
+    private String userType; // FREELANCER or CLIENT
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getEmail() { return email; }
@@ -91,6 +95,8 @@ public class User {
     public void setVerificationTokenExpiresAt(Instant verificationTokenExpiresAt) { this.verificationTokenExpiresAt = verificationTokenExpiresAt; }
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+    public String getUserType() { return userType; }
+    public void setUserType(String userType) { this.userType = userType; }
 }
 
 
