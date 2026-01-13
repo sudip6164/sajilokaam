@@ -229,6 +229,7 @@ public class ConversationController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<?> deleteConversation(
             @PathVariable Long id,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
