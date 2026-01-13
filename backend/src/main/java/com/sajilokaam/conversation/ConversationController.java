@@ -1,7 +1,7 @@
 package com.sajilokaam.conversation;
 
 import com.sajilokaam.auth.JwtService;
-import com.sajilokaam.auth.UserContextService;
+import com.sajilokaam.user.UserContextService;
 import com.sajilokaam.message.Message;
 import com.sajilokaam.message.MessageRepository;
 import com.sajilokaam.profile.ClientProfile;
