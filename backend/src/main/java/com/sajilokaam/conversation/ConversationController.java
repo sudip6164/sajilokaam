@@ -87,6 +87,15 @@ public class ConversationController {
             for (User participant : conversation.getParticipants()) {
                 String profilePicUrl = getProfilePictureUrl(participant.getId());
                 participant.setProfilePictureUrl(profilePicUrl);
+                
+                // Determine user type by checking if they have freelancer or client profile
+                if (freelancerProfileRepository.findByUserId(participant.getId()).isPresent()) {
+                    // Add FREELANCER role for frontend to detect
+                    participant.getRoles().add(new com.sajilokaam.role.Role("ROLE_FREELANCER"));
+                } else if (clientProfileRepository.findByUserId(participant.getId()).isPresent()) {
+                    // Add CLIENT role for frontend to detect
+                    participant.getRoles().add(new com.sajilokaam.role.Role("ROLE_CLIENT"));
+                }
             }
             
             // Populate last message
