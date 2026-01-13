@@ -44,6 +44,14 @@ export function ClientManagementPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useEffect(() => {
+    console.log('viewModalOpen state changed to:', viewModalOpen);
+  }, [viewModalOpen]);
+
+  useEffect(() => {
+    console.log('deleteModalOpen state changed to:', deleteModalOpen);
+  }, [deleteModalOpen]);
+
+  useEffect(() => {
     fetchClients();
   }, []);
 
@@ -313,8 +321,8 @@ export function ClientManagementPage() {
       </div>
 
       {/* View Details Modal */}
-      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen} modal={true}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto z-[9999]">
           <DialogHeader>
             <DialogTitle>Client Details</DialogTitle>
             <DialogDescription>View complete information about this client</DialogDescription>
