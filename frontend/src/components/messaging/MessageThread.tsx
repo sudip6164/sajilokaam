@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import { useRouter } from '../Router';
 
 export interface Message {
   id: number;
@@ -25,8 +26,10 @@ export interface Message {
 }
 
 interface MessageThreadProps {
+  recipientId: number;
   recipientName: string;
   recipientAvatar?: string;
+  recipientRole?: string;
   recipientStatus?: 'online' | 'offline' | 'away';
   messages: Message[];
   onSendMessage: (message: string, attachments?: File[]) => void;
@@ -40,8 +43,10 @@ interface MessageThreadProps {
 }
 
 export function MessageThread({
+  recipientId,
   recipientName,
   recipientAvatar,
+  recipientRole,
   recipientStatus = 'offline',
   messages,
   onSendMessage,
@@ -53,6 +58,7 @@ export function MessageThread({
   onEditMessage,
   onDeleteMessage,
 }: MessageThreadProps) {
+  const { navigate } = useRouter();
   const [messageInput, setMessageInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -219,7 +225,20 @@ export function MessageThread({
           >
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => {
+              // Navigate to recipient's profile based on their role
+              const isFreelancer = recipientRole?.includes('FREELANCER');
+              if (isFreelancer) {
+                navigate('view-freelancer', { freelancerId: recipientId.toString() });
+              } else {
+                // For client profile view - you may need to create this page if it doesn't exist
+                navigate('view-freelancer', { freelancerId: recipientId.toString() });
+              }
+            }}
+          >
             <Info className="h-5 w-5" />
           </Button>
         </div>

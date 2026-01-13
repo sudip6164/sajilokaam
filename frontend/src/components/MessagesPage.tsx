@@ -101,8 +101,10 @@ export function MessagesPage() {
         return {
           id: conv.id.toString(),
           participant: {
+            id: otherParticipant?.id,
             name: otherParticipant?.fullName || 'Unknown User',
             avatar: otherParticipant?.profilePictureUrl,
+            role: otherParticipant?.roles?.[0]?.authority || otherParticipant?.roles?.[0] || 'USER',
           },
           lastMessage: conv.lastMessage ? {
             content: conv.lastMessage.content,
@@ -338,8 +340,10 @@ export function MessagesPage() {
             {/* Message Thread */}
             {selectedConversation ? (
               <MessageThread
+                recipientId={selectedConversation.participant.id}
                 recipientName={selectedConversation.participant.name}
                 recipientAvatar={selectedConversation.participant.avatar}
+                recipientRole={selectedConversation.participant.role}
                 recipientStatus={selectedConversation.status}
                 messages={currentMessages}
                 onSendMessage={handleSendMessage}

@@ -5,8 +5,10 @@ import { Badge } from '../ui/badge';
 export interface Conversation {
   id: string;
   participant: {
+    id: number;
     name: string;
     avatar?: string;
+    role?: string;
   };
   lastMessage?: {
     content: string;
