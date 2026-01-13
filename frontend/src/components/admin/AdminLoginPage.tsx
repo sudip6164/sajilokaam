@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from '../Router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '../ui/button';
@@ -8,30 +8,35 @@ import { toast } from 'sonner';
 
 export function AdminLoginPage() {
   const { navigate } = useRouter();
-  const { login } = useAuth();
+  const { login, user: authUser, logout } = useAuth();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  // Check if user is already logged in and is admin
+  useEffect(() => {
+    if (authUser) {
+      const isAdmin = authUser.roles.some(r => r.name === 'ADMIN');
+      
+      if (isAdmin) {
+        navigate('admin-dashboard');
+      } else {
+        // User is logged in but not admin, show error and logout
+        toast.error('Access denied. Admin privileges required.');
+        logout();
+      }
+    }
+  }, [authUser, navigate, logout]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const user = await login(formData.email, formData.password);
-      
-      // Check if user is admin
-      const isAdmin = user.roles?.some((r: any) => r.name === 'ADMIN');
-      
-      if (isAdmin) {
-        toast.success('Admin login successful');
-        navigate('admin-dashboard');
-      } else {
-        toast.error('Access denied. Admin privileges required.');
-        // Don't navigate, let them try again
-      }
+      await login(formData.email, formData.password);
+      // Navigation will be handled by the useEffect above
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
