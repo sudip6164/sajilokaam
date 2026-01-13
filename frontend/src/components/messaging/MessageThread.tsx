@@ -230,9 +230,12 @@ export function MessageThread({
             size="icon"
             onClick={() => {
               // Navigate to recipient's profile based on their role
+              console.log('Navigating to profile - recipientId:', recipientId, 'recipientRole:', recipientRole);
               if (recipientRole === 'FREELANCER') {
+                console.log('Going to freelancer profile with ID:', recipientId);
                 navigate('view-freelancer', { freelancerId: recipientId.toString() });
               } else {
+                console.log('Going to client profile with ID:', recipientId);
                 navigate('view-client', { clientId: recipientId.toString() });
               }
             }}
