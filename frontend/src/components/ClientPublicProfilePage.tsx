@@ -27,6 +27,7 @@ export function ClientPublicProfilePage() {
         }
 
         const data = await clientsApi.getById(parseInt(pageParams.clientId));
+        console.log('Client profile data:', data);
         setClient(data);
       } catch (error: any) {
         console.error('Error fetching client:', error);
