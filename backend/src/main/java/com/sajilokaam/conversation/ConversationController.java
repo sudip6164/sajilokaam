@@ -142,9 +142,20 @@ public class ConversationController {
         // Check if conversation already exists between these two users
         List<Conversation> existingConvs = conversationRepository.findByParticipantsContaining(userOpt.get());
         for (Conversation conv : existingConvs) {
-            if (conv.getParticipants().contains(recipientOpt.get()) && conv.getProject() == null) {
-                // Conversation already exists
-                return ResponseEntity.ok(conv);
+            // Only consider direct conversations (no project)
+            if (conv.getProject() == null) {
+                // Check if the other user is the recipient by comparing IDs
+                Set<User> participants = conv.getParticipants();
+                if (participants.size() == 2) {
+                    boolean hasCurrentUser = participants.stream().anyMatch(p -> p.getId().equals(userOpt.get().getId()));
+                    boolean hasRecipient = participants.stream().anyMatch(p -> p.getId().equals(recipientId));
+                    
+                    if (hasCurrentUser && hasRecipient) {
+                        // Conversation already exists
+                        System.out.println("Found existing conversation: " + conv.getId());
+                        return ResponseEntity.ok(conv);
+                    }
+                }
             }
         }
 
