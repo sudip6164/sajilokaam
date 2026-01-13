@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useRouter } from './Router';
 import { Header } from './Header';
-import { freelancersApi } from '@/lib/api';
+import { freelancersApi, conversationsApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 const mockFreelancers = [
@@ -463,7 +463,16 @@ export function FindFreelancersPage() {
                   <Button 
                     size="sm" 
                     className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
-                    onClick={() => navigate('messages')}
+                    onClick={async () => {
+                      try {
+                        const conversation = await conversationsApi.createDirect(freelancer.id);
+                        navigate('messages');
+                        toast.success('Conversation started!');
+                      } catch (error: any) {
+                        console.error('Error starting conversation:', error);
+                        toast.error('Failed to start conversation');
+                      }
+                    }}
                   >
                     <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
                     Contact

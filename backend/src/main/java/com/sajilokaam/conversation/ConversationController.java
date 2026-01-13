@@ -115,6 +115,52 @@ public class ConversationController {
         return ResponseEntity.ok(conversations);
     }
 
+    @PostMapping("/direct/{recipientId}")
+    public ResponseEntity<Conversation> createDirectConversation(
+            @PathVariable Long recipientId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> recipientOpt = userRepository.findById(recipientId);
+        if (recipientOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Check if conversation already exists between these two users
+        List<Conversation> existingConvs = conversationRepository.findByParticipantsContaining(userOpt.get());
+        for (Conversation conv : existingConvs) {
+            if (conv.getParticipants().contains(recipientOpt.get()) && conv.getProject() == null) {
+                // Conversation already exists
+                return ResponseEntity.ok(conv);
+            }
+        }
+
+        // Create new conversation
+        Conversation conversation = new Conversation();
+        conversation.setTitle("Direct Message");
+
+        Set<User> participants = new HashSet<>();
+        participants.add(userOpt.get());
+        participants.add(recipientOpt.get());
+        conversation.setParticipants(participants);
+
+        Conversation created = conversationRepository.save(conversation);
+        return ResponseEntity.ok(created);
+    }
+
     @PostMapping("/project/{projectId}")
     public ResponseEntity<Conversation> createConversation(
             @PathVariable Long projectId,
