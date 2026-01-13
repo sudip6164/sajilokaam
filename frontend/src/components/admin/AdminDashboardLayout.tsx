@@ -38,12 +38,12 @@ export function AdminDashboardLayout({ children, activePage }: AdminDashboardLay
 
   const menuItems: Array<{ id: string; label: string; icon: any; page: Page }> = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, page: 'admin-dashboard' },
+    { id: 'analytics', label: 'Platform Analytics', icon: BarChart3, page: 'admin-analytics' },
     { id: 'freelancers', label: 'Freelancers', icon: Users, page: 'admin-freelancers' },
     { id: 'clients', label: 'Clients', icon: Briefcase, page: 'admin-clients' },
     { id: 'admins', label: 'Admins', icon: Shield, page: 'admin-admins' },
     { id: 'verification', label: 'Verification Queue', icon: CheckSquare, page: 'admin-verification' },
     { id: 'payments', label: 'Payment Analytics', icon: DollarSign, page: 'admin-payments' },
-    { id: 'analytics', label: 'Platform Analytics', icon: BarChart3, page: 'admin-analytics' },
     { id: 'settings', label: 'System Settings', icon: Settings, page: 'admin-settings' },
   ];
 

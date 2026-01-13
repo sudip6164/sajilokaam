@@ -62,23 +62,28 @@ export function ClientManagementPage() {
 
   const handleSuspendUser = async (userId: number, suspend: boolean) => {
     try {
+      console.log('Suspending user:', userId, suspend);
       await adminApi.updateUserStatus(userId, suspend ? 'SUSPENDED' : 'ACTIVE');
       toast.success(`User ${suspend ? 'suspended' : 'activated'} successfully`);
       fetchClients();
-    } catch (error) {
-      toast.error('Failed to update user status');
+    } catch (error: any) {
+      console.error('Error suspending user:', error);
+      toast.error(error.response?.data?.message || 'Failed to update user status');
     }
   };
 
   const handleDeleteUser = async () => {
     if (!selectedClient) return;
     try {
+      console.log('Deleting user:', selectedClient.id);
       await adminApi.deleteUser(selectedClient.id);
       toast.success('Client deleted successfully');
       setDeleteModalOpen(false);
+      setSelectedClient(null);
       fetchClients();
-    } catch (error) {
-      toast.error('Failed to delete client');
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete client');
     }
   };
 

@@ -64,23 +64,28 @@ export function FreelancerManagementPage() {
 
   const handleSuspendUser = async (userId: number, suspend: boolean) => {
     try {
+      console.log('Suspending user:', userId, suspend);
       await adminApi.updateUserStatus(userId, suspend ? 'SUSPENDED' : 'ACTIVE');
       toast.success(`User ${suspend ? 'suspended' : 'activated'} successfully`);
       fetchFreelancers();
-    } catch (error) {
-      toast.error('Failed to update user status');
+    } catch (error: any) {
+      console.error('Error suspending user:', error);
+      toast.error(error.response?.data?.message || 'Failed to update user status');
     }
   };
 
   const handleDeleteUser = async () => {
     if (!selectedFreelancer) return;
     try {
+      console.log('Deleting user:', selectedFreelancer.id);
       await adminApi.deleteUser(selectedFreelancer.id);
       toast.success('Freelancer deleted successfully');
       setDeleteModalOpen(false);
+      setSelectedFreelancer(null);
       fetchFreelancers();
-    } catch (error) {
-      toast.error('Failed to delete freelancer');
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete freelancer');
     }
   };
 
