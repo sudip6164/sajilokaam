@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
@@ -39,7 +39,7 @@ export function DocumentUploadModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      
+
       // Validate file size (10MB max)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
       if (selectedFile.size > maxSize) {
@@ -47,7 +47,7 @@ export function DocumentUploadModal({
         e.target.value = ''; // Reset input
         return;
       }
-      
+
       // Validate file type
       const allowedTypes = ['.txt', '.pdf'];
       const fileExtension = selectedFile.name.toLowerCase().substring(selectedFile.name.lastIndexOf('.'));
@@ -56,7 +56,7 @@ export function DocumentUploadModal({
         e.target.value = ''; // Reset input
         return;
       }
-      
+
       setFile(selectedFile);
       setExtractedTasks([]);
       setSelectedTasks([]);
@@ -77,7 +77,7 @@ export function DocumentUploadModal({
 
     try {
       setUploading(true);
-      
+
       // Upload document and extract tasks using ML
       const formData = new FormData();
       formData.append('file', file);
@@ -96,12 +96,12 @@ export function DocumentUploadModal({
       const tasks = response.data.tasks || [];
       setExtractedTasks(tasks);
       setProcessingId(response.data.id);
-      
+
       // Auto-select all tasks
       setSelectedTasks(tasks.map((_: any, idx: number) => idx));
-      
+
       toast.success(`Document processed! ${tasks.length} tasks extracted using AI.`);
-      
+
     } catch (error: any) {
       console.error('Error uploading document:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Failed to upload document';
@@ -119,10 +119,10 @@ export function DocumentUploadModal({
 
     try {
       setUploading(true);
-      
+
       // Get selected suggestion IDs
       const suggestionIds = selectedTasks.map(idx => extractedTasks[idx].id);
-      
+
       // Create tasks from selected suggestions
       await api.post(
         `/projects/${projectId}/documents/${processingId}/create-tasks`,
@@ -130,13 +130,13 @@ export function DocumentUploadModal({
       );
 
       toast.success(`${selectedTasks.length} tasks created successfully!`);
-      
+
       if (onUploadSuccess) {
         onUploadSuccess();
       }
-      
+
       onClose();
-      
+
     } catch (error: any) {
       console.error('Error creating tasks:', error);
       toast.error(error.response?.data?.error || 'Failed to create tasks');
@@ -164,8 +164,8 @@ export function DocumentUploadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="border-b bg-gradient-to-r from-primary/10 to-purple-100">
+      <Card className="w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/10 to-purple-100 flex-shrink-0 py-4">
           <div className="flex items-center gap-3">
             <Sparkles className="h-8 w-8 text-primary" />
             <div>
@@ -176,8 +176,8 @@ export function DocumentUploadModal({
             </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="p-6 space-y-6">
+
+        <CardContent className="p-6 space-y-6 overflow-hidden flex flex-col">
           {/* Upload Section */}
           {extractedTasks.length === 0 && (
             <div className="space-y-4">
@@ -210,8 +210,8 @@ export function DocumentUploadModal({
                     <div>
                       <p className="font-medium">{file.name}</p>
                       <p className="text-sm text-gray-500">
-                        {file.size > 0 
-                          ? file.size >= 1024 * 1024 
+                        {file.size > 0
+                          ? file.size >= 1024 * 1024
                             ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
                             : `${(file.size / 1024).toFixed(2)} KB`
                           : '0 KB'}
@@ -245,8 +245,8 @@ export function DocumentUploadModal({
 
           {/* Extracted Tasks */}
           {extractedTasks.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
                   AI Extracted Tasks ({extractedTasks.length})
@@ -266,13 +266,12 @@ export function DocumentUploadModal({
                 </Button>
               </div>
 
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 overflow-y-auto pr-2" style={{ maxHeight: '55vh' }}>
                 {extractedTasks.map((task, index) => (
                   <div
                     key={index}
-                    className={`border rounded-lg p-4 transition-colors ${
-                      selectedTasks.includes(index) ? 'border-primary bg-primary/5' : 'border-gray-200'
-                    }`}
+                    className={`border rounded-lg p-4 transition-colors ${selectedTasks.includes(index) ? 'border-primary bg-primary/5' : 'border-gray-200'
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <Checkbox
@@ -308,8 +307,10 @@ export function DocumentUploadModal({
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-3">
+        </CardContent>
+
+        <CardFooter className="border-t p-6 bg-gray-50 flex-shrink-0 mt-auto">
+          <div className="flex gap-3 w-full">
             {extractedTasks.length === 0 ? (
               <>
                 <Button
@@ -358,7 +359,7 @@ export function DocumentUploadModal({
               </>
             )}
           </div>
-        </CardContent>
+        </CardFooter>
       </Card>
     </div>
   );
