@@ -36,6 +36,7 @@ interface JobData {
     range: string;
   };
   duration: string;
+  deadline?: string;
   experienceLevel: string;
   projectType: string;
   location: string;
@@ -189,6 +190,7 @@ export function JobDetailPage() {
           range: budgetRange,
         },
         duration: jobData.projectLength || 'Not specified',
+        deadline: (jobData as any).deadline || jobData.expiresAt || undefined,
         experienceLevel: experienceLevelMap[jobData.experienceLevel || ''] || jobData.experienceLevel || 'Not specified',
         projectType: jobData.jobType === 'HOURLY' ? 'Hourly rate' : 'Fixed price project',
         location: jobData.location || 'Not specified',
@@ -345,6 +347,15 @@ export function JobDetailPage() {
                     <div className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
                       <span className="font-semibold">{job.duration}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Deadline</p>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <span className="font-semibold">
+                        {job.deadline ? new Date(job.deadline).toLocaleDateString() : 'Not specified'}
+                      </span>
                     </div>
                   </div>
                   <div>

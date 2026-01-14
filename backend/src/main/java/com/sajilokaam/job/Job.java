@@ -9,6 +9,7 @@ import com.sajilokaam.user.User;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +66,10 @@ public class Job {
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+
+    // Real project deadline (separate from expiresAt which is job-post expiry)
+    @Column(name = "deadline")
+    private LocalDate deadline;
 
     @Column(name = "is_featured")
     private Boolean isFeatured = false;
@@ -193,6 +198,14 @@ public class Job {
 
     public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 
     public Boolean getIsFeatured() {

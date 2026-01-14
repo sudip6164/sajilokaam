@@ -1,6 +1,7 @@
 package com.sajilokaam.job;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,6 +16,7 @@ public class JobCreateRequest {
     private String experienceLevel; // ENTRY, MID, SENIOR
     private Integer durationHours;
     private LocalDateTime expiresAt;
+    private LocalDate deadline;
     private Boolean isFeatured;
     private List<Long> skillIds; // Required skills (existing in database)
     private List<String> customSkills; // Custom skill names to create
@@ -101,6 +103,14 @@ public class JobCreateRequest {
 
     public void setExpiresAt(LocalDateTime expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 
     public Boolean getIsFeatured() {

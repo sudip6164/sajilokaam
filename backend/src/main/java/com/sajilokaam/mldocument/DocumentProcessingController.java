@@ -1,6 +1,8 @@
 package com.sajilokaam.mldocument;
 
 import com.sajilokaam.auth.JwtService;
+import com.sajilokaam.project.Project;
+import com.sajilokaam.project.ProjectRepository;
 import com.sajilokaam.task.Task;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
@@ -21,6 +23,7 @@ public class DocumentProcessingController {
     private final DocumentProcessingService documentProcessingService;
     private final DocumentProcessingRepository documentProcessingRepository;
     private final ExtractedTaskSuggestionRepository extractedTaskSuggestionRepository;
+    private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
@@ -28,11 +31,13 @@ public class DocumentProcessingController {
             DocumentProcessingService documentProcessingService,
             DocumentProcessingRepository documentProcessingRepository,
             ExtractedTaskSuggestionRepository extractedTaskSuggestionRepository,
+            ProjectRepository projectRepository,
             UserRepository userRepository,
             JwtService jwtService) {
         this.documentProcessingService = documentProcessingService;
         this.documentProcessingRepository = documentProcessingRepository;
         this.extractedTaskSuggestionRepository = extractedTaskSuggestionRepository;
+        this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
     }
@@ -63,6 +68,16 @@ public class DocumentProcessingController {
         User user = userOpt.get();
 
         try {
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+            if (projectOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+                return ResponseEntity.status(403).body(Map.of(
+                        "error", "Project is pending payment. Please complete payment to use document processing."
+                ));
+            }
+
             CompletableFuture<DocumentProcessing> future = documentProcessingService.processDocument(
                     file, projectId, user);
             
@@ -154,6 +169,15 @@ public class DocumentProcessingController {
         }
 
         try {
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+            if (projectOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+                return ResponseEntity.status(403).body(Map.of(
+                        "error", "Project is pending payment. Please complete payment to create tasks."
+                ));
+            }
             Long procId = processingId;
             List<Task> createdTasks = documentProcessingService.createTasksFromSuggestions(
                     procId, request.getSuggestionIds());

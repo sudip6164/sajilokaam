@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { SimpleModal } from './SimpleModal';
 import {
   Search,
   Eye,
@@ -25,14 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
 
 export function ClientManagementPage() {
   const [clients, setClients] = useState<any[]>([]);
@@ -321,13 +314,18 @@ export function ClientManagementPage() {
       </div>
 
       {/* View Details Modal */}
-      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen} modal={true}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto z-[9999]">
-          <DialogHeader>
-            <DialogTitle>Client Details</DialogTitle>
-            <DialogDescription>View complete information about this client</DialogDescription>
-          </DialogHeader>
-          {selectedClient && (
+      <SimpleModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        title="Client Details"
+        size="xl"
+      >
+        {selectedClient && (
+          <div className="space-y-4">
+            {(() => {
+              console.log('Rendering client details for:', selectedClient);
+              return null;
+            })()}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
@@ -394,29 +392,31 @@ export function ClientManagementPage() {
                 </div>
               )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        )}
+      </SimpleModal>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Client</DialogTitle>
-          </DialogHeader>
-          <DialogDescription>
-            Are you sure you want to delete {selectedClient?.fullName}? This action cannot be undone.
-          </DialogDescription>
-          <DialogFooter>
+      <SimpleModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Client"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Are you sure you want to delete <strong>{selectedClient?.fullName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteUser}>
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </SimpleModal>
     </AdminDashboardLayout>
   );
 }

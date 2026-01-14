@@ -48,6 +48,10 @@ public class InvoiceController {
 
     @GetMapping
     public ResponseEntity<List<Invoice>> getAllInvoices(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) Long clientId,
+            @RequestParam(required = false) Long freelancerId,
+            @RequestParam(required = false) String status,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build();
@@ -65,16 +69,48 @@ public class InvoiceController {
         }
         User user = userOpt.get();
 
-        // Return invoices where user is either client or freelancer
-        List<Invoice> invoices = invoiceRepository.findByClient_IdOrderByCreatedAtDesc(user.getId());
-        List<Invoice> freelancerInvoices = invoiceRepository.findByFreelancer_IdOrderByCreatedAtDesc(user.getId());
+        // Get invoices based on filters
+        List<Invoice> invoices;
         
-        // Combine and remove duplicates
-        invoices.addAll(freelancerInvoices.stream()
-                .filter(inv -> !invoices.contains(inv))
-                .toList());
-        
-        return ResponseEntity.ok(invoices);
+        try {
+            if (projectId != null) {
+                // Get by project and filter by user access
+                invoices = invoiceRepository.findByProject_IdOrderByCreatedAtDesc(projectId).stream()
+                        .filter(inv -> {
+                            // User must be either client or freelancer
+                            boolean isClient = inv.getClient() != null && inv.getClient().getId().equals(user.getId());
+                            boolean isFreelancer = inv.getFreelancer() != null && inv.getFreelancer().getId().equals(user.getId());
+                            return isClient || isFreelancer;
+                        })
+                        .toList();
+            } else if (clientId != null && clientId.equals(user.getId())) {
+                invoices = invoiceRepository.findByClient_IdOrderByCreatedAtDesc(user.getId());
+            } else if (freelancerId != null && freelancerId.equals(user.getId())) {
+                invoices = invoiceRepository.findByFreelancer_IdOrderByCreatedAtDesc(user.getId());
+            } else {
+                // Return all invoices where user is either client or freelancer
+                List<Invoice> clientInvoices = invoiceRepository.findByClient_IdOrderByCreatedAtDesc(user.getId());
+                List<Invoice> freelancerInvoices = invoiceRepository.findByFreelancer_IdOrderByCreatedAtDesc(user.getId());
+                invoices = new ArrayList<>(clientInvoices);
+                final List<Invoice> existingInvoices = new ArrayList<>(clientInvoices);
+                invoices.addAll(freelancerInvoices.stream()
+                        .filter(inv -> !existingInvoices.contains(inv))
+                        .toList());
+            }
+            
+            // Apply status filter if provided
+            if (status != null && !status.isEmpty()) {
+                invoices = invoices.stream()
+                        .filter(inv -> status.equalsIgnoreCase(inv.getStatus()))
+                        .toList();
+            }
+            
+            return ResponseEntity.ok(invoices);
+        } catch (Exception e) {
+            System.err.println("Error fetching invoices: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(new ArrayList<>());
+        }
     }
 
     @GetMapping("/{id}")

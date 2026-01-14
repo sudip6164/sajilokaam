@@ -89,17 +89,48 @@ public class DocumentProcessingService {
 
             // Save file
             String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.trim().isEmpty()) {
+                originalFilename = "uploaded_file";
+            }
+            
+            // Extract extension from original filename
             String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
+            if (originalFilename.contains(".")) {
                 extension = originalFilename.substring(originalFilename.lastIndexOf("."));
             }
+            
+            // If no extension found, try to infer from content type
+            if (extension.isEmpty() && file.getContentType() != null) {
+                String ct = file.getContentType().toLowerCase();
+                if (ct.contains("text/plain") || ct.contains("text")) {
+                    extension = ".txt";
+                } else if (ct.contains("pdf")) {
+                    extension = ".pdf";
+                }
+            }
+            
             String uniqueFilename = UUID.randomUUID().toString() + extension;
             Path filePath = Paths.get(UPLOAD_DIR, uniqueFilename);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Determine file type
+            // Determine file type (check filename first, then file path, then content type)
             String contentType = file.getContentType();
-            String fileType = determineFileType(contentType, originalFilename);
+            String fileType = determineFileType(contentType, originalFilename, filePath.toString());
+            
+            // Log for debugging
+            System.out.println("=== File Upload Debug ===");
+            System.out.println("Content Type: " + contentType);
+            System.out.println("Original Filename: " + originalFilename);
+            System.out.println("File Path: " + filePath.toString());
+            System.out.println("Detected File Type: " + fileType);
+            System.out.println("========================");
+
+            // If file type is UNKNOWN, default to TXT (most common case for requirements docs)
+            // MUST DO THIS BEFORE calling extractText!
+            if ("UNKNOWN".equals(fileType) || fileType == null || fileType.isEmpty()) {
+                System.out.println("WARNING: File type is UNKNOWN/null/empty, defaulting to TXT");
+                fileType = "TXT";
+            }
 
             // Save document processing record
             processing.setProject(project);
@@ -110,7 +141,7 @@ public class DocumentProcessingService {
             processing.setFileSizeBytes(file.getSize());
             processing = documentProcessingRepository.save(processing);
 
-            // Perform OCR
+            // Perform OCR/text extraction (fileType is now guaranteed to be TXT if it was UNKNOWN)
             String ocrText = ocrService.extractText(filePath, fileType);
             processing.setOcrText(ocrText);
             documentProcessingRepository.save(processing);
@@ -230,27 +261,70 @@ public class DocumentProcessingService {
     }
 
     /**
-     * Determine file type from content type and filename
+     * Determine file type from content type, filename, and file path
+     * Priority: filename extension > file path > content type > default to TXT
      */
-    private String determineFileType(String contentType, String filename) {
-        if (contentType != null) {
-            if (contentType.contains("pdf")) return "PDF";
-            if (contentType.contains("png")) return "PNG";
-            if (contentType.contains("jpeg") || contentType.contains("jpg")) return "JPG";
-            if (contentType.contains("gif")) return "GIF";
-            if (contentType.contains("bmp")) return "BMP";
-        }
-
-        if (filename != null) {
-            String lower = filename.toLowerCase();
+    private String determineFileType(String contentType, String filename, String filePath) {
+        System.out.println("determineFileType called with - ContentType: [" + contentType + "], Filename: [" + filename + "], FilePath: [" + filePath + "]");
+        
+        // First, check filename extension (most reliable)
+        if (filename != null && !filename.trim().isEmpty()) {
+            String lower = filename.toLowerCase().trim();
+            System.out.println("Checking filename: " + lower);
+            if (lower.endsWith(".txt")) {
+                System.out.println("Detected TXT from filename");
+                return "TXT";
+            }
             if (lower.endsWith(".pdf")) return "PDF";
+            if (lower.endsWith(".doc")) return "DOC";
+            if (lower.endsWith(".docx")) return "DOCX";
             if (lower.endsWith(".png")) return "PNG";
             if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "JPG";
             if (lower.endsWith(".gif")) return "GIF";
             if (lower.endsWith(".bmp")) return "BMP";
         }
 
-        return "UNKNOWN";
+        // Second, check file path extension (fallback)
+        if (filePath != null && !filePath.trim().isEmpty()) {
+            String lowerPath = filePath.toLowerCase().trim();
+            System.out.println("Checking file path: " + lowerPath);
+            if (lowerPath.endsWith(".txt")) {
+                System.out.println("Detected TXT from file path");
+                return "TXT";
+            }
+            if (lowerPath.endsWith(".pdf")) return "PDF";
+            if (lowerPath.endsWith(".doc")) return "DOC";
+            if (lowerPath.endsWith(".docx")) return "DOCX";
+            if (lowerPath.endsWith(".png")) return "PNG";
+            if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) return "JPG";
+            if (lowerPath.endsWith(".gif")) return "GIF";
+            if (lowerPath.endsWith(".bmp")) return "BMP";
+        }
+
+        // Third, check content type (least reliable, can be wrong)
+        if (contentType != null && !contentType.trim().isEmpty()) {
+            String lowerContentType = contentType.toLowerCase().trim();
+            System.out.println("Checking content type: " + lowerContentType);
+            if (lowerContentType.contains("pdf")) return "PDF";
+            if (lowerContentType.contains("text/plain") || lowerContentType.equals("text/plain")) {
+                System.out.println("Detected TXT from content type");
+                return "TXT";
+            }
+            if (lowerContentType.contains("text")) {
+                System.out.println("Detected TXT from generic text content type");
+                return "TXT";
+            }
+            if (lowerContentType.contains("application/msword")) return "DOC";
+            if (lowerContentType.contains("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) return "DOCX";
+            if (lowerContentType.contains("png")) return "PNG";
+            if (lowerContentType.contains("jpeg") || lowerContentType.contains("jpg")) return "JPG";
+            if (lowerContentType.contains("gif")) return "GIF";
+            if (lowerContentType.contains("bmp")) return "BMP";
+        }
+
+        // Default to TXT instead of UNKNOWN (most common case for requirements docs)
+        System.err.println("WARNING: Could not determine file type from ContentType: [" + contentType + "], Filename: [" + filename + "], FilePath: [" + filePath + "]. Defaulting to TXT.");
+        return "TXT"; // Changed from UNKNOWN to TXT
     }
 }
 

@@ -5,11 +5,14 @@ import com.sajilokaam.bid.Bid;
 import com.sajilokaam.bid.BidRepository;
 import com.sajilokaam.conversation.Conversation;
 import com.sajilokaam.conversation.ConversationRepository;
+import com.sajilokaam.escrow.EscrowAccount;
+import com.sajilokaam.escrow.EscrowAccountRepository;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.job.JobRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -29,16 +32,19 @@ public class ProjectController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final ConversationRepository conversationRepository;
+    private final EscrowAccountRepository escrowAccountRepository;
 
     public ProjectController(ProjectRepository projectRepository, JobRepository jobRepository,
                             BidRepository bidRepository, UserRepository userRepository,
-                            JwtService jwtService, ConversationRepository conversationRepository) {
+                            JwtService jwtService, ConversationRepository conversationRepository,
+                            EscrowAccountRepository escrowAccountRepository) {
         this.projectRepository = projectRepository;
         this.jobRepository = jobRepository;
         this.bidRepository = bidRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.conversationRepository = conversationRepository;
+        this.escrowAccountRepository = escrowAccountRepository;
     }
 
     @GetMapping
@@ -265,6 +271,88 @@ public class ProjectController {
 
         projectRepository.delete(project);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Get all projects for a client
+     */
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<List<Project>> getClientProjects(@PathVariable Long clientId) {
+        List<Project> projects = projectRepository.findByClient_Id(clientId);
+        return ResponseEntity.ok(projects);
+    }
+
+    /**
+     * Get all projects for a freelancer
+     */
+    @GetMapping("/freelancer/{freelancerId}")
+    public ResponseEntity<List<Project>> getFreelancerProjects(@PathVariable Long freelancerId) {
+        List<Project> projects = projectRepository.findByFreelancer_Id(freelancerId);
+        return ResponseEntity.ok(projects);
+    }
+
+    /**
+     * Complete a project and release escrow funds
+     */
+    @PutMapping("/{id}/complete")
+    @Transactional
+    public ResponseEntity<?> completeProject(
+            @PathVariable Long id,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<Project> projectOpt = projectRepository.findById(id);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Project project = projectOpt.get();
+        
+        // Verify user is the client
+        if (!project.getClient().getId().equals(userOpt.get().getId())) {
+            return ResponseEntity.status(403).body(java.util.Map.of("error", "Only the client can complete the project"));
+        }
+
+        // Verify project is active
+        if (!"ACTIVE".equals(project.getStatus())) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "Project is not active"));
+        }
+
+        // Find and release escrow
+        List<EscrowAccount> escrows = escrowAccountRepository.findAll().stream()
+                .filter(e -> e.getProject().getId().equals(project.getId()))
+                .toList();
+
+        if (!escrows.isEmpty()) {
+            EscrowAccount escrow = escrows.get(0);
+            escrow.setStatus("RELEASED");
+            escrow.setReleasedAmount(escrow.getTotalAmount());
+            escrowAccountRepository.save(escrow);
+        }
+
+        // Update project status
+        project.setStatus("COMPLETED");
+        project.setCompletedAt(java.time.Instant.now());
+        projectRepository.save(project);
+
+        return ResponseEntity.ok(java.util.Map.of(
+            "message", "Project completed successfully",
+            "projectId", project.getId(),
+            "status", "COMPLETED"
+        ));
     }
 }
 

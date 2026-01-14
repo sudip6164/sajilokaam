@@ -8,6 +8,9 @@ import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByJobId(Long jobId);
+    List<Project> findByClient_Id(Long clientId);
+    List<Project> findByFreelancer_Id(Long freelancerId);
+    List<Project> findByClient_IdAndStatus(Long clientId, String status);
     
     @EntityGraph(attributePaths = {"job", "job.client"})
     Optional<Project> findById(Long id);

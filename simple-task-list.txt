@@ -1,0 +1,46 @@
+PROJECT TASKS - Quick Reference
+
+Task 1: Create user login page
+Priority: HIGH
+Due Date: 2024-02-10
+Estimated Hours: 8
+
+Task 2: Implement password reset functionality
+Priority: MEDIUM
+Due Date: 2024-02-12
+Estimated Hours: 6
+
+Task 3: Build product catalog page
+Priority: HIGH
+Due Date: 2024-02-15
+Estimated Hours: 12
+
+Task 4: Add shopping cart feature
+Priority: CRITICAL
+Due Date: 2024-02-18
+Estimated Hours: 10
+
+Task 5: Integrate payment gateway
+Priority: CRITICAL
+Due Date: 2024-02-20
+Estimated Hours: 15
+
+Task 6: Create admin dashboard
+Priority: MEDIUM
+Due Date: 2024-02-25
+Estimated Hours: 20
+
+Task 7: Write API documentation
+Priority: LOW
+Due Date: 2024-02-28
+Estimated Hours: 8
+
+Task 8: Perform testing and bug fixes
+Priority: HIGH
+Due Date: 2024-03-01
+Estimated Hours: 16
+
+Task 9: Deploy to production
+Priority: CRITICAL
+Due Date: 2024-03-05
+Estimated Hours: 6

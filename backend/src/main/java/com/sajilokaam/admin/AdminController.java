@@ -171,23 +171,28 @@ public class AdminController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Delete associated profiles first
         try {
+            // 1. Delete jobs created by this user (if client)
+            jobRepository.deleteAll(jobRepository.findByClient_Id(userId));
+            
+            // 2. Delete bids made by this user (if freelancer)
+            bidRepository.deleteAll(bidRepository.findByFreelancerId(userId));
+            
+            // 3. Delete projects where user is client or freelancer
+            projectRepository.deleteAll(projectRepository.findByClient_Id(userId));
+            projectRepository.deleteAll(projectRepository.findByFreelancer_Id(userId));
+            
+            // 4. Delete profiles
             freelancerProfileRepository.deleteByUserId(userId);
-        } catch (Exception e) {
-            // No freelancer profile
-        }
-        
-        try {
             clientProfileRepository.deleteByUserId(userId);
+            
+            // 5. Finally, delete the user
+            userRepository.delete(user);
+            
+            return ResponseEntity.ok(Map.of("message", "User and all associated data deleted successfully"));
         } catch (Exception e) {
-            // No client profile
+            throw new RuntimeException("Failed to delete user: " + e.getMessage(), e);
         }
-        
-        // Delete user
-        userRepository.delete(user);
-        
-        return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 
     // Verification Queue Endpoints

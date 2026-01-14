@@ -79,22 +79,26 @@ export function ProposalsListPage() {
     try {
       setAccepting(true);
       
-      // Create project from accepted bid
-      const project = await bidsApi.accept(proposalId, {
-        title: jobTitle || 'New Project',
-        description: 'Project created from accepted proposal'
-      });
+      // Accept bid and get invoice details
+      const response = await bidsApi.accept(pageParams.jobId, proposalId);
       
-      toast.success('Proposal accepted! Redirecting to project page...');
+      console.log('Accept proposal response:', response);
       
-      // Navigate to project detail page if project ID is available
-      if (project && project.id) {
+      toast.success('Proposal accepted! Redirecting to payment...');
+      
+      // Navigate to payment page with invoice ID, project ID, and amount
+      if (response && response.invoiceId && response.projectId && response.amount) {
         setTimeout(() => {
-          // Note: project-detail page needs to be implemented to work with projectId
-          navigate('client-dashboard'); // Fallback to dashboard for now
-          toast.info('Project created successfully! View it in your Active Projects.');
-        }, 1500);
+          navigate('payment', {
+            invoiceId: response.invoiceId,
+            projectId: response.projectId,
+            amount: response.amount,
+            jobTitle: response.jobTitle || jobTitle || 'New Project'
+          });
+        }, 1000);
       } else {
+        toast.error('Invoice not created. Please contact support.');
+        console.error('Missing payment details in response:', response);
         navigate('client-dashboard');
       }
     } catch (err: any) {

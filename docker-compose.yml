@@ -41,6 +41,7 @@ services:
       - DB_NAME=sajilokaam
       - DB_USER=root
       - DB_PASS=
+      - KHALTI_SECRET_KEY=${KHALTI_SECRET_KEY}
     ports:
       - "8080:8080"
     volumes:

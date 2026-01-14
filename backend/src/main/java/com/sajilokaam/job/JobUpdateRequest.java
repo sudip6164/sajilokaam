@@ -1,5 +1,7 @@
 package com.sajilokaam.job;
 
+import java.time.LocalDate;
+
 public class JobUpdateRequest {
     private String title;
     private String description;
@@ -8,6 +10,7 @@ public class JobUpdateRequest {
     private String projectLength;
     private String requirements;
     private String deliverables;
+    private LocalDate deadline;
 
     public String getTitle() {
         return title;
@@ -63,6 +66,14 @@ public class JobUpdateRequest {
 
     public void setDeliverables(String deliverables) {
         this.deliverables = deliverables;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 }
 

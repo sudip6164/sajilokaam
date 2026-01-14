@@ -133,12 +133,14 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
   const [projects, setProjects] = useState<any[]>([]);
   const [pendingBids, setPendingBids] = useState(0);
   const [proposalCounts, setProposalCounts] = useState<Record<number, number>>({});
+  const [projectInvoices, setProjectInvoices] = useState<Record<number, any>>({});
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeProjects: 0,
     completedProjects: 0,
     totalSpent: 0,
     openJobs: 0,
+    pendingPayments: 0,
   });
 
   useEffect(() => {
@@ -159,6 +161,30 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
       // Fetch projects
       const projectsData = await projectsApi.list({ clientId: userId });
       setProjects(projectsData || []);
+
+      // Fetch invoices for pending payment projects
+      const invoicesMap: Record<number, any> = {};
+      const pendingPaymentProjects = projectsData?.filter(p => p.status === 'PENDING_PAYMENT') || [];
+      
+      if (pendingPaymentProjects.length > 0) {
+        await Promise.all(
+          pendingPaymentProjects.map(async (project: any) => {
+            try {
+              const invoices = await invoicesApi.list({ projectId: project.id, status: 'PENDING' });
+              if (invoices && invoices.length > 0) {
+                invoicesMap[project.id] = invoices[0];
+              } else {
+                console.warn(`No invoices found for project ${project.id}. Invoice may not have been created during bid acceptance.`);
+              }
+            } catch (err: any) {
+              console.error(`Error fetching invoice for project ${project.id}:`, err);
+              // Don't fail the whole operation if one invoice fetch fails
+            }
+          })
+        );
+      }
+      
+      setProjectInvoices(invoicesMap);
 
       // Calculate stats
       const openJobs = jobsData?.filter(j => j.status === 'OPEN') || [];
@@ -192,6 +218,7 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
         completedProjects: completedProjs.length,
         totalSpent,
         openJobs: openJobs.length,
+        pendingPayments: pendingPaymentProjects.length,
       });
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -202,6 +229,24 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
 
   const recentJobs = jobs.slice(0, 5);
   const recentProjects = projects.slice(0, 5);
+  const pendingPaymentProjects = projects.filter(p => p.status === 'PENDING_PAYMENT');
+
+  const handlePayNow = (project: any) => {
+    const invoice = projectInvoices[project.id];
+    if (invoice) {
+      navigate('payment', {
+        invoiceId: invoice.id,
+        projectId: project.id,
+        amount: project.budget,
+        jobTitle: project.title
+      });
+    } else {
+      toast.error('Invoice not found. The invoice may not have been created when you accepted the proposal. Please contact support.', {
+        duration: 5000
+      });
+      console.error('Invoice not found for project:', project);
+    }
+  };
 
   if (loading) {
     return (
@@ -229,6 +274,49 @@ function OverviewContent({ navigate, setActiveSection }: { navigate: any; setAct
           Post New Job
         </Button>
       </div>
+
+      {/* Pending Payment Alert */}
+      {pendingPaymentProjects.length > 0 && (
+        <Card className="border-2 border-orange-500 bg-gradient-to-r from-orange-50 to-red-50 animate-pulse">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-orange-500 p-3 rounded-full flex-shrink-0 animate-bounce">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-orange-900 text-xl mb-2 flex items-center gap-2">
+                  <span>⚠️ URGENT: Payment Required</span>
+                </h3>
+                <p className="text-orange-800 mb-4 text-base">
+                  You have <span className="font-bold">{pendingPaymentProjects.length}</span> project{pendingPaymentProjects.length > 1 ? 's' : ''} waiting for payment. 
+                  Complete the payment now to activate your project{pendingPaymentProjects.length > 1 ? 's' : ''} and start working with your freelancer{pendingPaymentProjects.length > 1 ? 's' : ''}.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {pendingPaymentProjects.map((project) => (
+                    <Button
+                      key={project.id}
+                      size="lg"
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg"
+                      onClick={() => handlePayNow(project)}
+                    >
+                      <DollarSign className="h-5 w-5 mr-2" />
+                      Pay Rs. {project.budget.toLocaleString()} for "{project.title}"
+                    </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-2 border-orange-600 text-orange-600 hover:bg-orange-50"
+                    onClick={() => setActiveSection('projects')}
+                  >
+                    View All Projects
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -412,6 +500,7 @@ function ProjectsContent({ navigate }: { navigate: any }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
+  const [projectInvoices, setProjectInvoices] = useState<Record<number, any>>({});
 
   useEffect(() => {
     if (user?.id) {
@@ -424,10 +513,51 @@ function ProjectsContent({ navigate }: { navigate: any }) {
       setLoading(true);
       const projectsData = await projectsApi.list({ clientId: user?.id });
       setProjects(projectsData || []);
+      
+      // Fetch invoices for pending payment projects
+      const invoicesMap: Record<number, any> = {};
+      const pendingProjects = (projectsData || []).filter((p: any) => p.status === 'PENDING_PAYMENT');
+      
+      if (pendingProjects.length > 0) {
+        await Promise.all(
+          pendingProjects.map(async (project: any) => {
+            try {
+              const invoices = await invoicesApi.list({ projectId: project.id, status: 'PENDING' });
+              if (invoices && invoices.length > 0) {
+                invoicesMap[project.id] = invoices[0];
+              } else {
+                console.warn(`No invoices found for project ${project.id}. Invoice may not have been created.`);
+              }
+            } catch (err: any) {
+              console.error(`Error fetching invoice for project ${project.id}:`, err);
+              // Don't fail the whole operation
+            }
+          })
+        );
+      }
+      
+      setProjectInvoices(invoicesMap);
     } catch (err) {
       console.error('Error fetching projects:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayNow = (project: any) => {
+    const invoice = projectInvoices[project.id];
+    if (invoice) {
+      navigate('payment', {
+        invoiceId: invoice.id,
+        projectId: project.id,
+        amount: project.budget,
+        jobTitle: project.title
+      });
+    } else {
+      toast.error('Invoice not found. The invoice may not have been created when you accepted the proposal. Please contact support.', {
+        duration: 5000
+      });
+      console.error('Invoice not found for project:', project);
     }
   };
 
@@ -448,12 +578,50 @@ function ProjectsContent({ navigate }: { navigate: any }) {
     );
   }
 
+  const pendingPaymentProjects = projects.filter(p => p.status === 'PENDING_PAYMENT');
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Active Projects</h1>
         <p className="text-muted-foreground">Monitor and manage your ongoing projects</p>
       </div>
+      
+      {/* Pending Payment Alert */}
+      {pendingPaymentProjects.length > 0 && (
+        <Card className="border-2 border-orange-500 bg-orange-50">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-orange-500 p-3 rounded-full">
+                <DollarSign className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-900 text-lg mb-2">
+                  ⚠️ Payment Required
+                </h3>
+                <p className="text-orange-800 mb-4">
+                  You have {pendingPaymentProjects.length} project{pendingPaymentProjects.length > 1 ? 's' : ''} waiting for payment. 
+                  Complete the payment to activate your project{pendingPaymentProjects.length > 1 ? 's' : ''} and start working with your freelancer{pendingPaymentProjects.length > 1 ? 's' : ''}.
+                </p>
+                <div className="flex gap-3">
+                  {pendingPaymentProjects.map((project) => (
+                    <Button
+                      key={project.id}
+                      size="sm"
+                      className="bg-orange-600 hover:bg-orange-700"
+                      onClick={() => handlePayNow(project)}
+                    >
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Pay for "{project.title}"
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {projects.length === 0 ? (
         <Card>
           <CardContent className="flex items-center justify-center py-16">
@@ -501,10 +669,14 @@ function ProjectsContent({ navigate }: { navigate: any }) {
                       </div>
                     </div>
                     <Badge 
-                      variant={project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : "secondary"}
+                      variant={
+                        project.status === "IN_PROGRESS" || project.status === "ACTIVE" ? "default" : 
+                        project.status === "PENDING_PAYMENT" ? "destructive" :
+                        "secondary"
+                      }
                       className="ml-2 flex-shrink-0"
                     >
-                      {project.status}
+                      {project.status === "PENDING_PAYMENT" ? "⚠️ AWAITING PAYMENT" : project.status}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -534,24 +706,46 @@ function ProjectsContent({ navigate }: { navigate: any }) {
 
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-2">
-                    <Button 
-                      className="flex-1 bg-gradient-to-r from-primary to-secondary"
-                      onClick={() => navigate('project-detail', { projectId: project.id })}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('messages');
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Contact
-                    </Button>
+                    {project.status === 'PENDING_PAYMENT' ? (
+                      <>
+                        <Button 
+                          className="flex-1 bg-primary hover:bg-primary/90 text-white"
+                          onClick={() => handlePayNow(project)}
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Pay Now
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => navigate('project-detail', { projectId: project.id })}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          className="flex-1 bg-gradient-to-r from-primary to-secondary"
+                          onClick={() => navigate('project-detail', { projectId: project.id })}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('messages');
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Contact
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>

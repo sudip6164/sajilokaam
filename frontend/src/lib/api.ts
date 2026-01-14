@@ -472,12 +472,9 @@ export const bidsApi = {
     return response.data;
   },
 
-  accept: async (id: number, projectData?: { title: string; description?: string }) => {
-    // Backend expects POST to /projects/accept-bid/{bidId}
-    const response = await api.post(`/projects/accept-bid/${id}`, projectData || { 
-      title: 'Project from accepted bid', 
-      description: '' 
-    });
+  accept: async (jobId: number, bidId: number) => {
+    // Backend expects PATCH to /jobs/{jobId}/bids/{bidId}/accept
+    const response = await api.patch(`/jobs/${jobId}/bids/${bidId}/accept`);
     return response.data;
   },
 
@@ -508,6 +505,37 @@ export const projectsApi = {
     freelancerId?: number;
     status?: string;
   }) => {
+    // Use dedicated backend endpoints that actually filter, otherwise backend returns ALL projects.
+    if (params?.clientId) {
+      const response = await api.get<Array<{
+        id: number;
+        jobId: number;
+        clientId: number;
+        freelancerId: number;
+        title: string;
+        description: string;
+        status: string;
+        budget: number;
+        deadline?: string;
+        createdAt: string;
+      }>>(`/projects/client/${params.clientId}`);
+      return response.data;
+    }
+    if (params?.freelancerId) {
+      const response = await api.get<Array<{
+        id: number;
+        jobId: number;
+        clientId: number;
+        freelancerId: number;
+        title: string;
+        description: string;
+        status: string;
+        budget: number;
+        deadline?: string;
+        createdAt: string;
+      }>>(`/projects/freelancer/${params.freelancerId}`);
+      return response.data;
+    }
     const response = await api.get<Array<{
       id: number;
       jobId: number;
@@ -810,6 +838,74 @@ export const paymentsApi = {
       signature: string;
       action: string;
     }>("/payments/esewa", payload);
+    return response.data;
+  },
+
+  // Initiate eSewa payment for invoice
+  initiateDemoPayment: async (data: {
+    invoiceId: number;
+    projectId: number;
+    amount: number;
+  }) => {
+    const response = await api.post("/payments/demo/initiate", data);
+    return response.data;
+  },
+  
+  verifyDemoPayment: async (data: {
+    invoiceId: number;
+    projectId: number;
+  }) => {
+    const response = await api.post("/payments/demo/verify", data);
+    return response.data;
+  },
+  
+  initiateKhaltiPayment: async (data: {
+    invoiceId: number;
+    projectId: number;
+    amount: number;
+  }) => {
+    const response = await api.post<{
+      publicKey: string;
+      amount: number;
+      productIdentity: string;
+      productName: string;
+      productUrl: string;
+      returnUrl: string;
+      websiteUrl: string;
+      invoiceId: number;
+      projectId: number;
+    }>("/payments/khalti/initiate", data);
+    return response.data;
+  },
+  
+  verifyKhaltiPayment: async (data: {
+    token: string;
+    amount: number;
+    invoiceId: number;
+    projectId: number;
+  }) => {
+    const response = await api.post("/payments/khalti/verify", data);
+    return response.data;
+  },
+  
+  initiateEsewaPayment: async (data: {
+    invoiceId: number;
+    projectId: number;
+    amount: number;
+  }) => {
+    const response = await api.post<{
+      productId: string;
+      amount: number;
+      taxAmount: number;
+      totalAmount: number;
+      transactionUuid: string;
+      productServiceCharge: number;
+      productDeliveryCharge: number;
+      successUrl: string;
+      failureUrl: string;
+      signedFieldNames: string;
+      esewaPaymentUrl: string;
+    }>("/payments/esewa/initiate", data);
     return response.data;
   },
 

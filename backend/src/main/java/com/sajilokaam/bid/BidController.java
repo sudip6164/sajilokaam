@@ -3,10 +3,14 @@ package com.sajilokaam.bid;
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.bid.dto.BidComparisonResponse;
 import com.sajilokaam.bid.dto.BidResponse;
+import com.sajilokaam.invoice.Invoice;
+import com.sajilokaam.invoice.InvoiceRepository;
 import com.sajilokaam.job.Job;
 import com.sajilokaam.job.JobRepository;
 import com.sajilokaam.profile.FreelancerProfile;
 import com.sajilokaam.profile.FreelancerProfileRepository;
+import com.sajilokaam.project.Project;
+import com.sajilokaam.project.ProjectRepository;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -31,15 +35,21 @@ public class BidController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final FreelancerProfileRepository freelancerProfileRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final ProjectRepository projectRepository;
 
     public BidController(BidRepository bidRepository, JobRepository jobRepository,
                         UserRepository userRepository, JwtService jwtService,
-                        FreelancerProfileRepository freelancerProfileRepository) {
+                        FreelancerProfileRepository freelancerProfileRepository,
+                        InvoiceRepository invoiceRepository,
+                        ProjectRepository projectRepository) {
         this.bidRepository = bidRepository;
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.freelancerProfileRepository = freelancerProfileRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.projectRepository = projectRepository;
     }
 
     @GetMapping("/{jobId}/bids")
@@ -182,6 +192,92 @@ public class BidController {
 
         List<Bid> bids = bidRepository.findByFreelancerId(userOpt.get().getId());
         return ResponseEntity.ok(bids);
+    }
+
+    @PatchMapping("/{jobId}/bids/{bidId}/accept")
+    public ResponseEntity<Map<String, Object>> acceptBid(
+            @PathVariable Long jobId,
+            @PathVariable Long bidId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User client = userOpt.get();
+
+        Optional<Bid> bidOpt = bidRepository.findById(bidId);
+        if (bidOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Bid bid = bidOpt.get();
+        if (!bid.getJob().getId().equals(jobId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // Verify user is the client who owns the job
+        if (!bid.getJob().getClient().getId().equals(client.getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // Only accept if bid is still pending
+        if (!bid.getStatus().equals("PENDING")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Bid is not in pending status"));
+        }
+
+        // Update bid status
+        bid.setStatus("ACCEPTED");
+        bidRepository.save(bid);
+
+        // Create project FIRST (pending payment)
+        Project project = new Project();
+        project.setJob(bid.getJob());
+        project.setClient(client);
+        project.setFreelancer(bid.getFreelancer());
+        project.setTitle(bid.getJob().getTitle());
+        project.setDescription(bid.getJob().getDescription());
+        project.setBudget(bid.getAmount());
+        project.setStatus("PENDING_PAYMENT"); // Will be activated after payment
+        
+        Project savedProject = projectRepository.save(project);
+
+        // Create invoice AFTER project, linking them together
+        Invoice invoice = new Invoice();
+        invoice.setProject(savedProject); // Link to project
+        invoice.setClient(client);
+        invoice.setFreelancer(bid.getFreelancer());
+        invoice.setStatus("PENDING");
+        invoice.setNotes("Payment for project: " + savedProject.getTitle());
+        invoice.setSubtotal(bid.getAmount());
+        invoice.setTotalAmount(bid.getAmount());
+        invoice.setIssueDate(java.time.LocalDate.now());
+        invoice.setDueDate(java.time.LocalDate.now().plusDays(7));
+        invoice.setInvoiceNumber("INV-" + System.currentTimeMillis());
+        
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+
+        // Return invoice ID, project ID, and payment details
+        return ResponseEntity.ok(Map.of(
+            "message", "Bid accepted successfully. Proceed to payment.",
+            "bidId", bid.getId(),
+            "invoiceId", savedInvoice.getId(),
+            "projectId", savedProject.getId(),
+            "amount", bid.getAmount().doubleValue(),
+            "jobTitle", bid.getJob().getTitle(),
+            "freelancerName", bid.getFreelancer().getFullName(),
+            "requiresPayment", true
+        ));
     }
 
     @PatchMapping("/{jobId}/bids/{bidId}/reject")

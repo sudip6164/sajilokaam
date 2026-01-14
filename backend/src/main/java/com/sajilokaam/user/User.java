@@ -1,6 +1,7 @@
 package com.sajilokaam.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.role.Role;
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -11,6 +12,7 @@ import java.util.Set;
 @Table(name = "users", indexes = {
         @Index(name = "idx_users_email", columnList = "email", unique = true)
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
 
     @Id

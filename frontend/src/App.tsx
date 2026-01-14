@@ -58,9 +58,13 @@ import { AnalyticsPage } from "./components/admin/AnalyticsPage";
 import { InvoicesListPage } from "./components/payments/InvoicesListPage";
 import { CreateInvoicePage } from "./components/payments/CreateInvoicePage";
 import { InvoiceDetailPage } from "./components/payments/InvoiceDetailPage";
+import { PaymentPage } from "./components/payment/PaymentPage";
+import { PaymentSuccessPage } from "./components/payment/PaymentSuccessPage";
+import { PaymentFailurePage } from "./components/payment/PaymentFailurePage";
+import { ClientProjectsPage } from "./components/projects/ClientProjectsPage";
+import { FreelancerProjectsPage } from "./components/projects/FreelancerProjectsPage";
 import { TransactionsPage } from "./components/payments/TransactionsPage";
 import { EscrowManagementPage } from "./components/payments/EscrowManagementPage";
-import { PaymentSuccessPage } from "./components/payments/PaymentSuccessPage";
 import { PaymentCancelPage } from "./components/payments/PaymentCancelPage";
 
 const queryClient = new QueryClient();
@@ -117,6 +121,16 @@ function AppContent() {
       return <EnhancedFindWorkPage />;
     case 'find-freelancers':
       return <FindFreelancersPage />;
+    case 'payment':
+      return <PaymentPage />;
+    case 'payment-success':
+      return <PaymentSuccessPage />;
+    case 'payment-failure':
+      return <PaymentFailurePage />;
+    case 'client-projects':
+      return <ClientProjectsPage />;
+    case 'freelancer-projects':
+      return <FreelancerProjectsPage />;
     case 'freelancer-dashboard':
       return <FreelancerDashboard />;
     case 'client-dashboard':

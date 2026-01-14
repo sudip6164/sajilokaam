@@ -37,8 +37,13 @@ public class TaskController {
     @GetMapping("/{projectId}/tasks")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<Task>> listTasks(@PathVariable Long projectId) {
-        if (!projectRepository.existsById(projectId)) {
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+        Project project = projectOpt.get();
+        if ("PENDING_PAYMENT".equalsIgnoreCase(project.getStatus())) {
+            return ResponseEntity.status(403).build();
         }
         List<Task> tasks = taskRepository.findByProjectId(projectId);
         // Initialize lazy-loaded relationships
@@ -60,6 +65,9 @@ public class TaskController {
         Optional<Project> projectOpt = projectRepository.findById(projectId);
         if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+            return ResponseEntity.status(403).build();
         }
 
         if (request.getTitle() == null || request.getTitle().isBlank()) {
@@ -108,6 +116,9 @@ public class TaskController {
         Task task = taskOpt.get();
         if (!task.getProject().getId().equals(projectId)) {
             return ResponseEntity.badRequest().build();
+        }
+        if ("PENDING_PAYMENT".equalsIgnoreCase(task.getProject().getStatus())) {
+            return ResponseEntity.status(403).build();
         }
 
         if (request.getStatus() == null || request.getStatus().isBlank()) {
@@ -202,6 +213,27 @@ public class TaskController {
 
         Task updated = taskRepository.save(task);
         return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{projectId}/tasks/{taskId}")
+    public ResponseEntity<Void> deleteTask(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId) {
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOpt.get();
+        if (!task.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+        if ("PENDING_PAYMENT".equalsIgnoreCase(task.getProject().getStatus())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        taskRepository.delete(task);
+        return ResponseEntity.noContent().build();
     }
 }
 

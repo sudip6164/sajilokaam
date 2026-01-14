@@ -13,6 +13,7 @@ import java.time.Instant;
         @Index(name = "idx_projects_freelancer", columnList = "freelancer_id"),
         @Index(name = "idx_projects_client", columnList = "client_id")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

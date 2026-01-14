@@ -46,6 +46,7 @@ export function PostJobPage() {
     hourlyMin: '',
     hourlyMax: '',
     duration: '',
+    deadline: '',
     experienceLevel: '',
     skills: [] as string[],
     skillIds: [] as number[],
@@ -231,6 +232,11 @@ export function PostJobPage() {
         projectLength: projectLengthMap[jobData.duration] || jobData.duration,
         status: 'OPEN',
       };
+
+      // Set deadline if provided (YYYY-MM-DD)
+      if (jobData.deadline && jobData.deadline.trim()) {
+        payload.deadline = jobData.deadline.trim();
+      }
 
       // Set budget
       if (jobData.budgetType === 'fixed') {
@@ -482,6 +488,21 @@ export function PostJobPage() {
                   </div>
 
                   <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="deadline" className="text-base">Deadline (important)</Label>
+                      <div className="mt-2">
+                        <Input
+                          id="deadline"
+                          type="date"
+                          value={jobData.deadline}
+                          onChange={(e) => setJobData({ ...jobData, deadline: e.target.value })}
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        The expected delivery date for this job (shown to freelancers and used in timeline).
+                      </p>
+                    </div>
+
                     <div>
                       <Label className="text-base">Budget Type *</Label>
                       <RadioGroup 

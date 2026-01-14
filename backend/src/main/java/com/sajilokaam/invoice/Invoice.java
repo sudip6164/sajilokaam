@@ -1,5 +1,7 @@
 package com.sajilokaam.invoice;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sajilokaam.project.Project;
 import com.sajilokaam.user.User;
 import jakarta.persistence.*;
@@ -17,6 +19,7 @@ import java.util.List;
         @Index(name = "idx_invoices_status", columnList = "status"),
         @Index(name = "idx_invoices_number", columnList = "invoice_number")
 })
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,16 +28,19 @@ public class Invoice {
     @Column(name = "invoice_number", nullable = false, unique = true, length = 100)
     private String invoiceNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "project_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "job", "client", "freelancer"})
     private Project project;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "client_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private User client;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "freelancer_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "roles"})
     private User freelancer;
 
     @Column(nullable = false, length = 50)
@@ -77,6 +83,7 @@ public class Invoice {
     private Instant sentAt;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<InvoiceItem> items = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)

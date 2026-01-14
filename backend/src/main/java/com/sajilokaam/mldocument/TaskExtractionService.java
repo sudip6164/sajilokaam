@@ -50,21 +50,37 @@ public class TaskExtractionService {
      */
     public List<ExtractedTaskSuggestion> extractTasks(String ocrText, Long documentProcessingId) {
         List<ExtractedTaskSuggestion> suggestions = new ArrayList<>();
-        
+
         if (ocrText == null || ocrText.trim().isEmpty()) {
             return suggestions;
         }
 
         // Split text into lines for line number tracking
         String[] lines = ocrText.split("\n");
-        
+
         // Try different extraction methods
         suggestions.addAll(extractFromTaskPattern(ocrText, documentProcessingId, lines));
         suggestions.addAll(extractFromBulletPoints(ocrText, documentProcessingId, lines));
         suggestions.addAll(extractFromNumberedList(ocrText, documentProcessingId, lines));
 
         // Remove duplicates and sort by confidence
-        return deduplicateAndSort(suggestions);
+        List<ExtractedTaskSuggestion> processed = deduplicateAndSort(suggestions);
+
+        // If we still have 0 or only 1 very long task, fall back to a simpler
+        // line-based extraction so that each bullet/line becomes its own task.
+        // This is mainly for plain .txt requirement lists like the sample docs.
+        if (processed.size() <= 1) {
+            List<ExtractedTaskSuggestion> lineBased =
+                    extractFromLinesFallback(ocrText, documentProcessingId, lines);
+
+            if (!lineBased.isEmpty()) {
+                // Re-run de‑duplication including the fallback tasks
+                processed.addAll(lineBased);
+                processed = deduplicateAndSort(processed);
+            }
+        }
+
+        return processed;
     }
 
     /**
@@ -273,6 +289,64 @@ public class TaskExtractionService {
     private String extractDescription(String fullMatch) {
         // For now, return null - can be enhanced to extract multi-line descriptions
         return null;
+    }
+
+    /**
+     * Very simple fallback: treat each meaningful line as a separate task.
+     * This is used when the main patterns / ML only return 0–1 giant task.
+     */
+    private List<ExtractedTaskSuggestion> extractFromLinesFallback(String text,
+                                                                   Long documentProcessingId,
+                                                                   String[] lines) {
+        List<ExtractedTaskSuggestion> suggestions = new ArrayList<>();
+
+        if (lines == null || lines.length == 0) {
+            return suggestions;
+        }
+
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+
+            // Skip empty lines and very short lines
+            if (line.length() < 10) {
+                continue;
+            }
+
+            // Skip obvious section headings (ALL CAPS with no punctuation)
+            boolean isAllCaps = line.equals(line.toUpperCase()) && line.matches("^[A-Z0-9\\s]+$");
+            if (isAllCaps) {
+                continue;
+            }
+
+            // If line does not look like a task at all, skip it
+            if (!isLikelyTask(line)) {
+                continue;
+            }
+
+            ExtractedTaskSuggestion suggestion = new ExtractedTaskSuggestion();
+            suggestion.setDocumentProcessing(new DocumentProcessing());
+            suggestion.getDocumentProcessing().setId(documentProcessingId);
+
+            String title = cleanTitle(line);
+            if (title.length() > 255) {
+                title = title.substring(0, 255);
+            }
+
+            suggestion.setSuggestedTitle(title);
+            suggestion.setSuggestedDescription(null);
+            suggestion.setSuggestedPriority("MEDIUM");
+            suggestion.setSuggestedDueDate(null);
+            suggestion.setSuggestedEstimatedHours(null);
+            suggestion.setConfidenceScore(
+                    BigDecimal.valueOf(0.60).setScale(2, RoundingMode.HALF_UP));
+            suggestion.setExtractionMethod("LINE_FALLBACK");
+            suggestion.setRawTextSnippet(line.substring(0, Math.min(500, line.length())));
+            suggestion.setLineNumber(i + 1);
+
+            suggestions.add(suggestion);
+        }
+
+        return suggestions;
     }
 
     /**

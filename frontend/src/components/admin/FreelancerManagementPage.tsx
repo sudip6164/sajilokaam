@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { SimpleModal } from './SimpleModal';
 import {
   Search,
   Filter,
@@ -27,14 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog';
 
 export function FreelancerManagementPage() {
   const [freelancers, setFreelancers] = useState<any[]>([]);
@@ -321,17 +314,13 @@ export function FreelancerManagementPage() {
       </div>
 
       {/* View Details Modal */}
-      <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen} modal={true}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto z-[9999]">
-          <DialogHeader>
-            <DialogTitle>Freelancer Details</DialogTitle>
-            <DialogDescription>View complete information about this freelancer</DialogDescription>
-          </DialogHeader>
-          {(() => {
-            console.log('View modal rendering - open:', viewModalOpen, 'selected:', selectedFreelancer);
-            return null;
-          })()}
-          {selectedFreelancer && (
+      <SimpleModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        title="Freelancer Details"
+        size="xl"
+      >
+        {selectedFreelancer && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
@@ -390,29 +379,30 @@ export function FreelancerManagementPage() {
                 </div>
               )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        )}
+      </SimpleModal>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Freelancer</DialogTitle>
-          </DialogHeader>
-          <DialogDescription>
-            Are you sure you want to delete {selectedFreelancer?.fullName}? This action cannot be undone.
-          </DialogDescription>
-          <DialogFooter>
+      <SimpleModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Freelancer"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Are you sure you want to delete <strong>{selectedFreelancer?.fullName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteUser}>
               Delete
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </SimpleModal>
     </AdminDashboardLayout>
   );
 }

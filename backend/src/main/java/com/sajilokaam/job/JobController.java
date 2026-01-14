@@ -240,6 +240,7 @@ public class JobController {
         job.setExperienceLevel(request.getExperienceLevel());
         job.setDurationHours(request.getDurationHours());
         job.setExpiresAt(request.getExpiresAt());
+        job.setDeadline(request.getDeadline());
         job.setIsFeatured(request.getIsFeatured() != null ? request.getIsFeatured() : false);
         
         // Set required skills
@@ -342,6 +343,9 @@ public class JobController {
         }
         if (request.getProjectLength() != null) {
             job.setProjectLength(request.getProjectLength());
+        }
+        if (request.getDeadline() != null) {
+            job.setDeadline(request.getDeadline());
         }
 
         Job updated = jobRepository.save(job);

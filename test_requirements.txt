@@ -1,0 +1,41 @@
+E-commerce Website Requirements
+
+Project Tasks:
+
+1. Implement user authentication system with email verification
+   Priority: HIGH
+   Estimated: 8 hours
+
+2. Create product catalog with search and filter functionality
+   Priority: HIGH
+   Estimated: 12 hours
+
+3. Build shopping cart with add/remove/update features
+   Priority: MEDIUM
+   Estimated: 6 hours
+
+4. Develop checkout process with payment integration
+   Priority: HIGH
+   Estimated: 10 hours
+
+5. Design admin dashboard for product management
+   Priority: MEDIUM
+   Estimated: 8 hours
+
+6. Implement order tracking system
+   Priority: LOW
+   Estimated: 4 hours
+
+7. Add customer review and rating feature
+   Priority: LOW
+   Estimated: 5 hours
+
+8. Optimize website for mobile responsiveness
+   Priority: MEDIUM
+   Estimated: 6 hours
+
+Additional Requirements:
+- Use React for frontend
+- Node.js/Express for backend
+- MySQL database
+- Secure payment gateway integration

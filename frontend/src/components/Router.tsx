@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-login' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment-success' | 'payment-cancel';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-login' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment' | 'payment-success' | 'payment-failure' | 'payment-cancel' | 'client-projects' | 'freelancer-projects';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -74,8 +74,12 @@ const pathToPage: Record<string, Page> = {
   '/invoice-detail': 'invoice-detail',
   '/transactions': 'transactions',
   '/escrow': 'escrow',
+  '/payment': 'payment',
   '/payment-success': 'payment-success',
+  '/payment-failure': 'payment-failure',
   '/payment-cancel': 'payment-cancel',
+  '/client-projects': 'client-projects',
+  '/freelancer-projects': 'freelancer-projects',
   '/features': 'features',
   '/about': 'about',
   '/contact': 'contact',
@@ -128,8 +132,12 @@ const pageToPath: Record<Page, string> = {
   'invoice-detail': '/invoice-detail',
   'transactions': '/transactions',
   'escrow': '/escrow',
+  'payment': '/payment',
   'payment-success': '/payment-success',
+  'payment-failure': '/payment-failure',
   'payment-cancel': '/payment-cancel',
+  'client-projects': '/client-projects',
+  'freelancer-projects': '/freelancer-projects',
   'features': '/features',
   'about': '/about',
   'contact': '/contact',
