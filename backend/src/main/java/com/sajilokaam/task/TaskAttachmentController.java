@@ -6,10 +6,6 @@ import com.sajilokaam.file.FileRepository;
 import com.sajilokaam.file.dto.FileResponse;
 import com.sajilokaam.user.User;
 import com.sajilokaam.user.UserRepository;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -77,6 +73,9 @@ public class TaskAttachmentController {
         }
 
         // Verify task exists
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -128,6 +127,9 @@ public class TaskAttachmentController {
         User user = userOpt.get();
 
         // Verify task exists
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();

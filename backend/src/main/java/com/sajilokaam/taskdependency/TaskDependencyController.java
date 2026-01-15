@@ -36,24 +36,35 @@ public class TaskDependencyController {
     public ResponseEntity<TaskDependencyResponse> createDependency(
             @PathVariable Long taskId,
             @RequestBody TaskDependencyCreateRequest request) {
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Long dependsOnTaskId = request != null ? request.getDependsOnTaskId() : null;
+        if (dependsOnTaskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         if (!taskRepository.existsById(taskId) || 
-            !taskRepository.existsById(request.getDependsOnTaskId())) {
+            !taskRepository.existsById(dependsOnTaskId)) {
             return ResponseEntity.notFound().build();
         }
 
         // Prevent circular dependencies
-        if (taskId.equals(request.getDependsOnTaskId())) {
+        if (taskId.equals(dependsOnTaskId)) {
             return ResponseEntity.badRequest().build();
         }
 
         // Check if dependency already exists
-        if (taskDependencyRepository.existsByTaskIdAndDependsOnTaskId(taskId, request.getDependsOnTaskId())) {
+        if (taskDependencyRepository.existsByTaskIdAndDependsOnTaskId(taskId, dependsOnTaskId)) {
             return ResponseEntity.badRequest().build();
         }
 
         Task task = taskRepository.findById(taskId).orElseThrow();
-        Task dependsOnTask = taskRepository.findById(request.getDependsOnTaskId()).orElseThrow();
+        Task dependsOnTask = taskRepository.findById(dependsOnTaskId).orElseThrow();
 
+        if (request == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
         TaskDependency dependency = new TaskDependency();
         dependency.setTask(task);
         dependency.setDependsOnTask(dependsOnTask);

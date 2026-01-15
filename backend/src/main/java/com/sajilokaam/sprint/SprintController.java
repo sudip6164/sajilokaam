@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/sprints")
@@ -91,6 +90,9 @@ public class SprintController {
             @PathVariable Long sprintId,
             @RequestBody SprintUpdateRequest request) {
         
+        if (sprintId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Sprint> sprintOpt = sprintRepository.findById(sprintId);
         if (sprintOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -118,6 +120,9 @@ public class SprintController {
             @PathVariable Long sprintId,
             @RequestBody AddTaskRequest request) {
         
+        if (sprintId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Sprint> sprintOpt = sprintRepository.findById(sprintId);
         if (sprintOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -128,7 +133,12 @@ public class SprintController {
             return ResponseEntity.badRequest().build();
         }
 
-        Optional<Task> taskOpt = taskRepository.findById(request.getTaskId());
+        Long taskId = request.getTaskId();
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -148,6 +158,9 @@ public class SprintController {
             @PathVariable Long projectId,
             @PathVariable Long sprintId) {
         
+        if (sprintId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Sprint> sprintOpt = sprintRepository.findById(sprintId);
         if (sprintOpt.isEmpty()) {
             return ResponseEntity.notFound().build();

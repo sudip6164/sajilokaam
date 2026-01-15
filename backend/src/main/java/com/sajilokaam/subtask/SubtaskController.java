@@ -24,6 +24,9 @@ public class SubtaskController {
 
     @GetMapping("/{taskId}/subtasks")
     public ResponseEntity<List<Subtask>> getSubtasks(@PathVariable Long taskId) {
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         if (!taskRepository.existsById(taskId)) {
             return ResponseEntity.notFound().build();
         }
@@ -34,6 +37,9 @@ public class SubtaskController {
     public ResponseEntity<Subtask> createSubtask(
             @PathVariable Long taskId,
             @RequestBody SubtaskCreateRequest request) {
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();

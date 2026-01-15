@@ -33,11 +33,13 @@ public class ProjectController {
     private final JwtService jwtService;
     private final ConversationRepository conversationRepository;
     private final EscrowAccountRepository escrowAccountRepository;
+    private final com.sajilokaam.task.TaskRepository taskRepository;
 
     public ProjectController(ProjectRepository projectRepository, JobRepository jobRepository,
                             BidRepository bidRepository, UserRepository userRepository,
                             JwtService jwtService, ConversationRepository conversationRepository,
-                            EscrowAccountRepository escrowAccountRepository) {
+                            EscrowAccountRepository escrowAccountRepository,
+                            com.sajilokaam.task.TaskRepository taskRepository) {
         this.projectRepository = projectRepository;
         this.jobRepository = jobRepository;
         this.bidRepository = bidRepository;
@@ -45,6 +47,7 @@ public class ProjectController {
         this.jwtService = jwtService;
         this.conversationRepository = conversationRepository;
         this.escrowAccountRepository = escrowAccountRepository;
+        this.taskRepository = taskRepository;
     }
 
     @GetMapping
@@ -271,6 +274,37 @@ public class ProjectController {
 
         projectRepository.delete(project);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Delete a task from a project
+     */
+    @DeleteMapping("/{projectId}/tasks/{taskId}")
+    public ResponseEntity<Void> deleteTask(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId) {
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        if (!taskRepository.existsByIdAndProject_Id(taskId, projectId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        taskRepository.deleteByIdDirect(taskId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{projectId}/tasks/{taskId}/delete")
+    public ResponseEntity<Void> deleteTaskPost(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId) {
+        return deleteTask(projectId, taskId);
     }
 
     /**

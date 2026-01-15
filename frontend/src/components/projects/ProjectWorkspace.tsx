@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
-import { 
-  Calendar, Clock, DollarSign, FileText, MessageSquare, Upload, 
+import {
+  Calendar, Clock, DollarSign, FileText, MessageSquare, Upload,
   CheckCircle, Circle, AlertCircle, Download, Eye, Trash2,
   Play, Pause, Plus, Send, Sparkles, List, LayoutGrid, Edit, X, GripVertical
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
-import { milestonesApi, timeTrackingApi, filesApi, projectsApi, tasksApi, invoicesApi } from '@/lib/api';
+import { milestonesApi, timeTrackingApi, filesApi, projectsApi, tasksApi, invoicesApi, sprintsApi, timeLogsApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { useRouter } from '../Router';
 import { DocumentUploadModal } from './DocumentUploadModal';
 import { TaskModal } from './TaskModal';
+import { MilestoneModal } from './MilestoneModal';
+import { TaskDetailModal } from './TaskDetailModal';
 import {
   DndContext,
   DragOverlay,
@@ -37,10 +39,10 @@ import { CSS } from '@dnd-kit/utilities';
 interface Milestone {
   id: number;
   title: string;
-  description: string;
-  amount: number;
-  dueDate: string;
-  status: 'pending' | 'in-progress' | 'submitted' | 'approved' | 'paid';
+  description?: string;
+  amount?: number;
+  dueDate?: string;
+  status?: string;
   submittedDate?: string;
   approvedDate?: string;
 }
@@ -93,19 +95,25 @@ interface Task {
 
 export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
   const { navigate } = useRouter();
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'ml-documents' | 'milestones' | 'files' | 'time' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'ml-documents' | 'milestones' | 'sprints' | 'files' | 'time' | 'activity'>('overview');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [taskView, setTaskView] = useState<'list' | 'kanban'>('list');
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showTaskDetailModal, setShowTaskDetailModal] = useState(false);
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
 
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [sprints, setSprints] = useState<Array<{id: number; name: string; startDate?: string; endDate?: string; status: string}>>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [activities, setActivities] = useState<Array<{action: string; user: string; time: string; type: string}>>([]);
   const [loading, setLoading] = useState(true);
   const [pendingInvoiceId, setPendingInvoiceId] = useState<number | null>(null);
 
@@ -122,6 +130,19 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
       fetchProjectData();
     }
   }, [project.id]);
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setCurrentTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning]);
 
   useEffect(() => {
     // If project is pending payment, fetch invoice for "Pay Now" CTA and block management UI.
@@ -147,10 +168,12 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
   const fetchProjectData = async () => {
     try {
       setLoading(true);
-      const [milestonesData, filesData, tasksData] = await Promise.all([
+      const [milestonesData, filesData, tasksData, timeLogsData, sprintsData] = await Promise.all([
         milestonesApi.list(project.id).catch(() => []),
         filesApi.list(project.id).catch(() => []),
         projectsApi.getTasks(project.id).catch(() => []),
+        timeLogsApi.list({ projectId: project.id }).catch(() => []),
+        sprintsApi.list(project.id).catch(() => []),
       ]);
 
       // Transform API data to match component interface
@@ -176,8 +199,72 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
 
       setTasks(tasksData || []);
 
-      // Note: Time tracking might not be implemented yet in backend
-      setTimeEntries([]);
+      // Transform time logs to time entries
+      setTimeEntries(timeLogsData.map((log: any) => ({
+        id: log.id,
+        date: log.createdAt ? new Date(log.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+        hours: Math.round((log.minutes || 0) / 60 * 10) / 10, // Convert minutes to hours, round to 1 decimal
+        description: log.description || `Time logged on task ${log.taskId || ''}`,
+        status: 'approved' as const, // Default to approved, can be updated later
+      })));
+
+      // Generate activity feed from project data
+      const activityList: Array<{action: string; user: string; time: string; type: string}> = [];
+      
+      // Add milestone activities
+      milestonesData.forEach((m: any) => {
+        if (m.createdAt) {
+          activityList.push({
+            action: `Milestone created: ${m.title}`,
+            user: 'System',
+            time: new Date(m.createdAt).toLocaleString(),
+            type: 'info'
+          });
+        }
+      });
+
+      // Add file activities
+      filesData.forEach((f: any) => {
+        if (f.createdAt) {
+          activityList.push({
+            action: `File uploaded: ${f.fileName || 'Unknown'}`,
+            user: f.uploadedBy?.fullName || 'Unknown',
+            time: new Date(f.createdAt).toLocaleString(),
+            type: 'info'
+          });
+        }
+      });
+
+      // Add task activities
+      tasksData.forEach((t: any) => {
+        if (t.createdAt) {
+          activityList.push({
+            action: `Task created: ${t.title}`,
+            user: 'System',
+            time: new Date(t.createdAt).toLocaleString(),
+            type: 'info'
+          });
+        }
+      });
+
+      // Add time log activities
+      timeLogsData.forEach((log: any) => {
+        if (log.createdAt) {
+          activityList.push({
+            action: `Time entry logged: ${Math.round((log.minutes || 0) / 60 * 10) / 10}h`,
+            user: 'Freelancer',
+            time: new Date(log.createdAt).toLocaleString(),
+            type: 'info'
+          });
+        }
+      });
+
+      // Sort by time (newest first) and limit to 20
+      activityList.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setActivities(activityList.slice(0, 20));
+
+      // Set sprints
+      setSprints(sprintsData);
     } catch (error) {
       console.error('Error fetching project data:', error);
       toast.error('Failed to load some project data');
@@ -232,8 +319,8 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
     try {
       await projectsApi.updateTaskStatus(project.id, taskId, newStatus);
       // Update local state immediately for better UX
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
           task.id === taskId ? { ...task, status: newStatus } : task
         )
       );
@@ -294,11 +381,21 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
 
   const handleDeleteTask = async (taskId: number) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
+
+    // Debugging logs
+    console.log(`Attempting to delete task ${taskId} from project ${project?.id}`);
+
+    if (!project?.id) {
+      toast.error('Project ID is missing');
+      return;
+    }
+
     try {
-      await tasksApi.delete(project.id, taskId);
+      await projectsApi.deleteTask(project.id, taskId);
       await fetchProjectData();
       toast.success('Task deleted');
     } catch (error: any) {
+      console.error('Task deletion failed:', error);
       toast.error(error.response?.data?.error || 'Failed to delete task');
     }
   };
@@ -364,7 +461,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           </Button>
           <Badge className={
             project.status === 'active' || project.status === 'ACTIVE' || project.status === 'IN_PROGRESS' ? 'bg-success' :
-            project.status === 'completed' || project.status === 'COMPLETED' ? 'bg-primary' : 'bg-yellow-500'
+              project.status === 'completed' || project.status === 'COMPLETED' ? 'bg-primary' : 'bg-yellow-500'
           }>
             {project.status ? (project.status.charAt(0).toUpperCase() + project.status.slice(1).toLowerCase().replace('_', ' ')) : 'Unknown'}
           </Badge>
@@ -418,11 +515,10 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id
+              className={`flex items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               <tab.icon className="h-4 w-4" />
               <span className="font-medium">{tab.label}</span>
@@ -497,7 +593,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                 <div>
                   <p className="text-muted-foreground">Progress</p>
                   <p className="font-semibold">
-                    {tasks.length > 0 
+                    {tasks.length > 0
                       ? `${Math.round((getTasksByStatus('DONE').length / tasks.length) * 100)}%`
                       : '0%'}
                   </p>
@@ -559,7 +655,10 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                   </div>
                 ) : (
                   tasks.map(task => (
-                    <Card key={task.id} className="hover:shadow-md transition-shadow">
+                    <Card key={task.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => {
+                      setSelectedTask(task);
+                      setShowTaskDetailModal(true);
+                    }}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -590,7 +689,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <select
                               value={task.status}
                               onChange={(e) => handleTaskStatusChange(task.id, e.target.value)}
@@ -629,6 +728,10 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                         taskCount={statusTasks.length}
                         tasks={statusTasks}
                         onDelete={handleDeleteTask}
+                        onTaskClick={(task) => {
+                          setSelectedTask(task);
+                          setShowTaskDetailModal(true);
+                        }}
                         getPriorityColor={getPriorityColor}
                         activeId={activeId}
                       />
@@ -691,7 +794,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                 <div>
                   <h4 className="font-semibold mb-2">AI-Powered Task Extraction</h4>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Upload requirement documents, project specs, or task lists. Our ML service uses Natural Language Processing 
+                    Upload requirement documents, project specs, or task lists. Our ML service uses Natural Language Processing
                     (spaCy) to automatically extract tasks, priorities, due dates, and estimated hours from your documents.
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1 mb-4">
@@ -747,7 +850,10 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Project Milestones</h3>
-              <Button size="sm" onClick={() => toast.info('Milestone management coming soon')}>
+              <Button size="sm" onClick={() => {
+                setEditingMilestone(null);
+                setShowMilestoneModal(true);
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Milestone
               </Button>
@@ -765,7 +871,10 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                 <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                 <h3 className="font-semibold mb-2">No milestones yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">Start by adding your first project milestone</p>
-                <Button size="sm" onClick={() => toast.info('Milestone management coming soon')}>
+                <Button size="sm" onClick={() => {
+                  setEditingMilestone(null);
+                  setShowMilestoneModal(true);
+                }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add First Milestone
                 </Button>
@@ -773,39 +882,124 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             ) : (
               <div className="space-y-3">
                 {milestones.map(milestone => (
-                <div key={milestone.id} className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-start gap-3 flex-1">
-                      {getMilestoneIcon(milestone.status)}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">{milestone.title}</h4>
-                          {getMilestoneBadge(milestone.status)}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{milestone.description}</p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            Rs. {milestone.amount.toLocaleString()}
-                          </span>
-                          {milestone.dueDate && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Due: {new Date(milestone.dueDate).toLocaleDateString()}
-                            </span>
+                  <div key={milestone.id} className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex items-start gap-3 flex-1">
+                        {getMilestoneIcon(milestone.status)}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold">{milestone.title}</h4>
+                            {getMilestoneBadge(milestone.status)}
+                          </div>
+                          {milestone.description && (
+                            <p className="text-sm text-muted-foreground mb-2">{milestone.description}</p>
                           )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            {milestone.dueDate && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Due: {new Date(milestone.dueDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setEditingMilestone(milestone);
+                            setShowMilestoneModal(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={async () => {
+                            if (confirm('Are you sure you want to delete this milestone?')) {
+                              try {
+                                await milestonesApi.delete(project.id, milestone.id);
+                                toast.success('Milestone deleted');
+                                fetchProjectData();
+                              } catch (error: any) {
+                                toast.error(error.response?.data?.error || 'Failed to delete milestone');
+                              }
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    {milestone.status === 'in-progress' && (
-                      <Button size="sm" onClick={() => toast.info('Feature coming soon')}>Submit for Review</Button>
-                    )}
-                    {milestone.status === 'approved' && (
-                      <Button size="sm" variant="outline" onClick={() => toast.info('Feature coming soon')}>Request Payment</Button>
-                    )}
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sprints Tab */}
+        {activeTab === 'sprints' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Project Sprints</h3>
+              <Button size="sm" onClick={() => toast.info('Sprint creation coming soon')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Sprint
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                  <p className="text-sm text-muted-foreground">Loading sprints...</p>
                 </div>
-              ))}
+              </div>
+            ) : sprints.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <h3 className="font-semibold mb-2">No sprints yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create sprints to organize your work</p>
+                <Button size="sm" onClick={() => toast.info('Sprint creation coming soon')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Sprint
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {sprints.map(sprint => (
+                  <div key={sprint.id} className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">{sprint.name}</h4>
+                          <Badge variant="outline">{sprint.status}</Badge>
+                        </div>
+                        {sprint.startDate && sprint.endDate && (
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" onClick={() => toast.info('Sprint details coming soon')}>
+                          View
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => toast.info('Sprint edit coming soon')}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -816,10 +1010,30 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Project Files</h3>
-              <Button size="sm" onClick={() => toast.info('File upload coming soon')}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Files
-              </Button>
+              <div>
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      try {
+                        await filesApi.upload(project.id, file);
+                        toast.success('File uploaded successfully');
+                        fetchProjectData();
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.error || 'Failed to upload file');
+                      }
+                      e.target.value = '';
+                    }
+                  }}
+                />
+                <Button size="sm" onClick={() => document.getElementById('file-upload')?.click()}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Files
+                </Button>
+              </div>
             </div>
 
             {loading ? (
@@ -834,39 +1048,88 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                 <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                 <h3 className="font-semibold mb-2">No files uploaded yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">Share project files with your team</p>
-                <Button size="sm" onClick={() => toast.info('File upload coming soon')}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload First File
-                </Button>
+                <div>
+                  <input
+                    type="file"
+                    id="file-upload-empty"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        try {
+                          await filesApi.upload(project.id, file);
+                          toast.success('File uploaded successfully');
+                          fetchProjectData();
+                        } catch (error: any) {
+                          toast.error(error.response?.data?.error || 'Failed to upload file');
+                        }
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <Button size="sm" onClick={() => document.getElementById('file-upload-empty')?.click()}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload First File
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
                 {files.map(file => (
-                <div key={file.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <FileText className="h-5 w-5 text-primary" />
+                  <div key={file.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {file.size} • Uploaded by {file.uploadedBy} • {file.uploadedAt}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{file.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {file.size} • Uploaded by {file.uploadedBy} • {file.uploadedAt}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={async () => {
+                          try {
+                            const blob = await filesApi.download(project.id, file.id);
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = file.name;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                          } catch (error: any) {
+                            toast.error('Failed to download file');
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={async () => {
+                          if (confirm('Are you sure you want to delete this file?')) {
+                            try {
+                              await filesApi.delete(project.id, file.id);
+                              toast.success('File deleted');
+                              fetchProjectData();
+                            } catch (error: any) {
+                              toast.error(error.response?.data?.error || 'Failed to delete file');
+                            }
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => toast.info('Preview coming soon')}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => toast.info('Download coming soon')}>
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => toast.info('Delete coming soon')}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))}
               </div>
             )}
           </div>
@@ -886,22 +1149,59 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                   <p className="text-4xl font-bold mb-2">
                     {Math.floor(currentTime / 3600)}:{String(Math.floor((currentTime % 3600) / 60)).padStart(2, '0')}:{String(currentTime % 60).padStart(2, '0')}
                   </p>
-                  <Button
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
-                    className={isTimerRunning ? 'bg-destructive' : ''}
-                  >
-                    {isTimerRunning ? (
-                      <>
-                        <Pause className="h-4 w-4 mr-2" />
-                        Stop
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Start
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <select
+                      className="text-sm border rounded px-2 py-1 mb-2"
+                      onChange={(e) => {
+                        // Store selected task for timer
+                        const taskId = e.target.value;
+                        if (taskId) {
+                          // Start timer for selected task
+                          setIsTimerRunning(true);
+                        }
+                      }}
+                    >
+                      <option value="">Select Task</option>
+                      {tasks.map(task => (
+                        <option key={task.id} value={task.id}>{task.title}</option>
+                      ))}
+                    </select>
+                    <Button
+                      onClick={async () => {
+                        if (isTimerRunning) {
+                          // Stop timer and log time
+                          setIsTimerRunning(false);
+                          const selectedTaskId = (document.querySelector('select') as HTMLSelectElement)?.value;
+                          if (selectedTaskId && currentTime > 0) {
+                            try {
+                              const minutes = Math.floor(currentTime / 60);
+                              await timeLogsApi.create(project.id, parseInt(selectedTaskId), { minutes });
+                              toast.success('Time logged successfully');
+                              setCurrentTime(0);
+                              fetchProjectData();
+                            } catch (error: any) {
+                              toast.error('Failed to log time');
+                            }
+                          }
+                        } else {
+                          setIsTimerRunning(true);
+                        }
+                      }}
+                      className={isTimerRunning ? 'bg-destructive' : ''}
+                    >
+                      {isTimerRunning ? (
+                        <>
+                          <Pause className="h-4 w-4 mr-2" />
+                          Stop & Log
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Start
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -929,19 +1229,19 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
               ) : (
                 <div className="space-y-2">
                   {timeEntries.map(entry => (
-                  <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="font-medium">{entry.hours}h</span>
-                        <span className="text-sm text-muted-foreground">{entry.date}</span>
-                        <Badge variant={entry.status === 'approved' ? 'default' : 'outline'}>
-                          {entry.status}
-                        </Badge>
+                    <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="font-medium">{entry.hours}h</span>
+                          <span className="text-sm text-muted-foreground">{entry.date}</span>
+                          <Badge variant={entry.status === 'approved' ? 'default' : 'outline'}>
+                            {entry.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{entry.description}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{entry.description}</p>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 </div>
               )}
             </div>
@@ -949,22 +1249,22 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             {/* Summary */}
             {timeEntries.length > 0 && (
               <div className="grid grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg bg-background text-center">
-                <p className="text-sm text-muted-foreground mb-1">Total Hours</p>
-                <p className="text-2xl font-bold">{timeEntries.reduce((sum, e) => sum + e.hours, 0)}h</p>
-              </div>
-              <div className="p-4 rounded-lg bg-background text-center">
-                <p className="text-sm text-muted-foreground mb-1">Approved</p>
-                <p className="text-2xl font-bold text-success">
-                  {timeEntries.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.hours, 0)}h
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-background text-center">
-                <p className="text-sm text-muted-foreground mb-1">Pending</p>
-                <p className="text-2xl font-bold text-yellow-500">
-                  {timeEntries.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.hours, 0)}h
-                </p>
-              </div>
+                <div className="p-4 rounded-lg bg-background text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Total Hours</p>
+                  <p className="text-2xl font-bold">{timeEntries.reduce((sum, e) => sum + e.hours, 0)}h</p>
+                </div>
+                <div className="p-4 rounded-lg bg-background text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Approved</p>
+                  <p className="text-2xl font-bold text-success">
+                    {timeEntries.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.hours, 0)}h
+                  </p>
+                </div>
+                <div className="p-4 rounded-lg bg-background text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-500">
+                    {timeEntries.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.hours, 0)}h
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -974,27 +1274,35 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         {activeTab === 'activity' && (
           <div className="space-y-4">
             <h3 className="font-semibold">Recent Activity</h3>
-            <div className="space-y-3">
-              {[
-                { action: 'Milestone approved', user: 'Client', time: '2 hours ago', type: 'success' },
-                { action: 'File uploaded: Design-Mockups-v2.fig', user: 'Sarah Johnson', time: '5 hours ago', type: 'info' },
-                { action: 'Time entry submitted', user: 'Sarah Johnson', time: '1 day ago', type: 'info' },
-                { action: 'Message sent', user: 'Client', time: '2 days ago', type: 'info' },
-                { action: 'Project started', user: 'System', time: '1 week ago', type: 'success' },
-              ].map((activity, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.type === 'success' ? 'bg-success' : 'bg-primary'
-                  }`} />
-                  <div className="flex-1">
-                    <p className="font-medium">{activity.action}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.user} • {activity.time}
-                    </p>
-                  </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                  <p className="text-sm text-muted-foreground">Loading activity...</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <h3 className="font-semibold mb-2">No activity yet</h3>
+                <p className="text-sm text-muted-foreground">Activity will appear here as you work on the project</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activities.map((activity, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'success' ? 'bg-success' : 'bg-primary'
+                      }`} />
+                    <div className="flex-1">
+                      <p className="font-medium">{activity.action}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.user} • {activity.time}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1026,6 +1334,23 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           fetchProjectData();
         }}
       />
+
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <TaskDetailModal
+          isOpen={showTaskDetailModal}
+          onClose={() => {
+            setShowTaskDetailModal(false);
+            setSelectedTask(null);
+          }}
+          projectId={project.id}
+          task={selectedTask}
+          allTasks={tasks}
+          onSuccess={() => {
+            fetchProjectData();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1037,6 +1362,7 @@ function DroppableColumn({
   taskCount,
   tasks,
   onDelete,
+  onTaskClick,
   getPriorityColor,
   activeId,
 }: {
@@ -1045,6 +1371,7 @@ function DroppableColumn({
   taskCount: number;
   tasks: Task[];
   onDelete: (id: number) => void;
+  onTaskClick: (task: Task) => void;
   getPriorityColor: (priority?: string) => string;
   activeId: number | null;
 }) {
@@ -1060,9 +1387,8 @@ function DroppableColumn({
       </div>
       <div
         ref={setNodeRef}
-        className={`space-y-2 min-h-[200px] p-2 rounded-lg transition-colors ${
-          isOver ? 'bg-primary/10 border-2 border-primary border-dashed' : 'bg-muted/30'
-        }`}
+        className={`space-y-2 min-h-[200px] p-2 rounded-lg transition-colors ${isOver ? 'bg-primary/10 border-2 border-primary border-dashed' : 'bg-muted/30'
+          }`}
       >
         <SortableContext
           id={id}
@@ -1074,6 +1400,7 @@ function DroppableColumn({
               key={task.id}
               task={task}
               onDelete={onDelete}
+              onTaskClick={onTaskClick}
               getPriorityColor={getPriorityColor}
             />
           ))}
@@ -1089,13 +1416,15 @@ function DroppableColumn({
 }
 
 // Draggable Task Card Component
-function DraggableTaskCard({ 
-  task, 
-  onDelete, 
-  getPriorityColor 
-}: { 
-  task: Task; 
+function DraggableTaskCard({
+  task,
+  onDelete,
+  onTaskClick,
+  getPriorityColor
+}: {
+  task: Task;
   onDelete: (id: number) => void;
+  onTaskClick: (task: Task) => void;
   getPriorityColor: (priority?: string) => string;
 }) {
   const {
@@ -1115,7 +1444,16 @@ function DraggableTaskCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${isDragging ? 'ring-2 ring-primary' : ''}`}>
+      <Card 
+        className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${isDragging ? 'ring-2 ring-primary' : ''}`}
+        onClick={(e) => {
+          // Don't open modal if clicking drag handle or delete button
+          if ((e.target as HTMLElement).closest('.cursor-grab') || (e.target as HTMLElement).closest('button')) {
+            return;
+          }
+          // This will be handled by parent component
+        }}
+      >
         <CardContent className="p-3">
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-start gap-2 flex-1">
@@ -1126,14 +1464,17 @@ function DraggableTaskCard({
               >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 cursor-pointer" onClick={(e) => {
+                e.stopPropagation();
+                // This will be handled by parent - we need to pass onTaskClick
+              }}>
                 <h5 className="font-medium text-sm">{task.title}</h5>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6" 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(task.id);

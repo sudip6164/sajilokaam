@@ -27,7 +27,7 @@ public class TaskController {
     private final TaskLabelRepository taskLabelRepository;
 
     public TaskController(TaskRepository taskRepository, ProjectRepository projectRepository,
-                          UserRepository userRepository, TaskLabelRepository taskLabelRepository) {
+            UserRepository userRepository, TaskLabelRepository taskLabelRepository) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -141,6 +141,15 @@ public class TaskController {
             @PathVariable Long projectId,
             @PathVariable Long taskId,
             @RequestBody TaskPriorityUpdateRequest request) {
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+            return ResponseEntity.status(403).build();
+        }
+
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -165,6 +174,15 @@ public class TaskController {
             @PathVariable Long projectId,
             @PathVariable Long taskId,
             @RequestBody TaskAssigneeUpdateRequest request) {
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+            return ResponseEntity.status(403).build();
+        }
+
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -194,6 +212,15 @@ public class TaskController {
             @PathVariable Long projectId,
             @PathVariable Long taskId,
             @RequestBody TaskLabelAssignmentRequest request) {
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+            return ResponseEntity.status(403).build();
+        }
+
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -219,21 +246,35 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(
             @PathVariable Long projectId,
             @PathVariable Long taskId) {
-        Optional<Task> taskOpt = taskRepository.findById(taskId);
-        if (taskOpt.isEmpty()) {
+        System.out.println("DELETE TASK ENDPOINT CALLED: projectId=" + projectId + ", taskId=" + taskId);
+        
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
+            System.out.println("Project not found: " + projectId);
             return ResponseEntity.notFound().build();
         }
-
-        Task task = taskOpt.get();
-        if (!task.getProject().getId().equals(projectId)) {
-            return ResponseEntity.badRequest().build();
-        }
-        if ("PENDING_PAYMENT".equalsIgnoreCase(task.getProject().getStatus())) {
+        
+        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
+            System.out.println("Project payment pending, cannot delete task");
             return ResponseEntity.status(403).build();
         }
 
-        taskRepository.delete(task);
+        if (!taskRepository.existsByIdAndProject_Id(taskId, projectId)) {
+            System.out.println("Task not found or doesn't belong to project: taskId=" + taskId + ", projectId=" + projectId);
+            return ResponseEntity.notFound().build();
+        }
+
+        // Use direct delete to avoid entity loading issues
+        taskRepository.deleteByIdDirect(taskId);
+        System.out.println("Task deleted successfully: taskId=" + taskId);
         return ResponseEntity.noContent().build();
     }
-}
 
+    @PostMapping("/{projectId}/tasks/{taskId}/delete")
+    public ResponseEntity<Void> deleteTaskPost(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId) {
+        System.out.println("DELETE TASK POST ENDPOINT CALLED: projectId=" + projectId + ", taskId=" + taskId);
+        return deleteTask(projectId, taskId);
+    }
+}

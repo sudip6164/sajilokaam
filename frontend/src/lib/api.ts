@@ -50,7 +50,7 @@ api.interceptors.response.use(
       if (status === 401) {
         // Only clear token if not a /me endpoint (initial auth check)
         const isAuthCheckEndpoint = url.includes('/auth/me');
-        
+
         // Clear token for actual authentication failures
         if (!isAuthCheckEndpoint) {
           localStorage.removeItem("jwt_token");
@@ -58,23 +58,23 @@ api.interceptors.response.use(
           // For /me endpoint, just clear token silently (might be expired)
           localStorage.removeItem("jwt_token");
         }
-        
+
         // Only redirect if not already on login/register page and not on public pages
-        const isPublicPage = window.location.pathname.startsWith("/jobs") || 
-                            window.location.pathname === "/" ||
-                            window.location.pathname.startsWith("/about") ||
-                            window.location.pathname.startsWith("/contact") ||
-                            window.location.pathname.startsWith("/pricing") ||
-                            window.location.pathname.startsWith("/features") ||
-                            window.location.pathname.startsWith("/terms") ||
-                            window.location.pathname.startsWith("/privacy");
-        
-        const isAuthPage = window.location.pathname.includes("/login") || 
-                          window.location.pathname.includes("/register") ||
-                          window.location.pathname.includes("/forgot-password") ||
-                          window.location.pathname.includes("/reset-password") ||
-                          window.location.pathname.includes("/verify-email");
-        
+        const isPublicPage = window.location.pathname.startsWith("/jobs") ||
+          window.location.pathname === "/" ||
+          window.location.pathname.startsWith("/about") ||
+          window.location.pathname.startsWith("/contact") ||
+          window.location.pathname.startsWith("/pricing") ||
+          window.location.pathname.startsWith("/features") ||
+          window.location.pathname.startsWith("/terms") ||
+          window.location.pathname.startsWith("/privacy");
+
+        const isAuthPage = window.location.pathname.includes("/login") ||
+          window.location.pathname.includes("/register") ||
+          window.location.pathname.includes("/forgot-password") ||
+          window.location.pathname.includes("/reset-password") ||
+          window.location.pathname.includes("/verify-email");
+
         // Only redirect if on a protected page (not public, not auth page, and not /me check)
         if (!isPublicPage && !isAuthPage && !isAuthCheckEndpoint) {
           // For protected pages, redirect to login after a brief delay (to avoid race conditions)
@@ -84,7 +84,7 @@ api.interceptors.response.use(
             }
           }, 100);
         }
-        
+
         // Only show error toast for protected pages and non-/me endpoints
         if (!isPublicPage && !isAuthPage && !isAuthCheckEndpoint) {
           toast.error("Session expired. Please login again.");
@@ -656,6 +656,20 @@ export const projectsApi = {
     return response.data;
   },
 
+  deleteTask: async (projectId: number, taskId: number) => {
+    // Try DELETE method first
+    try {
+      await api.delete(`/projects/${projectId}/tasks/${taskId}`);
+    } catch (error: any) {
+      // Fallback to POST if DELETE fails
+      if (error.response?.status === 404) {
+        await api.post(`/projects/${projectId}/tasks/${taskId}/delete`);
+      } else {
+        throw error;
+      }
+    }
+  },
+
   // Milestones
   getMilestones: async (projectId: number) => {
     const response = await api.get<Array<{
@@ -818,12 +832,12 @@ export const paymentsApi = {
       total_amount: amount,
       amount: amount,
     };
-    
+
     // Include invoice ID if provided
     if (invoiceId) {
       payload.invoice_id = invoiceId;
     }
-    
+
     const response = await api.post<{
       amount: string;
       tax_amount: number;
@@ -850,7 +864,7 @@ export const paymentsApi = {
     const response = await api.post("/payments/demo/initiate", data);
     return response.data;
   },
-  
+
   verifyDemoPayment: async (data: {
     invoiceId: number;
     projectId: number;
@@ -858,7 +872,7 @@ export const paymentsApi = {
     const response = await api.post("/payments/demo/verify", data);
     return response.data;
   },
-  
+
   initiateKhaltiPayment: async (data: {
     invoiceId: number;
     projectId: number;
@@ -877,7 +891,7 @@ export const paymentsApi = {
     }>("/payments/khalti/initiate", data);
     return response.data;
   },
-  
+
   verifyKhaltiPayment: async (data: {
     token: string;
     amount: number;
@@ -887,7 +901,7 @@ export const paymentsApi = {
     const response = await api.post("/payments/khalti/verify", data);
     return response.data;
   },
-  
+
   initiateEsewaPayment: async (data: {
     invoiceId: number;
     projectId: number;
@@ -1126,7 +1140,7 @@ export const adminApi = {
     status: string;
     notes?: string;
   }) => {
-    const endpoint = profileType === 'freelancer' 
+    const endpoint = profileType === 'freelancer'
       ? `/admin/profiles/freelancers/${profileId}/verification`
       : `/admin/profiles/clients/${profileId}/verification`;
     const response = await api.patch(endpoint, data);
@@ -1321,7 +1335,7 @@ export const profileApi = {
   }) => {
     // Build request payload, only including fields that are actually provided
     const payload: any = {};
-    
+
     if (data.headline !== undefined) payload.headline = data.headline;
     if (data.overview !== undefined) payload.overview = data.overview;
     if (data.bio !== undefined && !data.overview) payload.overview = data.bio; // Legacy support
@@ -1352,7 +1366,7 @@ export const profileApi = {
     if (data.availability !== undefined) payload.availability = data.availability;
     if (data.experienceLevel !== undefined) payload.experienceLevel = data.experienceLevel;
     if (data.experienceYears !== undefined) payload.experienceYears = data.experienceYears;
-    
+
     const response = await api.put<{
       id: number;
       userId: number;
@@ -2239,6 +2253,171 @@ export const clientsApi = {
   getById: async (id: number) => {
     const response = await api.get(`/profile/client/user/${id}`);
     return response.data;
+  },
+};
+
+// Subtasks API
+export const subtasksApi = {
+  list: async (taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      taskId: number;
+      title: string;
+      status: string;
+    }>>(`/tasks/${taskId}/subtasks`);
+    return response.data;
+  },
+  create: async (taskId: number, data: { title: string; status?: string }) => {
+    const response = await api.post(`/tasks/${taskId}/subtasks`, data);
+    return response.data;
+  },
+  updateStatus: async (taskId: number, subtaskId: number, status: string) => {
+    const response = await api.patch(`/tasks/${taskId}/subtasks/${subtaskId}/status`, { status });
+    return response.data;
+  },
+  delete: async (taskId: number, subtaskId: number) => {
+    await api.delete(`/tasks/${taskId}/subtasks/${subtaskId}`);
+  },
+};
+
+// Task Dependencies API
+export const taskDependenciesApi = {
+  list: async (taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      taskId: number;
+      dependsOnTaskId: number;
+      dependsOnTaskTitle: string;
+      dependsOnTaskStatus: string;
+      dependencyType: string;
+      createdAt: string;
+    }>>(`/tasks/${taskId}/dependencies`);
+    return response.data;
+  },
+  create: async (taskId: number, data: { dependsOnTaskId: number; dependencyType?: string }) => {
+    const response = await api.post(`/tasks/${taskId}/dependencies`, data);
+    return response.data;
+  },
+  delete: async (taskId: number, dependencyId: number) => {
+    await api.delete(`/tasks/${taskId}/dependencies/${dependencyId}`);
+  },
+};
+
+// Task Labels API
+export const taskLabelsApi = {
+  list: async () => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      color: string;
+    }>>('/task-labels');
+    return response.data;
+  },
+  create: async (data: { name: string; color?: string }) => {
+    const response = await api.post('/task-labels', data);
+    return response.data;
+  },
+  update: async (id: number, data: { name?: string; color?: string }) => {
+    const response = await api.put(`/task-labels/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    await api.delete(`/task-labels/${id}`);
+  },
+};
+
+// Task Comments API (using comment controller)
+export const taskCommentsApi = {
+  list: async (projectId: number, taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      content: string;
+      authorId: number;
+      authorName: string;
+      createdAt: string;
+    }>>(`/projects/${projectId}/tasks/${taskId}/comments`);
+    return response.data;
+  },
+  create: async (projectId: number, taskId: number, data: { content: string }) => {
+    const response = await api.post(`/projects/${projectId}/tasks/${taskId}/comments`, data);
+    return response.data;
+  },
+  update: async (projectId: number, taskId: number, commentId: number, data: { content: string }) => {
+    const response = await api.put(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, data);
+    return response.data;
+  },
+  delete: async (projectId: number, taskId: number, commentId: number) => {
+    await api.delete(`/projects/${projectId}/tasks/${taskId}/comments/${commentId}`);
+  },
+};
+
+// Task Watchers API
+export const taskWatchersApi = {
+  list: async (taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      userId: number;
+      user: { id: number; fullName: string; email: string };
+    }>>(`/tasks/${taskId}/watchers`);
+    return response.data;
+  },
+  add: async (taskId: number) => {
+    const response = await api.post(`/tasks/${taskId}/watchers`);
+    return response.data;
+  },
+  remove: async (taskId: number) => {
+    await api.delete(`/tasks/${taskId}/watchers`);
+  },
+  check: async (taskId: number) => {
+    const response = await api.get<boolean>(`/tasks/${taskId}/watchers/check`);
+    return response.data;
+  },
+};
+
+// Task Attachments API
+export const taskAttachmentsApi = {
+  list: async (taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      fileName: string;
+      fileUrl: string;
+      fileSize: number;
+      uploadedBy: { id: number; fullName: string };
+      createdAt: string;
+    }>>(`/tasks/${taskId}/attachments`);
+    return response.data;
+  },
+  upload: async (projectId: number, taskId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post(`/projects/${projectId}/tasks/${taskId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+  delete: async (projectId: number, taskId: number, attachmentId: number) => {
+    await api.delete(`/projects/${projectId}/tasks/${taskId}/attachments/${attachmentId}`);
+  },
+};
+
+// Task Links API
+export const taskLinksApi = {
+  list: async (taskId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      taskId: number;
+      linkedTaskId: number;
+      linkedTask: { id: number; title: string; status: string };
+      linkType: string;
+    }>>(`/tasks/${taskId}/links`);
+    return response.data;
+  },
+  create: async (taskId: number, data: { linkedTaskId: number; linkType?: string }) => {
+    const response = await api.post(`/tasks/${taskId}/links`, data);
+    return response.data;
+  },
+  delete: async (taskId: number, linkId: number) => {
+    await api.delete(`/tasks/${taskId}/links/${linkId}`);
   },
 };
 

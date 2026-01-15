@@ -18,8 +18,8 @@ public class TaskActivityController {
     private final JwtService jwtService;
 
     public TaskActivityController(TaskActivityRepository taskActivityRepository,
-                                  UserRepository userRepository,
-                                  JwtService jwtService) {
+            UserRepository userRepository,
+            JwtService jwtService) {
         this.taskActivityRepository = taskActivityRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
@@ -50,8 +50,11 @@ public class TaskActivityController {
             return ResponseEntity.status(401).build();
         }
 
-        List<TaskActivity> activities = taskActivityRepository.findRecentActivities(taskId, page * size, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+                org.springframework.data.domain.Sort.by("createdAt").descending());
+        org.springframework.data.domain.Page<TaskActivity> activityPage = taskActivityRepository.findByTaskId(taskId,
+                pageable);
+        List<TaskActivity> activities = activityPage.getContent();
         return ResponseEntity.ok(activities);
     }
 }
-

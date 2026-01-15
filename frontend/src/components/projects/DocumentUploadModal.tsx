@@ -163,21 +163,31 @@ export function DocumentUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
-        <CardHeader className="border-b bg-gradient-to-r from-primary/10 to-purple-100 flex-shrink-0 py-4">
-          <div className="flex items-center gap-3">
-            <Sparkles className="h-8 w-8 text-primary" />
-            <div>
-              <CardTitle className="text-2xl">Upload Requirements Document</CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
-                AI will automatically extract tasks from your document
-              </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+      <Card className="w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/10 to-purple-100 flex-shrink-0 py-4 px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <Sparkles className="h-6 w-6 md:h-8 md:w-8 text-primary flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-lg md:text-xl lg:text-2xl break-words">Upload Requirements Document</CardTitle>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">
+                  AI will automatically extract tasks from your document
+                </p>
+              </div>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="flex-shrink-0 h-8 w-8 md:h-10 md:w-10"
+            >
+              <XCircle className="h-4 w-4 md:h-5 md:w-5" />
+            </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-6 overflow-hidden flex flex-col">
+        <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6 flex-1 overflow-y-auto min-h-0">
           {/* Upload Section */}
           {extractedTasks.length === 0 && (
             <div className="space-y-4">
@@ -245,11 +255,11 @@ export function DocumentUploadModal({
 
           {/* Extracted Tasks */}
           {extractedTasks.length > 0 && (
-            <div className="flex flex-col h-full overflow-hidden">
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  AI Extracted Tasks ({extractedTasks.length})
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 flex-shrink-0">
+                <h3 className="text-base md:text-lg font-semibold flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                  <span>AI Extracted Tasks ({extractedTasks.length})</span>
                 </h3>
                 <Button
                   variant="outline"
@@ -261,33 +271,39 @@ export function DocumentUploadModal({
                       setSelectedTasks(extractedTasks.map((_, idx) => idx));
                     }
                   }}
+                  className="w-full sm:w-auto"
                 >
                   {selectedTasks.length === extractedTasks.length ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
 
-              <div className="space-y-3 overflow-y-auto pr-2" style={{ maxHeight: '55vh' }}>
+              <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-2 -mr-2">
                 {extractedTasks.map((task, index) => (
                   <div
                     key={index}
-                    className={`border rounded-lg p-4 transition-colors ${selectedTasks.includes(index) ? 'border-primary bg-primary/5' : 'border-gray-200'
-                      }`}
+                    className={`border rounded-lg p-3 md:p-4 transition-colors ${
+                      selectedTasks.includes(index) ? 'border-primary bg-primary/5' : 'border-gray-200'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       <Checkbox
                         checked={selectedTasks.includes(index)}
                         onCheckedChange={() => toggleTask(index)}
-                        className="mt-1"
+                        className="mt-1 flex-shrink-0"
                       />
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold">{task.title}</h4>
-                          <Badge className={getPriorityColor(task.priority)}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                          <h4 className="font-semibold text-sm md:text-base break-words">{task.title}</h4>
+                          <Badge className={`${getPriorityColor(task.priority)} flex-shrink-0 w-fit`}>
                             {task.priority}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                        <div className="flex items-center gap-4 text-sm">
+                        {task.description && (
+                          <p className="text-xs md:text-sm text-gray-600 mb-3 break-words line-clamp-3">
+                            {task.description}
+                          </p>
+                        )}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs md:text-sm">
                           <span className="text-gray-500">
                             Method: <span className="font-medium">{task.extractionMethod || 'ML'}</span>
                           </span>
@@ -309,14 +325,14 @@ export function DocumentUploadModal({
 
         </CardContent>
 
-        <CardFooter className="border-t p-6 bg-gray-50 flex-shrink-0 mt-auto">
-          <div className="flex gap-3 w-full">
+        <CardFooter className="border-t p-4 md:p-6 bg-gray-50 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             {extractedTasks.length === 0 ? (
               <>
                 <Button
                   onClick={handleUpload}
                   disabled={!file || uploading}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   {uploading ? (
                     <>
@@ -330,7 +346,7 @@ export function DocumentUploadModal({
                     </>
                   )}
                 </Button>
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </>
@@ -339,7 +355,7 @@ export function DocumentUploadModal({
                 <Button
                   onClick={handleCreateTasks}
                   disabled={selectedTasks.length === 0 || uploading}
-                  className="flex-1"
+                  className="w-full sm:flex-1"
                 >
                   {uploading ? (
                     <>
@@ -353,7 +369,7 @@ export function DocumentUploadModal({
                     </>
                   )}
                 </Button>
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </>

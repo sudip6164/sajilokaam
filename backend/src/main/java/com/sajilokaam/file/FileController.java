@@ -83,6 +83,9 @@ public class FileController {
         User user = userOpt.get();
 
         // Verify task exists and belongs to project
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -218,6 +221,76 @@ public class FileController {
         }
     }
 
+    @PostMapping("/{projectId}/files")
+    public ResponseEntity<FileEntity> uploadProjectFile(
+            @PathVariable Long projectId,
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = userOpt.get();
+
+        Optional<Project> projectOpt = projectRepository.findById(projectId);
+        if (projectOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Validate file
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (file.getSize() > MAX_FILE_SIZE) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            String fileExtension = "";
+            int lastDotIndex = originalFilename.lastIndexOf('.');
+            if (lastDotIndex > 0) {
+                fileExtension = originalFilename.substring(lastDotIndex);
+            }
+
+            String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+            Path uploadPath = Paths.get(UPLOAD_DIR, "projects", projectId.toString());
+            Files.createDirectories(uploadPath);
+            Path filePath = uploadPath.resolve(uniqueFilename);
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            FileEntity fileEntity = new FileEntity();
+            fileEntity.setTask(null); // Project-level file, not task-specific
+            fileEntity.setUploader(user);
+            fileEntity.setFilename(originalFilename);
+            fileEntity.setFilePath(filePath.toString());
+            fileEntity.setContentType(file.getContentType());
+            fileEntity.setSizeBytes(file.getSize());
+
+            FileEntity saved = fileRepository.save(fileEntity);
+            URI location = URI.create("/api/projects/" + projectId + "/files/" + saved.getId());
+            return ResponseEntity.created(location).body(saved);
+        } catch (IOException e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
     @GetMapping("/{projectId}/files")
     public ResponseEntity<List<FileResponse>> getProjectFiles(
             @PathVariable Long projectId,
@@ -277,6 +350,9 @@ public class FileController {
             @PathVariable Long taskId) {
         
         // Verify task exists and belongs to project
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -312,6 +388,9 @@ public class FileController {
             @PathVariable Long fileId) {
         
         // Verify task exists and belongs to project
+        if (taskId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -388,11 +467,60 @@ public class FileController {
                 return ResponseEntity.notFound().build();
             }
 
+            String contentType = fileEntity.getContentType();
+            if (contentType == null || contentType.isEmpty()) {
+                contentType = "application/octet-stream";
+            }
             return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(fileEntity.getContentType() != null ? fileEntity.getContentType() : "application/octet-stream"))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileEntity.getFilename() + "\"")
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + (fileEntity.getFilename() != null ? fileEntity.getFilename() : "file") + "\"")
                     .body(resource);
         } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @DeleteMapping("/{projectId}/files/{fileId}")
+    public ResponseEntity<Void> deleteProjectFile(
+            @PathVariable Long projectId,
+            @PathVariable Long fileId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorization.substring("Bearer ".length()).trim();
+        Optional<String> emailOpt = jwtService.extractSubject(token);
+        if (emailOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        Optional<FileEntity> fileOpt = fileRepository.findById(fileId);
+        if (fileOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        FileEntity fileEntity = fileOpt.get();
+        // Verify file belongs to project (either through task or directly)
+        if (fileEntity.getTask() != null && !fileEntity.getTask().getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            // Delete physical file
+            Path filePath = Paths.get(fileEntity.getFilePath());
+            Files.deleteIfExists(filePath);
+            
+            // Delete database record
+            fileRepository.delete(fileEntity);
+            return ResponseEntity.noContent().build();
+        } catch (IOException e) {
             return ResponseEntity.status(500).build();
         }
     }
