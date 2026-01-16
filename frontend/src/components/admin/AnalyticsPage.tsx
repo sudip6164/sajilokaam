@@ -97,7 +97,7 @@ export function AnalyticsPage() {
     },
     {
       title: 'Total Revenue',
-      value: `Rs. ${(analytics?.totalRevenue || 0).toLocaleString()}`,
+      value: `Rs. ${Number(analytics?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',

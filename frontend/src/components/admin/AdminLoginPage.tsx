@@ -37,6 +37,7 @@ export function AdminLoginPage() {
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.response?.data?.message || 'Invalid credentials');
+      // Stay on admin login page - don't redirect
     } finally {
       setLoading(false);
     }

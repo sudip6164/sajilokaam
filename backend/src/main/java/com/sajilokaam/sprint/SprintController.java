@@ -24,18 +24,21 @@ public class SprintController {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final SprintTaskRepository sprintTaskRepository;
 
     public SprintController(
             SprintRepository sprintRepository,
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
             UserRepository userRepository,
-            JwtService jwtService) {
+            JwtService jwtService,
+            SprintTaskRepository sprintTaskRepository) {
         this.sprintRepository = sprintRepository;
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.sprintTaskRepository = sprintTaskRepository;
     }
 
     @GetMapping
@@ -148,9 +151,26 @@ public class SprintController {
             return ResponseEntity.badRequest().build();
         }
 
-        // In a real implementation, you'd use a SprintTask join table
-        // For now, we'll just return success
+        if (sprintTaskRepository.existsBySprintIdAndTaskId(sprintId, taskId)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Task already in sprint"));
+        }
+
+        SprintTask sprintTask = new SprintTask();
+        sprintTask.setSprintId(sprintId);
+        sprintTask.setTaskId(taskId);
+        sprintTaskRepository.save(sprintTask);
+        
         return ResponseEntity.ok(Map.of("message", "Task added to sprint"));
+    }
+    
+    @DeleteMapping("/{sprintId}/tasks/{taskId}")
+    public ResponseEntity<Void> removeTaskFromSprint(
+            @PathVariable Long projectId,
+            @PathVariable Long sprintId,
+            @PathVariable Long taskId) {
+        
+        sprintTaskRepository.deleteBySprintIdAndTaskId(sprintId, taskId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{sprintId}/tasks")
@@ -171,9 +191,46 @@ public class SprintController {
             return ResponseEntity.badRequest().build();
         }
 
-        // In a real implementation, you'd query the join table
-        // For now, return empty list
-        return ResponseEntity.ok(new java.util.ArrayList<>());
+        List<Task> tasks = sprintTaskRepository.findTasksBySprintId(sprintId);
+        return ResponseEntity.ok(tasks);
+    }
+    
+    @PostMapping("/{sprintId}/tasks/{taskId}")
+    public ResponseEntity<Map<String, String>> addTaskToSprint(
+            @PathVariable Long projectId,
+            @PathVariable Long sprintId,
+            @PathVariable Long taskId) {
+        
+        Optional<Sprint> sprintOpt = sprintRepository.findById(sprintId);
+        if (sprintOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Optional<Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOpt.get();
+        if (!task.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Sprint sprint = sprintOpt.get();
+        if (!sprint.getProject().getId().equals(projectId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (sprintTaskRepository.existsBySprintIdAndTaskId(sprintId, taskId)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Task already in sprint"));
+        }
+
+        SprintTask sprintTask = new SprintTask();
+        sprintTask.setSprintId(sprintId);
+        sprintTask.setTaskId(taskId);
+        sprintTaskRepository.save(sprintTask);
+        
+        return ResponseEntity.ok(Map.of("message", "Task added to sprint"));
     }
 
     public static class SprintCreateRequest {

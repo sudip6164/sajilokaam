@@ -74,13 +74,22 @@ api.interceptors.response.use(
           window.location.pathname.includes("/forgot-password") ||
           window.location.pathname.includes("/reset-password") ||
           window.location.pathname.includes("/verify-email");
+        
+        const isAdminPage = window.location.pathname.startsWith("/admin");
 
         // Only redirect if on a protected page (not public, not auth page, and not /me check)
         if (!isPublicPage && !isAuthPage && !isAuthCheckEndpoint) {
           // For protected pages, redirect to login after a brief delay (to avoid race conditions)
           setTimeout(() => {
-            if (window.location.pathname !== "/login") {
-              window.location.href = "/login";
+            // If on admin pages, redirect to admin login, otherwise redirect to user login
+            if (isAdminPage) {
+              if (window.location.pathname !== "/admin") {
+                window.location.href = "/admin";
+              }
+            } else {
+              if (window.location.pathname !== "/login") {
+                window.location.href = "/login";
+              }
             }
           }, 100);
         }
@@ -668,6 +677,16 @@ export const projectsApi = {
         throw error;
       }
     }
+  },
+  getActivities: async (projectId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      action: string;
+      description: string;
+      user: { id: number; fullName: string; email: string };
+      createdAt: string;
+    }>>(`/projects/${projectId}/activities`);
+    return response.data;
   },
 
   // Milestones
@@ -1527,10 +1546,138 @@ export const notificationsApi = {
     return response.data;
   },
   markAsRead: async (id: number) => {
-    await api.put(`/notifications/${id}/read`);
+    await api.patch(`/notifications/${id}/read`);
   },
   markAllAsRead: async () => {
-    await api.put("/notifications/read-all");
+    await api.patch("/notifications/read-all");
+  },
+};
+
+// Reviews API
+export const reviewsApi = {
+  getProjectReviews: async (projectId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      reviewerId: number;
+      revieweeId: number;
+      rating: number;
+      title: string;
+      comment: string;
+      createdAt: string;
+      reviewer?: { id: number; fullName: string; profilePictureUrl?: string };
+      reviewee?: { id: number; fullName: string; profilePictureUrl?: string };
+    }>>(`/reviews/project/${projectId}`);
+    return response.data;
+  },
+  listByProject: async (projectId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      reviewerId: number;
+      revieweeId: number;
+      rating: number;
+      title: string;
+      comment: string;
+      createdAt: string;
+      reviewer?: { id: number; fullName: string; profilePictureUrl?: string };
+      reviewee?: { id: number; fullName: string; profilePictureUrl?: string };
+    }>>(`/reviews/project/${projectId}`);
+    return response.data;
+  },
+  listByUser: async (userId: number) => {
+    const response = await api.get<Array<{
+      id: number;
+      projectId: number;
+      reviewerId: number;
+      revieweeId: number;
+      rating: number;
+      title: string;
+      comment: string;
+      createdAt: string;
+      reviewer?: { id: number; fullName: string; profilePictureUrl?: string };
+    }>>(`/reviews/user/${userId}`);
+    return response.data;
+  },
+  create: async (data: {
+    projectId?: number;
+    revieweeId: number;
+    rating: number;
+    title: string;
+    comment: string;
+  }) => {
+    const response = await api.post(`/reviews`, data);
+    return response.data;
+  },
+  createReview: async (data: {
+    projectId?: number;
+    revieweeId: number;
+    rating: number;
+    title: string;
+    comment: string;
+  }) => {
+    return reviewsApi.create(data);
+  },
+  update: async (id: number, data: {
+    rating?: number;
+    title?: string;
+    comment?: string;
+  }) => {
+    const response = await api.put(`/reviews/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    await api.delete(`/reviews/${id}`);
+  },
+  get: async (id: number) => {
+    const response = await api.get(`/reviews/${id}`);
+    return response.data;
+  },
+};
+
+// Pricing API
+export const pricingApi = {
+  getPlans: async () => {
+    const response = await api.get<Array<{
+      id: number;
+      name: string;
+      displayName: string;
+      description: string;
+      monthlyPrice: number;
+      yearlyPrice: number;
+      maxBidsPerMonth: number;
+      maxJobPostsPerMonth: number;
+      platformFeePercent: number;
+      featuredProfile: boolean;
+      prioritySupport: boolean;
+    }>>("/pricing/plans");
+    return response.data;
+  },
+  getMySubscription: async () => {
+    const response = await api.get<{
+      id: number;
+      planId: number;
+      billingPeriod: string;
+      startDate: string;
+      endDate?: string;
+      isActive: boolean;
+      plan: {
+        id: number;
+        name: string;
+        displayName: string;
+        monthlyPrice: number;
+        yearlyPrice: number;
+      };
+    }>("/pricing/my-subscription");
+    return response.data;
+  },
+  subscribe: async (data: {
+    planId: number;
+    billingPeriod: 'MONTHLY' | 'YEARLY';
+    autoRenew?: boolean;
+  }) => {
+    const response = await api.post("/pricing/subscribe", data);
+    return response.data;
   },
 };
 
@@ -2273,6 +2420,10 @@ export const subtasksApi = {
   },
   updateStatus: async (taskId: number, subtaskId: number, status: string) => {
     const response = await api.patch(`/tasks/${taskId}/subtasks/${subtaskId}/status`, { status });
+    return response.data;
+  },
+  update: async (taskId: number, subtaskId: number, data: { title?: string; status?: string }) => {
+    const response = await api.put(`/tasks/${taskId}/subtasks/${subtaskId}`, data);
     return response.data;
   },
   delete: async (taskId: number, subtaskId: number) => {

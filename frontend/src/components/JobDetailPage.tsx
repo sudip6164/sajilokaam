@@ -7,7 +7,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
 import { useRouter } from './Router';
-import { jobsApi, bidsApi, profileApi } from '@/lib/api';
+import { jobsApi, bidsApi, profileApi, reviewsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { 
@@ -148,14 +148,38 @@ export function JobDetailPage() {
         'SENIOR': 'Expert',
       };
 
-      // Fetch client profile to get their location
+      // Fetch client profile to get their location and rating
       let clientLocation = 'Not specified';
       let clientName = 'Client';
+      let clientRating = 0;
+      let clientReviewCount = 0;
       if (jobData.clientId) {
         try {
           const clientProfile = await profileApi.getClientProfile(jobData.clientId);
           clientLocation = clientProfile.location || 'Not specified';
           clientName = clientProfile.companyName || clientProfile.user?.fullName || 'Client';
+          
+          // Fetch client reviews - use user.id, not profile.id
+          // Reviews are stored by user ID, not client profile ID
+          const clientUserId = clientProfile.user?.id || (clientProfile as any).userId;
+          if (clientUserId) {
+            try {
+              console.log('JobDetailPage: Fetching reviews for client userId:', clientUserId);
+              const reviews = await reviewsApi.listByUser(clientUserId);
+              console.log('JobDetailPage: Received reviews:', reviews);
+              if (Array.isArray(reviews) && reviews.length > 0) {
+                clientRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+                clientReviewCount = reviews.length;
+                console.log('JobDetailPage: Calculated rating:', clientRating, 'count:', clientReviewCount);
+              } else {
+                console.log('JobDetailPage: No reviews found for client');
+              }
+            } catch (err) {
+              console.error('JobDetailPage: Error fetching client reviews:', err);
+            }
+          } else {
+            console.warn('JobDetailPage: No client userId found in profile:', clientProfile);
+          }
         } catch (err) {
           console.error('Error fetching client profile:', err);
         }
@@ -198,8 +222,8 @@ export function JobDetailPage() {
         hires: 0, // Would need separate API call or backend field
         client: {
           name: clientName,
-          rating: 4.5, // Would need client profile API
-          reviews: 0,
+          rating: clientRating,
+          reviews: clientReviewCount,
           location: clientLocation, // Use client profile location
           memberSince: new Date(jobData.createdAt).getFullYear().toString(),
         },
@@ -585,11 +609,15 @@ export function JobDetailPage() {
                   </Avatar>
                   <div>
                     <h4 className="font-semibold">{job.client.name}</h4>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      <span>{job.client.rating}</span>
-                      <span className="text-muted-foreground">({job.client.reviews})</span>
-                    </div>
+                    {job.client.rating > 0 ? (
+                      <div className="flex items-center gap-1 text-sm">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span>{job.client.rating.toFixed(1)}</span>
+                        <span className="text-muted-foreground">({job.client.reviews})</span>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No ratings yet</div>
+                    )}
                   </div>
                 </div>
 

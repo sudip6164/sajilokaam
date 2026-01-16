@@ -26,6 +26,8 @@ import {
   Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { FreelancerAnalyticsPage } from './FreelancerAnalyticsPage';
+import { ReviewManagementPage } from './reviews/ReviewManagementPage';
 
 const sidebarItems: Array<{
   title: string;
@@ -34,9 +36,11 @@ const sidebarItems: Array<{
   badge?: string | number;
 }> = [
   { title: "Dashboard", icon: Home, id: "overview" },
+  { title: "Analytics", icon: TrendingUp, id: "analytics" },
   { title: "Active Projects", icon: Briefcase, id: "projects" },
   { title: "Proposals", icon: FileText, id: "proposals" },
   { title: "Earnings", icon: DollarSign, id: "earnings" },
+  { title: "Reviews", icon: Star, id: "reviews" },
 ];
 
 export function FreelancerDashboard() {
@@ -47,12 +51,22 @@ export function FreelancerDashboard() {
     switch (activeSection) {
       case 'overview':
         return <OverviewContent navigate={navigate} />;
+      case 'analytics':
+        return <FreelancerAnalyticsPage />;
       case 'projects':
         return <ProjectsContent navigate={navigate} />;
       case 'proposals':
         return <ProposalsContent navigate={navigate} />;
       case 'earnings':
         return <EarningsContent navigate={navigate} />;
+      case 'reviews':
+        return user ? (
+          <ReviewManagementPage 
+            userId={user.id} 
+            userType="freelancer" 
+            userName={user.fullName || 'Freelancer'} 
+          />
+        ) : null;
       default:
         return <OverviewContent navigate={navigate} />;
     }

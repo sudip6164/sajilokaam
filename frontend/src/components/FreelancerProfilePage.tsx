@@ -62,10 +62,7 @@ interface FreelancerProfileData {
   websiteUrl: string;
   linkedinUrl: string;
   githubUrl: string;
-  experience: string;
   availability: string;
-  preferredJobTypes: string;
-  preferredContractTypes: string;
 }
 
 const timezones = [
@@ -89,18 +86,6 @@ const availabilityOptions = [
   'Part-time (20-40 hrs/week)',
   'Flexible (10-20 hrs/week)',
   'As needed (<10 hrs/week)'
-];
-
-const contractTypes = [
-  'Fixed Price',
-  'Hourly',
-  'Both'
-];
-
-const jobTypes = [
-  'One-time projects',
-  'Ongoing projects',
-  'Both'
 ];
 
 export function FreelancerProfilePage() {
@@ -207,10 +192,7 @@ export function FreelancerProfilePage() {
           websiteUrl: profile.websiteUrl || '',
           linkedinUrl: profile.linkedinUrl || '',
           githubUrl: profile.githubUrl || '',
-          experience: profile.experience || '',
-          availability: profile.availability || '',
-          preferredJobTypes: profile.preferredJobTypes || '',
-          preferredContractTypes: profile.preferredContractTypes || ''
+          availability: profile.availability || ''
         });
       } else {
         // No profile yet, use defaults
@@ -235,10 +217,7 @@ export function FreelancerProfilePage() {
           websiteUrl: '',
           linkedinUrl: '',
           githubUrl: '',
-          experience: '',
-          availability: '',
-          preferredJobTypes: '',
-          preferredContractTypes: ''
+          availability: ''
         });
       }
       
@@ -457,19 +436,22 @@ export function FreelancerProfilePage() {
         if (profileData.githubUrl.trim()) {
           payload.githubUrl = profileData.githubUrl.trim();
         }
-        if (profileData.experience.trim()) {
-          payload.experience = profileData.experience.trim();
-        }
         if (profileData.availability) {
-          payload.availability = profileData.availability;
-        }
-        if (profileData.preferredJobTypes) {
-          payload.preferredJobTypes = profileData.preferredJobTypes;
-        }
-        if (profileData.preferredContractTypes) {
-          payload.preferredContractTypes = profileData.preferredContractTypes;
+          // Map UI availability strings to backend enum values
+          const availabilityMap: Record<string, string> = {
+            'Full-time (40+ hrs/week)': 'FULL_TIME',
+            'Part-time (20-40 hrs/week)': 'PART_TIME',
+            'Flexible (10-20 hrs/week)': 'PART_TIME', // Map Flexible to PART_TIME since backend doesn't have FLEXIBLE
+            'As needed (<10 hrs/week)': 'AS_NEEDED'
+          };
+          const enumValue = availabilityMap[profileData.availability] || profileData.availability;
+          // Only send if it's a valid enum value
+          if (enumValue === 'FULL_TIME' || enumValue === 'PART_TIME' || enumValue === 'AS_NEEDED') {
+            payload.availability = enumValue;
+          }
         }
 
+        console.log('Sending payload:', JSON.stringify(payload, null, 2));
         await profileApi.updateFreelancerProfile(payload);
       }
       
@@ -487,7 +469,9 @@ export function FreelancerProfilePage() {
       }
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      toast.error('Failed to save profile. Please try again.');
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save profile. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -584,14 +568,6 @@ export function FreelancerProfilePage() {
                             ? `Rs. ${profileData.hourlyRateMin}-${profileData.hourlyRateMax}/hr`
                             : 'Not set'}
                         </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Job Types</p>
-                        <p className="text-xl font-bold">{profileData.preferredJobTypes || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Contract Types</p>
-                        <p className="text-xl font-bold text-success">{profileData.preferredContractTypes || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Availability</p>
@@ -699,14 +675,6 @@ export function FreelancerProfilePage() {
                             <span className="font-semibold">{profileData.availability || 'Not set'}</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Job Types</span>
-                            <span className="font-semibold">{profileData.preferredJobTypes || 'Not set'}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Contract Types</span>
-                            <span className="font-semibold">{profileData.preferredContractTypes || 'Not set'}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Timezone</span>
                             <span className="font-semibold">{profileData.timezone || 'Not set'}</span>
                           </div>
@@ -788,23 +756,7 @@ export function FreelancerProfilePage() {
                     </Card>
                   )}
 
-                  {profileData.experience && (
-                    <Card className="border-2">
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                          <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Briefcase className="h-6 w-6 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-lg">Work Experience</h3>
-                            <p className="mt-3 text-muted-foreground whitespace-pre-line">{profileData.experience}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {!profileData.education && !profileData.experience && (
+                  {!profileData.education && (
                     <Card className="border-2">
                       <CardContent className="p-12 text-center">
                         <p className="text-muted-foreground">No experience information provided yet.</p>
@@ -1243,15 +1195,6 @@ export function FreelancerProfilePage() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="experience">Years of Experience</Label>
-                    <Input
-                      id="experience"
-                      value={profileData.experience}
-                      onChange={(e) => updateField('experience', e.target.value)}
-                      placeholder="5+ years"
-                    />
-                  </div>
                 </div>
               </div>
             )}
@@ -1353,39 +1296,6 @@ export function FreelancerProfilePage() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="preferredJobTypes">Preferred Job Types</Label>
-                    <Select 
-                      value={profileData.preferredJobTypes}
-                      onValueChange={(value) => updateField('preferredJobTypes', value)}
-                    >
-                      <SelectTrigger id="preferredJobTypes">
-                        <SelectValue placeholder="Select job type preference" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {jobTypes.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="preferredContractTypes">Preferred Contract Types</Label>
-                    <Select 
-                      value={profileData.preferredContractTypes}
-                      onValueChange={(value) => updateField('preferredContractTypes', value)}
-                    >
-                      <SelectTrigger id="preferredContractTypes">
-                        <SelectValue placeholder="Select contract type preference" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {contractTypes.map(type => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
               </div>
                 )}

@@ -16,5 +16,12 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> 
     
     @Query("SELECT al FROM ActivityLog al WHERE al.action = :action ORDER BY al.createdAt DESC")
     List<ActivityLog> findByAction(@Param("action") String action);
+    
+    @Query("SELECT al FROM ActivityLog al WHERE " +
+           "(al.entityType = 'FILE' AND (al.entityId IN (SELECT f.id FROM FileEntity f WHERE f.task.project.id = :projectId) OR al.description LIKE CONCAT('%project:', :projectId, '%'))) " +
+           "OR (al.entityType = 'TASK' AND al.entityId IN (SELECT t.id FROM Task t WHERE t.project.id = :projectId)) " +
+           "OR (al.entityType = 'MILESTONE' AND al.entityId IN (SELECT m.id FROM Milestone m WHERE m.project.id = :projectId)) " +
+           "ORDER BY al.createdAt DESC")
+    List<ActivityLog> findProjectActivities(@Param("projectId") Long projectId);
 }
 

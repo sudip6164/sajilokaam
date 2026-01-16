@@ -3,7 +3,9 @@ package com.sajilokaam.task;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.NonNull;
 import java.util.List;
+import java.util.Optional;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
     @EntityGraph(attributePaths = { "assignee", "labels" })
@@ -16,7 +18,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     boolean existsByIdAndProject_Id(Long id, Long projectId);
     
-    // Explicitly declare existsById to help IDE (inherited from CrudRepository)
+    // Explicitly declare inherited methods to help IDE recognition
     @Override
-    boolean existsById(Long id);
+    boolean existsById(@NonNull Long id);
+    
+    @Override
+    @NonNull
+    Optional<Task> findById(@NonNull Long id);
+    
+    @Override
+    @NonNull
+    <S extends Task> S save(@NonNull S entity);
 }

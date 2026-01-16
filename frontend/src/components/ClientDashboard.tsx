@@ -29,6 +29,8 @@ import {
   Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientAnalyticsPage } from './ClientAnalyticsPage';
+import { ReviewManagementPage } from './reviews/ReviewManagementPage';
 
 const sidebarItems: Array<{
   title: string;
@@ -37,28 +39,38 @@ const sidebarItems: Array<{
   badge?: string | number;
 }> = [
   { title: "Dashboard", icon: Home, id: "overview" },
+  { title: "Analytics", icon: TrendingUp, id: "analytics" },
   { title: "Active Projects", icon: Briefcase, id: "projects" },
   { title: "Posted Jobs", icon: FileText, id: "jobs" },
-  { title: "Freelancers", icon: Users, id: "freelancers" },
   { title: "Payments", icon: DollarSign, id: "payments" },
+  { title: "Reviews", icon: Star, id: "reviews" },
 ];
 
 export function ClientDashboard() {
   const { navigate } = useRouter();
+  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState('overview');
 
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
         return <OverviewContent navigate={navigate} setActiveSection={setActiveSection} />;
+      case 'analytics':
+        return <ClientAnalyticsPage />;
       case 'projects':
         return <ProjectsContent navigate={navigate} />;
       case 'jobs':
         return <JobsContent navigate={navigate} />;
-      case 'freelancers':
-        return <FreelancersContent navigate={navigate} />;
       case 'payments':
         return <PaymentsContent navigate={navigate} />;
+      case 'reviews':
+        return user ? (
+          <ReviewManagementPage 
+            userId={user.id} 
+            userType="client" 
+            userName={user.fullName || 'Client'} 
+          />
+        ) : null;
       default:
         return <OverviewContent navigate={navigate} setActiveSection={setActiveSection} />;
     }

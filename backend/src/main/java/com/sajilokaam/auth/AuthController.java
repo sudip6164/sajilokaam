@@ -184,10 +184,13 @@ public class AuthController {
             // Send email with reset link
             try {
                 emailService.sendPasswordResetEmail(email, resetToken);
+                System.out.println("Password reset request processed for: " + email);
             } catch (Exception e) {
                 System.err.println("Failed to send password reset email: " + e.getMessage());
+                e.printStackTrace();
                 // Log error but don't fail the request - user still gets success message
                 // In production, you might want to queue this for retry
+                // Token is still saved, so user can check console logs for the reset link
             }
         }
 

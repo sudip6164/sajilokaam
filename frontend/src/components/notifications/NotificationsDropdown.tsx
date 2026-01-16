@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Bell, Check, Trash2, Settings, Filter, MessageSquare, 
+  Bell, Check, Trash2, Filter, MessageSquare, 
   Briefcase, DollarSign, Star, AlertCircle, CheckCircle, X 
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { notificationsApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from '../Router';
+import { toast } from 'sonner';
 
 export interface Notification {
   id: number;
@@ -23,62 +27,48 @@ interface NotificationsDropdownProps {
 }
 
 export function NotificationsDropdown({ isOpen, onClose }: NotificationsDropdownProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: 'message',
-      title: 'New message from Sarah Johnson',
-      description: 'Great! I can start working on the project next week.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      isRead: false,
-      priority: 'high',
-    },
-    {
-      id: 2,
-      type: 'payment',
-      title: 'Payment received',
-      description: 'You received Rs. 1,500 for milestone completion',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      isRead: false,
-      priority: 'high',
-    },
-    {
-      id: 3,
-      type: 'project',
-      title: 'Milestone approved',
-      description: 'Your milestone "Initial Design & Wireframes" has been approved',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-      isRead: false,
-      priority: 'medium',
-    },
-    {
-      id: 4,
-      type: 'review',
-      title: 'New review received',
-      description: 'Client left you a 5-star review',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      isRead: true,
-      priority: 'medium',
-    },
-    {
-      id: 5,
-      type: 'project',
-      title: 'New job match',
-      description: 'A job matching your skills was just posted',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-      isRead: true,
-      priority: 'low',
-    },
-    {
-      id: 6,
-      type: 'system',
-      title: 'Profile verification complete',
-      description: 'Your profile has been successfully verified',
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-      isRead: true,
-      priority: 'low',
-    },
-  ]);
+  const { user } = useAuth();
+  const { navigate } = useRouter();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchNotifications();
+    }
+  }, [isOpen, user]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const data = await notificationsApi.list({ page: 0, size: 50 });
+      // Handle both array response and paginated response
+      const notificationsList = Array.isArray(data) ? data : (data.content || []);
+      const mapped = notificationsList.map((n: any) => ({
+        id: n.id,
+        type: mapNotificationType(n.type),
+        title: n.title,
+        description: n.message || n.title,
+        timestamp: n.createdAt,
+        isRead: n.read || n.isRead || false,
+      }));
+      setNotifications(mapped);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]); // Set empty array on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapNotificationType = (type: string): Notification['type'] => {
+    const upper = type.toUpperCase();
+    if (upper.includes('MESSAGE')) return 'message';
+    if (upper.includes('PAYMENT') || upper.includes('INVOICE')) return 'payment';
+    if (upper.includes('REVIEW')) return 'review';
+    if (upper.includes('PROJECT') || upper.includes('TASK') || upper.includes('MILESTONE')) return 'project';
+    return 'system';
+  };
 
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
@@ -114,14 +104,24 @@ export function NotificationsDropdown({ isOpen, onClose }: NotificationsDropdown
     }
   };
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, isRead: true } : n
-    ));
+  const markAsRead = async (id: number) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, isRead: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
 
   const deleteNotification = (id: number) => {
@@ -161,12 +161,6 @@ export function NotificationsDropdown({ isOpen, onClose }: NotificationsDropdown
                   <CheckCircle className="h-4 w-4" />
                 </button>
               )}
-              <button
-                className="p-2 hover:bg-muted rounded-lg transition-colors"
-                title="Settings"
-              >
-                <Settings className="h-4 w-4" />
-              </button>
             </div>
           </div>
 
@@ -197,7 +191,11 @@ export function NotificationsDropdown({ isOpen, onClose }: NotificationsDropdown
 
         {/* Notifications List */}
         <div className="max-h-[480px] overflow-y-auto">
-          {filteredNotifications.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Bell className="h-8 w-8 text-muted-foreground" />
@@ -271,7 +269,13 @@ export function NotificationsDropdown({ isOpen, onClose }: NotificationsDropdown
         {/* Footer */}
         {filteredNotifications.length > 0 && (
           <div className="p-3 border-t border-border bg-background">
-            <button className="w-full text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+            <button 
+              onClick={() => {
+                onClose();
+                navigate('notifications');
+              }}
+              className="w-full text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
               View all notifications
             </button>
           </div>

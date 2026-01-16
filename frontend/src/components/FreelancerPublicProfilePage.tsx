@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useRouter } from './Router';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { GooglePlayStyleReviews } from './reviews/GooglePlayStyleReviews';
+import { projectsApi, reviewsApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Star, 
   MapPin, 
@@ -26,18 +29,52 @@ import {
 
 export function FreelancerPublicProfilePage() {
   const { navigate, pageParams } = useRouter();
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [completedProjects, setCompletedProjects] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState<number>(0);
+  const [totalReviews, setTotalReviews] = useState<number>(0);
   
   useEffect(() => {
     if (pageParams?.freelancerId) {
       loadProfile(pageParams.freelancerId);
+      if (currentUser) {
+        loadCompletedProjects(pageParams.freelancerId);
+      }
     } else {
       toast.error('Freelancer not found');
       navigate('find-freelancers');
     }
-  }, [pageParams]);
+  }, [pageParams, currentUser]);
+
+  useEffect(() => {
+    if (profile?.user?.id || profile?.id) {
+      fetchReviewStats();
+    }
+  }, [profile]);
+
+  const fetchReviewStats = async () => {
+    try {
+      // Try multiple ways to get user ID: user.id, userId, or profile.id
+      const userId = profile?.user?.id || profile?.userId || profile?.id;
+      if (!userId) return;
+      const reviews = await reviewsApi.listByUser(userId);
+      if (Array.isArray(reviews) && reviews.length > 0) {
+        const avg = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+        setAverageRating(avg);
+        setTotalReviews(reviews.length);
+      } else {
+        setAverageRating(0);
+        setTotalReviews(0);
+      }
+    } catch (error) {
+      console.error('Error fetching review stats:', error);
+      setAverageRating(0);
+      setTotalReviews(0);
+    }
+  };
 
   const loadProfile = async (id: number) => {
     try {
@@ -50,6 +87,20 @@ export function FreelancerPublicProfilePage() {
       navigate('find-freelancers');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadCompletedProjects = async (freelancerId: number) => {
+    try {
+      if (!currentUser) return;
+      // Get all projects where current user is client and freelancerId is the freelancer
+      // Allow any project, not just completed ones, so users can leave reviews
+      const projects = await projectsApi.list({ clientId: currentUser.id });
+      const relevantProjects = projects.filter((p: any) => p.freelancerId === freelancerId);
+      setCompletedProjects(relevantProjects);
+    } catch (error) {
+      console.error('Error loading completed projects:', error);
+      setCompletedProjects([]);
     }
   };
 
@@ -125,6 +176,28 @@ export function FreelancerPublicProfilePage() {
                         <MapPin className="h-4 w-4" />
                         {[profile.locationCity, profile.locationCountry].filter(Boolean).join(', ') || 'Location not specified'}
                       </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-4 w-4 ${
+                                averageRating > 0 && star <= Math.round(averageRating)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-muted-foreground'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        {averageRating > 0 ? (
+                          <>
+                            <span className="text-sm font-semibold">{averageRating.toFixed(1)}</span>
+                            <span className="text-xs text-muted-foreground">({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})</span>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No ratings yet</span>
+                        )}
+                      </div>
                       {profile.status === "VERIFIED" && (
                         <Badge className="bg-success text-white">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -197,6 +270,9 @@ export function FreelancerPublicProfilePage() {
               <TabsTrigger value="experience" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
                 Experience
               </TabsTrigger>
+              <TabsTrigger value="reviews" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+                Reviews
+              </TabsTrigger>
             </TabsList>
 
             <div className="mt-6">
@@ -260,6 +336,16 @@ export function FreelancerPublicProfilePage() {
                         <CardTitle>Quick Stats</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        {averageRating > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Rating</span>
+                            <div className="flex items-center gap-1.5">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <span className="font-semibold">{averageRating.toFixed(1)}</span>
+                              <span className="text-xs text-muted-foreground">({totalReviews})</span>
+                            </div>
+                          </div>
+                        )}
                         {profile.experienceYears && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Experience</span>
@@ -385,6 +471,16 @@ export function FreelancerPublicProfilePage() {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="reviews">
+                <GooglePlayStyleReviews
+                  userId={profile.user?.id || profile.id}
+                  userType="freelancer"
+                  userName={profile.user?.fullName || profile.fullName || 'Freelancer'}
+                  canLeaveReview={currentUser && currentUser.id !== (profile.user?.id || profile.id)}
+                  completedProjects={completedProjects}
+                />
               </TabsContent>
             </div>
           </Tabs>

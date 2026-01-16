@@ -8,14 +8,20 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useRouter } from './Router';
 import { MapPin, Star, Briefcase, Calendar, MessageSquare, Building2, Globe, Mail, Phone, Award } from 'lucide-react';
-import { clientsApi } from '@/lib/api';
+import { clientsApi, projectsApi, reviewsApi } from '@/lib/api';
 import { toast } from 'sonner';
+import { GooglePlayStyleReviews } from './reviews/GooglePlayStyleReviews';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function ClientPublicProfilePage() {
   const { navigate, pageParams } = useRouter();
+  const { user: currentUser } = useAuth();
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [completedProjects, setCompletedProjects] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState<number>(0);
+  const [totalReviews, setTotalReviews] = useState<number>(0);
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -28,7 +34,12 @@ export function ClientPublicProfilePage() {
 
         const data = await clientsApi.getById(parseInt(pageParams.clientId));
         console.log('Client profile data:', data);
+        console.log('Client profile - id (profile ID):', data.id, 'userId (user ID):', data.userId, 'user.id:', data.user?.id);
         setClient(data);
+        
+        if (currentUser) {
+          loadCompletedProjects(parseInt(pageParams.clientId));
+        }
       } catch (error: any) {
         console.error('Error fetching client:', error);
         toast.error('Failed to load client profile');
@@ -38,7 +49,49 @@ export function ClientPublicProfilePage() {
     };
 
     fetchClient();
-  }, [pageParams?.clientId]);
+  }, [pageParams?.clientId, currentUser]);
+
+  useEffect(() => {
+    if (client?.user?.id || client?.id) {
+      fetchReviewStats();
+    }
+  }, [client]);
+
+  const fetchReviewStats = async () => {
+    try {
+      // IMPORTANT: Use user.id, NOT client.id (which is profile ID)
+      // If user object is not loaded, try userId field from client profile
+      const userId = client?.user?.id || (client as any)?.userId;
+      if (!userId) return;
+      const reviews = await reviewsApi.listByUser(userId);
+      if (Array.isArray(reviews) && reviews.length > 0) {
+        const avg = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+        setAverageRating(avg);
+        setTotalReviews(reviews.length);
+      } else {
+        setAverageRating(0);
+        setTotalReviews(0);
+      }
+    } catch (error) {
+      console.error('Error fetching review stats:', error);
+      setAverageRating(0);
+      setTotalReviews(0);
+    }
+  };
+
+  const loadCompletedProjects = async (clientId: number) => {
+    try {
+      if (!currentUser) return;
+      // Get all projects where current user is freelancer and clientId is the client
+      // Allow any project, not just completed ones, so users can leave reviews
+      const projects = await projectsApi.list({ freelancerId: currentUser.id });
+      const relevantProjects = projects.filter((p: any) => p.clientId === clientId);
+      setCompletedProjects(relevantProjects);
+    } catch (error) {
+      console.error('Error loading completed projects:', error);
+      setCompletedProjects([]);
+    }
+  };
 
   if (loading) {
     return (
@@ -109,6 +162,24 @@ export function ClientPublicProfilePage() {
                           {client.location}
                         </div>
                       )}
+                      {averageRating > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${
+                                  star <= Math.round(averageRating)
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-muted-foreground'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm font-semibold">{averageRating.toFixed(1)}</span>
+                          <span className="text-xs text-muted-foreground">({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})</span>
+                        </div>
+                      )}
                       {client.user?.createdAt && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4" />
@@ -144,6 +215,9 @@ export function ClientPublicProfilePage() {
               </TabsTrigger>
               <TabsTrigger value="contact" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
                 Contact Info
+              </TabsTrigger>
+              <TabsTrigger value="reviews" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary">
+                Reviews
               </TabsTrigger>
             </TabsList>
 
@@ -261,6 +335,16 @@ export function ClientPublicProfilePage() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="reviews">
+                <GooglePlayStyleReviews
+                  userId={client.user?.id || (client as any).userId}
+                  userType="client"
+                  userName={client.companyName || client.user?.fullName || 'Client'}
+                  canLeaveReview={currentUser && currentUser.id !== (client.user?.id || (client as any).userId)}
+                  completedProjects={completedProjects}
+                />
               </TabsContent>
             </div>
           </Tabs>

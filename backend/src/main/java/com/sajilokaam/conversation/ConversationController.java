@@ -18,8 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -83,7 +88,14 @@ public class ConversationController {
             return ResponseEntity.status(401).build();
         }
 
-        List<Conversation> conversations = conversationRepository.findByParticipantsContaining(userOpt.get());
+        List<Conversation> conversations = conversationRepository.findByParticipantsContaining(userOpt.get().getId());
+        
+        // Deduplicate conversations by ID (in case query returns duplicates)
+        Map<Long, Conversation> uniqueConversations = new LinkedHashMap<>();
+        for (Conversation conversation : conversations) {
+            uniqueConversations.putIfAbsent(conversation.getId(), conversation);
+        }
+        conversations = new ArrayList<>(uniqueConversations.values());
         
         // Enrich participants with profile pictures and populate lastMessage
         for (Conversation conversation : conversations) {
@@ -143,24 +155,19 @@ public class ConversationController {
         }
 
         // Check if conversation already exists between these two users
-        List<Conversation> allConversations = conversationRepository.findAll();
-        for (Conversation conv : allConversations) {
+        List<Conversation> userConversations = conversationRepository.findByParticipantsContaining(userOpt.get().getId());
+        for (Conversation conv : userConversations) {
             // Only consider direct conversations (no project)
             if (conv.getProject() == null) {
                 Set<User> participants = conv.getParticipants();
                 if (participants.size() == 2) {
-                    List<Long> participantIds = participants.stream()
-                        .map(User::getId)
-                        .sorted()
-                        .collect(java.util.stream.Collectors.toList());
+                    boolean containsCurrentUser = participants.stream()
+                        .anyMatch(p -> p.getId().equals(userOpt.get().getId()));
+                    boolean containsRecipient = participants.stream()
+                        .anyMatch(p -> p.getId().equals(recipientId));
                     
-                    List<Long> targetIds = java.util.Arrays.asList(
-                        Math.min(userOpt.get().getId(), recipientId),
-                        Math.max(userOpt.get().getId(), recipientId)
-                    );
-                    
-                    if (participantIds.equals(targetIds)) {
-                        System.out.println("Found existing conversation " + conv.getId() + " between users " + targetIds);
+                    if (containsCurrentUser && containsRecipient) {
+                        System.out.println("Found existing conversation " + conv.getId() + " between users");
                         return ResponseEntity.ok(conv);
                     }
                 }
@@ -205,13 +212,68 @@ public class ConversationController {
             return ResponseEntity.notFound().build();
         }
 
-        Conversation conversation = new Conversation();
-        conversation.setProject(projectOpt.get());
-        conversation.setTitle(request.getTitle());
+        Project project = projectOpt.get();
+        User currentUser = userOpt.get();
+        
+        // Determine the other participant (client or freelancer)
+        User otherParticipant = null;
+        if (project.getClient() != null && project.getClient().getId().equals(currentUser.getId())) {
+            // Current user is the client, other participant is freelancer
+            otherParticipant = project.getFreelancer();
+        } else if (project.getFreelancer() != null && project.getFreelancer().getId().equals(currentUser.getId())) {
+            // Current user is the freelancer, other participant is client
+            otherParticipant = project.getClient();
+        } else {
+            // Current user is neither, use project client/freelancer as other participant
+            otherParticipant = project.getClient() != null ? project.getClient() : project.getFreelancer();
+        }
 
-        // Add participants
+        // Check if a direct conversation already exists between these two users
+        if (otherParticipant != null) {
+            List<Conversation> allConversations = conversationRepository.findByParticipantsContaining(currentUser.getId());
+            for (Conversation conv : allConversations) {
+                // Check if this is a direct conversation (no project) with the other participant
+                if (conv.getProject() == null) {
+                    Set<User> participants = conv.getParticipants();
+                    if (participants.size() == 2 && participants.contains(currentUser) && participants.contains(otherParticipant)) {
+                        // Found existing direct conversation - return it instead of creating a new one
+                        return ResponseEntity.ok(conv);
+                    }
+                }
+            }
+            
+            // No existing direct conversation found, create one
+            Conversation conversation = new Conversation();
+            conversation.setTitle("Direct Message");
+            
+            Set<User> participants = new HashSet<>();
+            participants.add(currentUser);
+            participants.add(otherParticipant);
+            conversation.setParticipants(participants);
+            
+            Conversation created = conversationRepository.save(conversation);
+            return ResponseEntity.ok(created);
+        }
+
+        // Fallback: if we can't determine the other participant, check project conversations
+        List<Conversation> existingConversations = conversationRepository.findByProjectId(projectId);
+        if (!existingConversations.isEmpty()) {
+            return ResponseEntity.ok(existingConversations.get(0));
+        }
+
+        // Last resort: create project-based conversation (shouldn't happen in normal flow)
+        Conversation conversation = new Conversation();
+        conversation.setProject(project);
+        conversation.setTitle(request.getTitle() != null ? request.getTitle() : project.getTitle());
+
         Set<User> participants = new HashSet<>();
-        participants.add(userOpt.get()); // Add creator
+        participants.add(currentUser);
+        if (project.getClient() != null) {
+            participants.add(project.getClient());
+        }
+        if (project.getFreelancer() != null) {
+            participants.add(project.getFreelancer());
+        }
         if (request.getParticipantIds() != null) {
             for (Long userId : request.getParticipantIds()) {
                 userRepository.findById(userId).ifPresent(participants::add);

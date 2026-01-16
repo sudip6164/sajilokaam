@@ -1,5 +1,7 @@
 package com.sajilokaam.task;
 
+import com.sajilokaam.activitylog.ActivityLogService;
+import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.project.Project;
 import com.sajilokaam.project.ProjectRepository;
 import com.sajilokaam.tasklabel.TaskLabel;
@@ -25,13 +27,18 @@ public class TaskController {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final TaskLabelRepository taskLabelRepository;
+    private final ActivityLogService activityLogService;
+    private final JwtService jwtService;
 
     public TaskController(TaskRepository taskRepository, ProjectRepository projectRepository,
-            UserRepository userRepository, TaskLabelRepository taskLabelRepository) {
+            UserRepository userRepository, TaskLabelRepository taskLabelRepository,
+            ActivityLogService activityLogService, JwtService jwtService) {
         this.taskRepository = taskRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.taskLabelRepository = taskLabelRepository;
+        this.activityLogService = activityLogService;
+        this.jwtService = jwtService;
     }
 
     @GetMapping("/{projectId}/tasks")
@@ -61,7 +68,8 @@ public class TaskController {
     @PostMapping("/{projectId}/tasks")
     public ResponseEntity<Task> createTask(
             @PathVariable Long projectId,
-            @RequestBody TaskCreateRequest request) {
+            @RequestBody TaskCreateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
         Optional<Project> projectOpt = projectRepository.findById(projectId);
         if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -72,6 +80,16 @@ public class TaskController {
 
         if (request.getTitle() == null || request.getTitle().isBlank()) {
             return ResponseEntity.badRequest().build();
+        }
+
+        // Get user for activity log
+        Optional<User> userOpt = Optional.empty();
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                userOpt = userRepository.findByEmail(emailOpt.get());
+            }
         }
 
         Task task = new Task();
@@ -99,6 +117,13 @@ public class TaskController {
         }
 
         Task created = taskRepository.save(task);
+        
+        // Log activity
+        userOpt.ifPresent(user -> {
+            activityLogService.logActivity(user, "Task created", "TASK", created.getId(), 
+                "Task created: " + created.getTitle());
+        });
+        
         URI location = URI.create("/api/projects/" + projectId + "/tasks/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
@@ -107,7 +132,8 @@ public class TaskController {
     public ResponseEntity<Task> updateTaskStatus(
             @PathVariable Long projectId,
             @PathVariable Long taskId,
-            @RequestBody TaskStatusUpdateRequest request) {
+            @RequestBody TaskStatusUpdateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
         Optional<Task> taskOpt = taskRepository.findById(taskId);
         if (taskOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -126,13 +152,31 @@ public class TaskController {
         }
 
         // Validate status value
+        String oldStatus = task.getStatus();
         String status = request.getStatus().toUpperCase();
         if (!status.equals("TODO") && !status.equals("IN_PROGRESS") && !status.equals("DONE")) {
             return ResponseEntity.badRequest().build();
         }
 
+        // Get user for activity log
+        Optional<User> userOpt = Optional.empty();
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                userOpt = userRepository.findByEmail(emailOpt.get());
+            }
+        }
+
         task.setStatus(status);
         Task updated = taskRepository.save(task);
+        
+        // Log activity
+        userOpt.ifPresent(user -> {
+            activityLogService.logActivity(user, "Task updated", "TASK", updated.getId(), 
+                "Task status updated: " + updated.getTitle() + " (" + oldStatus + " → " + status + ")");
+        });
+        
         return ResponseEntity.ok(updated);
     }
 
@@ -140,7 +184,8 @@ public class TaskController {
     public ResponseEntity<Task> updateTaskPriority(
             @PathVariable Long projectId,
             @PathVariable Long taskId,
-            @RequestBody TaskPriorityUpdateRequest request) {
+            @RequestBody TaskPriorityUpdateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
         Optional<Project> projectOpt = projectRepository.findById(projectId);
         if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -164,8 +209,26 @@ public class TaskController {
             return ResponseEntity.badRequest().build();
         }
 
+        // Get user for activity log
+        Optional<User> userOpt = Optional.empty();
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                userOpt = userRepository.findByEmail(emailOpt.get());
+            }
+        }
+
+        TaskPriority oldPriority = task.getPriority();
         task.setPriority(request.getPriority());
         Task updated = taskRepository.save(task);
+        
+        // Log activity
+        userOpt.ifPresent(user -> {
+            activityLogService.logActivity(user, "Task updated", "TASK", updated.getId(), 
+                "Task priority updated: " + updated.getTitle() + " (" + oldPriority + " → " + request.getPriority() + ")");
+        });
+        
         return ResponseEntity.ok(updated);
     }
 
@@ -173,7 +236,8 @@ public class TaskController {
     public ResponseEntity<Task> updateTaskAssignee(
             @PathVariable Long projectId,
             @PathVariable Long taskId,
-            @RequestBody TaskAssigneeUpdateRequest request) {
+            @RequestBody TaskAssigneeUpdateRequest request,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
         Optional<Project> projectOpt = projectRepository.findById(projectId);
         if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -193,6 +257,18 @@ public class TaskController {
             return ResponseEntity.badRequest().build();
         }
 
+        // Get user for activity log
+        Optional<User> userOpt = Optional.empty();
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                userOpt = userRepository.findByEmail(emailOpt.get());
+            }
+        }
+
+        String oldAssignee = task.getAssignee() != null ? task.getAssignee().getFullName() : "Unassigned";
+        
         if (request.getAssigneeId() != null) {
             Optional<User> assigneeOpt = userRepository.findById(request.getAssigneeId());
             if (assigneeOpt.isEmpty()) {
@@ -204,6 +280,14 @@ public class TaskController {
         }
 
         Task updated = taskRepository.save(task);
+        
+        // Log activity
+        userOpt.ifPresent(user -> {
+            String newAssignee = updated.getAssignee() != null ? updated.getAssignee().getFullName() : "Unassigned";
+            activityLogService.logActivity(user, "Task updated", "TASK", updated.getId(), 
+                "Task assignee updated: " + updated.getTitle() + " (" + oldAssignee + " → " + newAssignee + ")");
+        });
+        
         return ResponseEntity.ok(updated);
     }
 
@@ -242,39 +326,4 @@ public class TaskController {
         return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping("/{projectId}/tasks/{taskId}")
-    public ResponseEntity<Void> deleteTask(
-            @PathVariable Long projectId,
-            @PathVariable Long taskId) {
-        System.out.println("DELETE TASK ENDPOINT CALLED: projectId=" + projectId + ", taskId=" + taskId);
-        
-        Optional<Project> projectOpt = projectRepository.findById(projectId);
-        if (projectOpt.isEmpty()) {
-            System.out.println("Project not found: " + projectId);
-            return ResponseEntity.notFound().build();
-        }
-        
-        if ("PENDING_PAYMENT".equalsIgnoreCase(projectOpt.get().getStatus())) {
-            System.out.println("Project payment pending, cannot delete task");
-            return ResponseEntity.status(403).build();
-        }
-
-        if (!taskRepository.existsByIdAndProject_Id(taskId, projectId)) {
-            System.out.println("Task not found or doesn't belong to project: taskId=" + taskId + ", projectId=" + projectId);
-            return ResponseEntity.notFound().build();
-        }
-
-        // Use direct delete to avoid entity loading issues
-        taskRepository.deleteByIdDirect(taskId);
-        System.out.println("Task deleted successfully: taskId=" + taskId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/{projectId}/tasks/{taskId}/delete")
-    public ResponseEntity<Void> deleteTaskPost(
-            @PathVariable Long projectId,
-            @PathVariable Long taskId) {
-        System.out.println("DELETE TASK POST ENDPOINT CALLED: projectId=" + projectId + ", taskId=" + taskId);
-        return deleteTask(projectId, taskId);
-    }
 }

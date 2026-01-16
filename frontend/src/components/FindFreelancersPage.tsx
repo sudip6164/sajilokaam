@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Star, Heart, MessageCircle, ArrowLeft, DollarSign, Clock } from 'lucide-react';
+import { Search, MapPin, Heart, MessageCircle, DollarSign, Clock, Grid, List, Star } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { useRouter } from './Router';
 import { Header } from './Header';
-import { freelancersApi, conversationsApi } from '@/lib/api';
+import { freelancersApi, conversationsApi, reviewsApi } from '@/lib/api';
 import { toast } from 'sonner';
 
 const mockFreelancers = [
@@ -142,16 +141,6 @@ const mockFreelancers = [
   }
 ];
 
-const categories = [
-  "All Skills",
-  "Web Development",
-  "Mobile Development",
-  "Design & Creative", 
-  "Writing & Content",
-  "Digital Marketing",
-  "Data Science",
-  "DevOps & Cloud"
-];
 
 interface Freelancer {
   id: number;
@@ -177,10 +166,9 @@ export function FindFreelancersPage() {
   const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'recommended' | 'rating' | 'hourly-rate'>('recommended');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [savedFreelancers, setSavedFreelancers] = useState<number[]>([]);
+  const [freelancerRatings, setFreelancerRatings] = useState<Record<number, { average: number; count: number }>>({});
 
   useEffect(() => {
     fetchFreelancers();
@@ -190,7 +178,33 @@ export function FindFreelancersPage() {
     try {
       setLoading(true);
       const response = await freelancersApi.list(0, 100);
-      setFreelancers(response.content);
+      const freelancerList = response.content;
+      setFreelancers(freelancerList);
+      
+      // Fetch ratings for all freelancers
+      const ratingsMap: Record<number, { average: number; count: number }> = {};
+      await Promise.all(
+        freelancerList.map(async (freelancer: any) => {
+          try {
+            // Try multiple ways to get user ID: user.id, userId, or freelancer.id (which should be user ID from /users/freelancers endpoint)
+            const userId = freelancer.user?.id || freelancer.userId || freelancer.id;
+            if (userId) {
+              const reviews = await reviewsApi.listByUser(userId);
+              if (Array.isArray(reviews) && reviews.length > 0) {
+                const avg = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+                ratingsMap[freelancer.id] = { average: avg, count: reviews.length };
+              } else {
+                // Set empty rating so "No ratings yet" shows
+                ratingsMap[freelancer.id] = { average: 0, count: 0 };
+              }
+            }
+          } catch (error) {
+            // Set empty rating on error so "No ratings yet" shows
+            ratingsMap[freelancer.id] = { average: 0, count: 0 };
+          }
+        })
+      );
+      setFreelancerRatings(ratingsMap);
     } catch (error: any) {
       console.error('Error fetching freelancers:', error);
       toast.error('Failed to load freelancers');
@@ -223,15 +237,6 @@ export function FindFreelancersPage() {
     });
   }
 
-  // Sort freelancers
-  filteredFreelancers.sort((a, b) => {
-    switch (sortBy) {
-      case 'hourly-rate':
-        return (a.hourlyRate || 0) - (b.hourlyRate || 0);
-      default:
-        return 0;
-    }
-  });
 
   if (loading) {
     return (
@@ -258,83 +263,51 @@ export function FindFreelancersPage() {
           <p className="text-lg text-muted-foreground">Discover talented professionals for your next project</p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search for freelancers, skills, or services..."
-                className="pl-11 h-12 border-2 rounded-lg shadow-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" className="md:w-auto h-12 border-2 hover:border-primary hover:bg-primary/5">
-              <Filter className="mr-2 h-4 w-4" />
-              Advanced Filters
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[200px] h-11 border-2">
-                <SelectValue placeholder="Skill Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[200px] h-11 border-2">
-                <SelectValue placeholder="Sort By" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recommended">Recommended</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="hourly-rate">Hourly Rate</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[150px] h-11 border-2">
-                <SelectValue placeholder="Availability" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="online">Online Now</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Search */}
+        <div className="mb-8">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search for freelancers, skills, or services..."
+              className="pl-11 h-12 border-2 rounded-lg shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Results Header */}
-        <div className="mb-6 flex items-center justify-between">
+        {/* Results Header with View Toggle */}
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <p className="text-muted-foreground font-medium">
             <span className="text-foreground font-semibold">{filteredFreelancers.length}</span> freelancer{filteredFreelancers.length !== 1 ? 's' : ''} found
           </p>
-          <Select defaultValue="rating">
-            <SelectTrigger className="w-[150px] h-10 border-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="rating">Highest Rated</SelectItem>
-              <SelectItem value="rate-low">Lowest Rate</SelectItem>
-              <SelectItem value="rate-high">Highest Rate</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1 border border-border rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'grid' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Grid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'list' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Freelancer Listings */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-5' : 'space-y-4'}>
           {filteredFreelancers.length === 0 ? (
             <div className="col-span-2 text-center py-12">
               <p className="text-muted-foreground text-lg">No freelancers found</p>
@@ -352,59 +325,223 @@ export function FindFreelancersPage() {
                 .join(', ') || 'Location not specified';
 
               return (
-            <Card key={freelancer.id} className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 bg-card">
-              <CardHeader className="pb-4">
-                <div className="flex items-start gap-4">
-                  <div className="relative">
-                    <Avatar className="h-16 w-16">
-                      {freelancer.profilePictureUrl ? (
-                        <AvatarImage
-                          src={freelancer.profilePictureUrl}
-                          alt={freelancer.fullName}
-                        />
-                      ) : (
-                        <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                          {freelancer.fullName.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors">
-                          {freelancer.fullName}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">{freelancer.headline || 'Freelancer'}</p>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{location}</span>
+            <Card key={freelancer.id} className={`hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 bg-card ${
+              viewMode === 'list' ? 'flex flex-row items-start' : ''
+            }`}>
+              {viewMode === 'list' ? (
+                <>
+                  <CardHeader className="pb-4 flex-shrink-0 pr-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        {freelancer.profilePictureUrl ? (
+                          <AvatarImage
+                            src={freelancer.profilePictureUrl}
+                            alt={freelancer.fullName}
+                          />
+                        ) : (
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {freelancer.fullName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 pt-4 pb-4 pr-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="font-semibold text-lg text-card-foreground hover:text-primary cursor-pointer transition-colors">
+                              {freelancer.fullName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">{freelancer.headline || 'Freelancer'}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">{location}</span>
+                              <div className="flex items-center gap-1">
+                                {freelancerRatings[freelancer.id] && freelancerRatings[freelancer.id].count > 0 ? (
+                                  <>
+                                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs font-semibold text-foreground">{freelancerRatings[freelancer.id].average.toFixed(1)}</span>
+                                    <span className="text-xs text-muted-foreground">({freelancerRatings[freelancer.id].count} {freelancerRatings[freelancer.id].count === 1 ? 'review' : 'reviews'})</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">No ratings yet</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {freelancer.overview || 'No overview provided yet'}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {skills.length > 0 ? (
+                            <>
+                              {skills.slice(0, 8).map((skill, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary transition-colors">
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {skills.length > 8 && (
+                                <Badge variant="outline" className="text-xs bg-muted">
+                                  +{skills.length - 8} more
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">No skills listed</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          {freelancer.experienceYears && (
+                            <span className="text-muted-foreground">
+                              {freelancer.experienceYears} years exp.
+                            </span>
+                          )}
+                          {freelancer.experienceLevel && (
+                            <Badge variant="outline" className="text-xs">
+                              {freelancer.experienceLevel}
+                            </Badge>
+                          )}
+                          {(freelancer.hourlyRate || freelancer.hourlyRateMin) && (
+                            <div className="flex items-center gap-1.5">
+                              <DollarSign className="h-4 w-4 text-primary" />
+                              <span className="font-semibold text-primary">
+                                Rs. {freelancer.hourlyRate || freelancer.hourlyRateMin}
+                                {freelancer.hourlyRateMax && freelancer.hourlyRateMax !== freelancer.hourlyRateMin && ` - ${freelancer.hourlyRateMax}`}/hr
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleSaveFreelancer(freelancer.id)}
-                        className="hover:bg-red-50"
-                      >
-                        <Heart 
-                          className={`h-5 w-5 transition-colors ${savedFreelancers.includes(freelancer.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} 
-                        />
-                      </Button>
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleSaveFreelancer(freelancer.id)}
+                          className="hover:bg-red-50"
+                        >
+                          <Heart 
+                            className={`h-5 w-5 transition-colors ${savedFreelancers.includes(freelancer.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} 
+                          />
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
+                            onClick={async () => {
+                              try {
+                                const conversation = await conversationsApi.createDirect(freelancer.id);
+                                navigate('messages');
+                                toast.success('Conversation started!');
+                              } catch (error: any) {
+                                console.error('Error starting conversation:', error);
+                                toast.error('Failed to start conversation');
+                              }
+                            }}
+                          >
+                            <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+                            Contact
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-2 hover:border-primary hover:bg-primary/5"
+                            onClick={() => navigate('view-freelancer', { freelancerId: freelancer.id })}
+                          >
+                            View Profile
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardHeader>
+                  </CardContent>
+                </>
+              ) : (
+                <>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <Avatar className="h-16 w-16">
+                          {freelancer.profilePictureUrl ? (
+                            <AvatarImage
+                              src={freelancer.profilePictureUrl}
+                              alt={freelancer.fullName}
+                            />
+                          ) : (
+                            <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                              {freelancer.fullName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-card-foreground hover:text-primary cursor-pointer transition-colors">
+                              {freelancer.fullName}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">{freelancer.headline || 'Freelancer'}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">{location}</span>
+                              <div className="flex items-center gap-1">
+                                {freelancerRatings[freelancer.id] && freelancerRatings[freelancer.id].count > 0 ? (
+                                  <>
+                                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs font-semibold text-foreground">{freelancerRatings[freelancer.id].average.toFixed(1)}</span>
+                                    <span className="text-xs text-muted-foreground">({freelancerRatings[freelancer.id].count} {freelancerRatings[freelancer.id].count === 1 ? 'review' : 'reviews'})</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Star className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">No ratings yet</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleSaveFreelancer(freelancer.id)}
+                            className="hover:bg-red-50"
+                          >
+                            <Heart 
+                              className={`h-5 w-5 transition-colors ${savedFreelancers.includes(freelancer.id) ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} 
+                            />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
 
-              <CardContent className="pt-0 space-y-4">
+                  <CardContent className="pt-0 space-y-4">
                 {/* Rate and Experience */}
                 <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {freelancerRatings[freelancer.id] && freelancerRatings[freelancer.id].count > 0 ? (
+                        <>
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="font-semibold text-foreground">{freelancerRatings[freelancer.id].average.toFixed(1)}</span>
+                          <span className="text-xs text-muted-foreground">({freelancerRatings[freelancer.id].count} {freelancerRatings[freelancer.id].count === 1 ? 'review' : 'reviews'})</span>
+                        </>
+                      ) : (
+                        <>
+                          <Star className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">No ratings yet</span>
+                        </>
+                      )}
+                    </div>
                     {freelancer.experienceYears && (
                       <span className="text-muted-foreground">
-                        {freelancer.experienceYears} years exp.
+                        • {freelancer.experienceYears} years exp.
                       </span>
                     )}
                     {freelancer.experienceLevel && (
@@ -426,7 +563,7 @@ export function FindFreelancersPage() {
                 </div>
 
                 {/* Description */}
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className={`text-sm text-muted-foreground ${viewMode === 'list' ? '' : 'line-clamp-2'}`}>
                   {freelancer.overview || 'No overview provided yet'}
                 </p>
 
@@ -434,14 +571,14 @@ export function FindFreelancersPage() {
                 <div className="flex flex-wrap gap-1.5">
                   {skills.length > 0 ? (
                     <>
-                      {skills.slice(0, 5).map((skill, idx) => (
+                      {skills.slice(0, viewMode === 'list' ? 10 : 5).map((skill, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs border-primary/30 hover:bg-primary/10 hover:border-primary transition-colors">
                           {skill}
                         </Badge>
                       ))}
-                      {skills.length > 5 && (
+                      {skills.length > (viewMode === 'list' ? 10 : 5) && (
                         <Badge variant="outline" className="text-xs bg-muted">
-                          +{skills.length - 5} more
+                          +{skills.length - (viewMode === 'list' ? 10 : 5)} more
                         </Badge>
                       )}
                     </>
@@ -459,10 +596,10 @@ export function FindFreelancersPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-1">
+                <div className={`flex gap-2 pt-1 ${viewMode === 'list' ? 'justify-end' : ''}`}>
                   <Button 
                     size="sm" 
-                    className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
+                    className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-sm"
                     onClick={async () => {
                       try {
                         const conversation = await conversationsApi.createDirect(freelancer.id);
@@ -480,13 +617,15 @@ export function FindFreelancersPage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 border-2 hover:border-primary hover:bg-primary/5"
+                    className="border-2 hover:border-primary hover:bg-primary/5"
                     onClick={() => navigate('view-freelancer', { freelancerId: freelancer.id })}
                   >
                     View Profile
                   </Button>
                 </div>
-              </CardContent>
+                  </CardContent>
+                </>
+              )}
             </Card>
               );
             })

@@ -3,9 +3,10 @@ import { Menu, Bell, User, LayoutDashboard, MessageSquare, LogOut } from "lucide
 import { useRouter } from "./Router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { profileApi } from "@/lib/api";
+import { profileApi, notificationsApi } from "@/lib/api";
 import { NotificationsDropdown } from "./notifications/NotificationsDropdown";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +15,52 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
+function NotificationBellWithBadge() {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const data = await notificationsApi.list({ read: false, page: 0, size: 1 });
+      setUnreadCount(data.totalElements || 0);
+    } catch (error) {
+      // Ignore errors
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowNotifications(!showNotifications)}
+        className="relative p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+      >
+        <Bell className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Badge>
+        )}
+      </button>
+      <NotificationsDropdown 
+        isOpen={showNotifications} 
+        onClose={() => {
+          setShowNotifications(false);
+          fetchUnreadCount(); // Refresh count when closing
+        }} 
+      />
+    </div>
+  );
+}
+
 export function Header() {
   const { navigate, isAuthenticated, user: routerUser } = useRouter();
   const { user: authUser, logout } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   
   // Use authUser for profile info, routerUser for type
@@ -50,23 +93,27 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 w-full items-center justify-between px-4 md:px-6">
+      <div className="flex h-20 w-full items-center justify-between px-4 md:px-6">
         {/* Logo */}
         <button 
           onClick={() => navigate('home')}
-          className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+          className="flex items-center hover:opacity-80 transition-opacity focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 cursor-pointer border-0 bg-transparent p-0 m-0"
+          style={{ outline: 'none', boxShadow: 'none', border: 'none', borderWidth: 0, borderStyle: 'none' }}
+          tabIndex={0}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary">
-            <span className="text-primary-foreground font-bold text-lg">S</span>
-          </div>
-          <span className="text-xl font-semibold text-foreground">SajiloKaam</span>
+          <img 
+            src="/logo.png" 
+            alt="SajiloKaam Logo" 
+            className="h-20 w-20 object-contain"
+            style={{ display: 'block' }}
+          />
         </button>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           <button 
             onClick={() => navigate('home')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
           >
             Home
           </button>
@@ -74,7 +121,7 @@ export function Header() {
           {(!isAuthenticated || isFreelancer) && (
             <button 
               onClick={() => navigate('find-work')}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
             >
               Find Work
             </button>
@@ -83,32 +130,32 @@ export function Header() {
           {(!isAuthenticated || isClient || isAdmin) && (
             <button 
               onClick={() => navigate('find-freelancers')}
-              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
             >
               Find Freelancers
             </button>
           )}
           <button 
             onClick={() => navigate('features')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
           >
             Features
           </button>
           <button 
             onClick={() => navigate('about')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
           >
             About
           </button>
           <button 
             onClick={() => navigate('pricing')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
           >
             Pricing
           </button>
           <button 
             onClick={() => navigate('contact')}
-            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
           >
             Contact
           </button>
@@ -119,24 +166,12 @@ export function Header() {
           {isAuthenticated && user ? (
             <>
               {/* Notifications */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 hover:bg-muted rounded-lg transition-colors"
-                >
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-                </button>
-                <NotificationsDropdown 
-                  isOpen={showNotifications} 
-                  onClose={() => setShowNotifications(false)} 
-                />
-              </div>
+              <NotificationBellWithBadge />
 
               {/* Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors">
+                  <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted transition-colors cursor-pointer focus:outline-none focus-visible:outline-none focus-visible:ring-0">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={profilePictureUrl || undefined} alt={authUser?.fullName || routerUser?.name || 'User'} />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground">

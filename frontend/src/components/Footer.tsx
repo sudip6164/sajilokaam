@@ -44,9 +44,11 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary">
-                <span className="text-primary-foreground font-bold text-lg">S</span>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="SajiloKaam Logo" 
+                className="h-10 w-10 object-contain"
+              />
               <span className="text-xl font-semibold">SajiloKaam</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">

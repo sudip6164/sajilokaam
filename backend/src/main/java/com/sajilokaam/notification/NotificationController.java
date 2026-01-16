@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -31,7 +33,10 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Notification>> getMyNotifications(
+    public ResponseEntity<Map<String, Object>> getMyNotifications(
+            @RequestParam(required = false) Boolean read,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
             @RequestHeader(name = "Authorization", required = false) String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build();
@@ -48,8 +53,24 @@ public class NotificationController {
             return ResponseEntity.status(401).build();
         }
 
-        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userOpt.get().getId());
-        return ResponseEntity.ok(notifications);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Notification> notificationPage;
+        
+        if (read != null) {
+            if (read) {
+                notificationPage = notificationRepository.findByUserIdAndIsReadTrueOrderByCreatedAtDesc(userOpt.get().getId(), pageable);
+            } else {
+                notificationPage = notificationRepository.findByUserIdAndIsReadFalseOrderByCreatedAtDesc(userOpt.get().getId(), pageable);
+            }
+        } else {
+            notificationPage = notificationRepository.findByUserIdOrderByCreatedAtDesc(userOpt.get().getId(), pageable);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", notificationPage.getContent());
+        response.put("totalElements", notificationPage.getTotalElements());
+        response.put("totalPages", notificationPage.getTotalPages());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/unread-count")

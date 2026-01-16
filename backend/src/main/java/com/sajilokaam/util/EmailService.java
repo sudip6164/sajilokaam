@@ -29,7 +29,15 @@ public class EmailService {
         this.mailSender = mailSender;
         System.out.println("EmailService initialized. SMTP configured: " + (mailSender != null));
         if (mailSender == null) {
-            System.out.println("Note: Email sending disabled. Password reset tokens will be logged to console.");
+            System.out.println("================================================");
+            System.out.println("WARNING: Email sending is DISABLED!");
+            System.out.println("Password reset tokens will be logged to console.");
+            System.out.println("To enable email sending, set these environment variables:");
+            System.out.println("  - SMTP_USERNAME=your-email@gmail.com");
+            System.out.println("  - SMTP_PASSWORD=your-app-password");
+            System.out.println("  - SMTP_HOST=smtp.gmail.com (optional, defaults to Gmail)");
+            System.out.println("  - SMTP_PORT=587 (optional, defaults to 587)");
+            System.out.println("================================================");
         }
     }
 
@@ -54,7 +62,7 @@ public class EmailService {
 
             helper.setText(htmlContent, true);
             mailSender.send(message);
-            System.out.println("Password reset email sent successfully to: " + toEmail);
+            System.out.println("✅ Password reset email sent successfully to: " + toEmail);
         } catch (MessagingException e) {
             System.err.println("Failed to send password reset email: " + e.getMessage());
             e.printStackTrace();

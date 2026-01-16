@@ -96,15 +96,15 @@ export function TaskModal({ isOpen, onClose, projectId, task, onSuccess }: TaskM
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>{task ? 'Edit Task' : 'Create New Task'}</CardTitle>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+      <Card className="w-full max-w-2xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 flex-shrink-0 border-b">
+          <CardTitle className="text-lg md:text-xl">{task ? 'Edit Task' : 'Create New Task'}</CardTitle>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="title">Task Title *</Label>
@@ -130,7 +130,7 @@ export function TaskModal({ isOpen, onClose, projectId, task, onSuccess }: TaskM
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="status">Status</Label>
                 <select
@@ -160,7 +160,7 @@ export function TaskModal({ isOpen, onClose, projectId, task, onSuccess }: TaskM
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="dueDate">
                   <Calendar className="h-4 w-4 inline mr-1" />
@@ -193,11 +193,11 @@ export function TaskModal({ isOpen, onClose, projectId, task, onSuccess }: TaskM
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t mt-4">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                 {loading ? 'Saving...' : task ? 'Update Task' : 'Create Task'}
               </Button>
             </div>

@@ -1,63 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { Check, Zap, Crown, Rocket } from 'lucide-react';
+import { Check, Zap, Crown, Rocket, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { pricingApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from './Router';
+import { toast } from 'sonner';
 
-const plans = [
-  {
-    name: 'Free',
-    icon: Zap,
-    price: 'Rs. 0',
-    period: 'forever',
-    description: 'Perfect for getting started',
-    features: [
-      'Browse unlimited jobs',
-      'Submit up to 5 bids/month',
-      'Basic profile',
-      'Standard support',
-      '10% platform fee',
-    ],
-    cta: 'Get Started',
-    highlighted: false,
-  },
-  {
-    name: 'Professional',
-    icon: Crown,
-    price: 'Rs. 19',
-    period: 'per month',
-    description: 'For serious freelancers',
-    features: [
-      'Everything in Free',
-      'Unlimited bids',
-      'Featured profile badge',
-      'Priority support',
-      '5% platform fee',
-      'Advanced analytics',
-      'Portfolio showcase',
-    ],
-    cta: 'Start Free Trial',
-    highlighted: true,
-  },
-  {
-    name: 'Enterprise',
-    icon: Rocket,
-    price: 'Custom',
-    period: 'contact us',
-    description: 'For teams and agencies',
-    features: [
-      'Everything in Professional',
-      'Team management',
-      'Dedicated account manager',
-      'Custom contracts',
-      'Negotiable fees',
-      'API access',
-      'White-label options',
-    ],
-    cta: 'Contact Sales',
-    highlighted: false,
-  },
-];
+const planIcons: Record<string, any> = {
+  'FREE': Zap,
+  'PROFESSIONAL': Crown,
+  'ENTERPRISE': Rocket,
+};
 
 const faqs = [
   {
@@ -79,7 +34,130 @@ const faqs = [
 ];
 
 export function PricingPage() {
+  const { user, isAuthenticated } = useAuth();
+  const { navigate } = useRouter();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPlan, setCurrentPlan] = useState<any>(null);
+  const [billingPeriod, setBillingPeriod] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
+
+  useEffect(() => {
+    fetchPlans();
+    if (isAuthenticated) {
+      fetchCurrentSubscription();
+    }
+  }, [isAuthenticated]);
+
+  const fetchPlans = async () => {
+    try {
+      const data = await pricingApi.getPlans();
+      setPlans(data.map((plan: any) => ({
+        ...plan,
+        icon: planIcons[plan.name] || Zap,
+        highlighted: plan.name === 'PROFESSIONAL',
+      })));
+    } catch (error: any) {
+      console.error('Error fetching plans:', error);
+      // If API fails, use fallback plans
+      if (error.response?.status === 404) {
+        setPlans([
+          {
+            id: 1,
+            name: 'FREE',
+            displayName: 'Free',
+            description: 'Perfect for getting started',
+            monthlyPrice: 0,
+            yearlyPrice: 0,
+            maxBidsPerMonth: 5,
+            maxJobPostsPerMonth: 3,
+            platformFeePercent: 10,
+            featuredProfile: false,
+            prioritySupport: false,
+            icon: Zap,
+            highlighted: false,
+          },
+          {
+            id: 2,
+            name: 'PROFESSIONAL',
+            displayName: 'Professional',
+            description: 'For serious freelancers',
+            monthlyPrice: 19,
+            yearlyPrice: 190,
+            maxBidsPerMonth: -1,
+            maxJobPostsPerMonth: -1,
+            platformFeePercent: 5,
+            featuredProfile: true,
+            prioritySupport: true,
+            icon: Crown,
+            highlighted: true,
+          },
+          {
+            id: 3,
+            name: 'ENTERPRISE',
+            displayName: 'Enterprise',
+            description: 'For teams and agencies',
+            monthlyPrice: 0,
+            yearlyPrice: 0,
+            maxBidsPerMonth: -1,
+            maxJobPostsPerMonth: -1,
+            platformFeePercent: 0,
+            featuredProfile: true,
+            prioritySupport: true,
+            icon: Rocket,
+            highlighted: false,
+          },
+        ]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCurrentSubscription = async () => {
+    try {
+      const sub = await pricingApi.getMySubscription();
+      setCurrentPlan(sub.plan?.name);
+    } catch (error: any) {
+      // Silently fail - user might not have a subscription yet
+      if (error.response?.status !== 404) {
+        console.error('Error fetching subscription:', error);
+      }
+    }
+  };
+
+  const handleSubscribe = async (plan: any) => {
+    if (!isAuthenticated) {
+      navigate('login');
+      return;
+    }
+
+    if (plan.name === 'ENTERPRISE') {
+      toast.info('Please contact sales for enterprise plans');
+      return;
+    }
+
+    try {
+      const price = billingPeriod === 'YEARLY' ? plan.yearlyPrice : plan.monthlyPrice;
+      
+      if (price === 0) {
+        // Free plan - just subscribe
+        await pricingApi.subscribe({
+          planId: plan.id,
+          billingPeriod: billingPeriod,
+        });
+        toast.success('Subscribed successfully!');
+        fetchCurrentSubscription();
+      } else {
+        // Paid plan - redirect to payment
+        toast.info('Payment integration coming soon');
+        // TODO: Integrate with payment gateway
+      }
+    } catch (error: any) {
+      console.error('Error subscribing:', error);
+      toast.error(error.response?.data?.message || 'Failed to subscribe');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background" style={{ width: '100%', minWidth: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
@@ -99,66 +177,126 @@ export function PricingPage() {
         </div>
       </section>
 
+      {/* Billing Period Toggle */}
+      {plans.length > 0 && (
+        <section className="py-8">
+          <div className="w-full px-4 md:px-8 lg:px-12">
+            <div className="max-w-7xl mx-auto flex justify-center">
+              <div className="inline-flex rounded-lg border border-border p-1 bg-muted">
+                <button
+                  onClick={() => setBillingPeriod('MONTHLY')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    billingPeriod === 'MONTHLY'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBillingPeriod('YEARLY')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    billingPeriod === 'YEARLY'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Yearly (Save 17%)
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Pricing Cards */}
       <section className="py-20">
         <div className="w-full px-4 md:px-8 lg:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-            {plans.map((plan, index) => {
-              const Icon = plan.icon;
-              return (
-                <div
-                  key={index}
-                  className={`rounded-2xl border p-8 relative ${
-                    plan.highlighted
-                      ? 'border-primary shadow-2xl shadow-primary/20 scale-105 bg-gradient-to-b from-primary/5 to-background'
-                      : 'border-border bg-card'
-                  }`}
-                >
-                  {plan.highlighted && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary to-secondary text-white text-sm font-semibold rounded-full">
-                      Most Popular
-                    </div>
-                  )}
-
-                  <div className="mb-6">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 mb-4">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                    <p className="text-muted-foreground text-sm">{plan.description}</p>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground">/ {plan.period}</span>
-                    </div>
-                  </div>
-
-                  <Button
-                    className={`w-full mb-8 ${
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+              {plans.map((plan, index) => {
+                const Icon = plan.icon;
+                const price = billingPeriod === 'YEARLY' ? plan.yearlyPrice : plan.monthlyPrice;
+                const isCurrentPlan = currentPlan === plan.name;
+                const features = getPlanFeatures(plan);
+                
+                return (
+                  <div
+                    key={index}
+                    className={`rounded-2xl border p-8 relative ${
                       plan.highlighted
-                        ? 'bg-gradient-to-r from-primary to-secondary hover:opacity-90'
-                        : ''
+                        ? 'border-primary shadow-2xl shadow-primary/20 scale-105 bg-gradient-to-b from-primary/5 to-background'
+                        : 'border-border bg-card'
                     }`}
-                    variant={plan.highlighted ? 'default' : 'outline'}
-                    size="lg"
                   >
-                    {plan.cta}
-                  </Button>
-
-                  <div className="space-y-3">
-                    {plan.features.map((feature, featureIndex) => (
-                      <div key={featureIndex} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
+                    {plan.highlighted && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary to-secondary text-white text-sm font-semibold rounded-full">
+                        Most Popular
                       </div>
-                    ))}
+                    )}
+
+                    <div className="mb-6">
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-primary/10 to-secondary/10 mb-4">
+                        <Icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                      <p className="text-muted-foreground text-sm">{plan.description}</p>
+                    </div>
+
+                    <div className="mb-6">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold">
+                          {price === 0 ? 'Free' : `Rs. ${price.toLocaleString()}`}
+                        </span>
+                        {price > 0 && (
+                          <span className="text-muted-foreground">
+                            {' / '}{billingPeriod === 'YEARLY' ? 'year' : 'month'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {isCurrentPlan ? (
+                      <Button
+                        className="w-full mb-8"
+                        variant="outline"
+                        size="lg"
+                        disabled
+                      >
+                        Current Plan
+                      </Button>
+                    ) : (
+                      <Button
+                        className={`w-full mb-8 ${
+                          plan.highlighted
+                            ? 'bg-gradient-to-r from-primary to-secondary hover:opacity-90'
+                            : ''
+                        }`}
+                        variant={plan.highlighted ? 'default' : 'outline'}
+                        size="lg"
+                        onClick={() => handleSubscribe(plan)}
+                      >
+                        {price === 0 ? 'Get Started' : plan.name === 'ENTERPRISE' ? 'Contact Sales' : 'Subscribe'}
+                      </Button>
+                    )}
+
+                    <div className="space-y-3">
+                      {features.map((feature, featureIndex) => (
+                        <div key={featureIndex} className="flex items-start gap-3">
+                          <Check className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -221,4 +359,27 @@ export function PricingPage() {
       <Footer />
     </div>
   );
+}
+
+function getPlanFeatures(plan: any): string[] {
+  const base = [
+    plan.maxBidsPerMonth === -1 ? 'Unlimited bids' : `Up to ${plan.maxBidsPerMonth} bids/month`,
+    plan.maxJobPostsPerMonth === -1 ? 'Unlimited job posts' : `Up to ${plan.maxJobPostsPerMonth} job posts/month`,
+    `${plan.platformFeePercent}% platform fee`,
+  ];
+  
+  if (plan.featuredProfile) {
+    base.push('Featured profile badge');
+  }
+  if (plan.prioritySupport) {
+    base.push('Priority support');
+  }
+  if (plan.name === 'PROFESSIONAL' || plan.name === 'ENTERPRISE') {
+    base.push('Advanced analytics');
+  }
+  if (plan.name === 'ENTERPRISE') {
+    base.push('Team management', 'Dedicated account manager', 'Custom contracts');
+  }
+  
+  return base;
 }

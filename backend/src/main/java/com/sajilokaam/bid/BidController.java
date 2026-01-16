@@ -195,6 +195,7 @@ public class BidController {
     }
 
     @PatchMapping("/{jobId}/bids/{bidId}/accept")
+    @Transactional
     public ResponseEntity<Map<String, Object>> acceptBid(
             @PathVariable Long jobId,
             @PathVariable Long bidId,

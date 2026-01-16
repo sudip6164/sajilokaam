@@ -264,7 +264,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
     box-sizing: border-box;
   }
 
@@ -307,6 +307,43 @@
   main, header, footer {
     max-width: 100vw;
     width: 100%;
+  }
+
+  /* Cursor pointer for interactive elements - using !important to override any conflicting styles */
+  button:not(:disabled),
+  a,
+  [role="button"]:not([aria-disabled="true"]),
+  [onclick],
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  label[for] {
+    cursor: pointer !important;
+  }
+
+  /* Remove focus outline/ring from buttons to prevent insert line */
+  button:focus,
+  button:focus-visible,
+  button:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Specifically target logo button and prevent any borders/outlines */
+  button[class*="logo"],
+  button:has(img[alt*="Logo"]) {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-width: 0 !important;
+  }
+
+  /* Disabled elements should show not-allowed */
+  button:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed !important;
   }
 }
 

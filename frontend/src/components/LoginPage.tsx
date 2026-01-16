@@ -130,9 +130,11 @@ export function LoginPage() {
               onClick={() => navigate('home')}
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary">
-                <span className="text-primary-foreground font-bold text-lg">S</span>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="SajiloKaam Logo" 
+                className="h-10 w-10 object-contain"
+              />
               <span className="text-xl font-semibold text-foreground">SajiloKaam</span>
             </button>
 

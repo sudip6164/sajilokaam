@@ -88,6 +88,35 @@ public class SubtaskController {
         return ResponseEntity.ok(updated);
     }
 
+    @PutMapping("/{taskId}/subtasks/{subtaskId}")
+    public ResponseEntity<Subtask> updateSubtask(
+            @PathVariable Long taskId,
+            @PathVariable Long subtaskId,
+            @RequestBody SubtaskUpdateRequest request) {
+        Optional<Subtask> subtaskOpt = subtaskRepository.findById(subtaskId);
+        if (subtaskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Subtask subtask = subtaskOpt.get();
+        if (!subtask.getTask().getId().equals(taskId)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            subtask.setTitle(request.getTitle().trim());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            String status = request.getStatus().toUpperCase();
+            if (status.equals("TODO") || status.equals("IN_PROGRESS") || status.equals("DONE")) {
+                subtask.setStatus(status);
+            }
+        }
+
+        Subtask updated = subtaskRepository.save(subtask);
+        return ResponseEntity.ok(updated);
+    }
+
     @DeleteMapping("/{taskId}/subtasks/{subtaskId}")
     public ResponseEntity<Void> deleteSubtask(
             @PathVariable Long taskId,

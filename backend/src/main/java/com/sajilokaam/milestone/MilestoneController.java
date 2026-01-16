@@ -1,8 +1,11 @@
 package com.sajilokaam.milestone;
 
+import com.sajilokaam.activitylog.ActivityLogService;
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.project.Project;
 import com.sajilokaam.project.ProjectRepository;
+import com.sajilokaam.user.User;
+import com.sajilokaam.user.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,12 +21,16 @@ public class MilestoneController {
     private final MilestoneRepository milestoneRepository;
     private final ProjectRepository projectRepository;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
     public MilestoneController(MilestoneRepository milestoneRepository, ProjectRepository projectRepository,
-                              JwtService jwtService) {
+                              JwtService jwtService, UserRepository userRepository, ActivityLogService activityLogService) {
         this.milestoneRepository = milestoneRepository;
         this.projectRepository = projectRepository;
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
+        this.activityLogService = activityLogService;
     }
 
     @GetMapping("/{projectId}/milestones")
@@ -50,6 +57,12 @@ public class MilestoneController {
             return ResponseEntity.status(401).build();
         }
 
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = userOpt.get();
+
         Optional<Project> projectOpt = projectRepository.findById(projectId);
         if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -65,6 +78,11 @@ public class MilestoneController {
         milestone.setDueDate(request.getDueDate());
 
         Milestone created = milestoneRepository.save(milestone);
+        
+        // Log activity
+        activityLogService.logActivity(user, "Milestone created", "MILESTONE", created.getId(), 
+            "Milestone created: " + created.getTitle());
+        
         URI location = URI.create("/api/projects/" + projectId + "/milestones/" + created.getId());
         return ResponseEntity.created(location).body(created);
     }
@@ -96,12 +114,26 @@ public class MilestoneController {
             return ResponseEntity.badRequest().build();
         }
 
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = userOpt.get();
+
+        String oldTitle = milestone.getTitle();
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             milestone.setTitle(request.getTitle().trim());
         }
         milestone.setDueDate(request.getDueDate());
 
         Milestone updated = milestoneRepository.save(milestone);
+        
+        // Log activity
+        String changeDesc = oldTitle.equals(updated.getTitle()) 
+            ? "Milestone updated: " + updated.getTitle()
+            : "Milestone updated: " + oldTitle + " → " + updated.getTitle();
+        activityLogService.logActivity(user, "Milestone updated", "MILESTONE", updated.getId(), changeDesc);
+        
         return ResponseEntity.ok(updated);
     }
 
@@ -121,6 +153,12 @@ public class MilestoneController {
             return ResponseEntity.status(401).build();
         }
 
+        Optional<User> userOpt = userRepository.findByEmail(emailOpt.get());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        User user = userOpt.get();
+
         Optional<Milestone> milestoneOpt = milestoneRepository.findById(milestoneId);
         if (milestoneOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -131,6 +169,12 @@ public class MilestoneController {
             return ResponseEntity.badRequest().build();
         }
 
+        String milestoneTitle = milestone.getTitle();
+        
+        // Log deletion activity BEFORE deleting
+        activityLogService.logActivity(user, "Milestone deleted", "MILESTONE", milestoneId, 
+            "Milestone deleted: " + milestoneTitle);
+        
         milestoneRepository.delete(milestone);
         return ResponseEntity.noContent().build();
     }

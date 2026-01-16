@@ -55,6 +55,7 @@ import { ClientManagementPage } from "./components/admin/ClientManagementPage";
 import { AdminManagementPage } from "./components/admin/AdminManagementPage";
 import { VerificationQueuePage } from "./components/admin/VerificationQueuePage";
 import { AnalyticsPage } from "./components/admin/AnalyticsPage";
+import { AdminPaymentAnalyticsPage } from "./components/admin/AdminPaymentAnalyticsPage";
 import { InvoicesListPage } from "./components/payments/InvoicesListPage";
 import { CreateInvoicePage } from "./components/payments/CreateInvoicePage";
 import { InvoiceDetailPage } from "./components/payments/InvoiceDetailPage";
@@ -66,6 +67,7 @@ import { FreelancerProjectsPage } from "./components/projects/FreelancerProjects
 import { TransactionsPage } from "./components/payments/TransactionsPage";
 import { EscrowManagementPage } from "./components/payments/EscrowManagementPage";
 import { PaymentCancelPage } from "./components/payments/PaymentCancelPage";
+import { NotificationsPage } from "./components/NotificationsPage";
 
 const queryClient = new QueryClient();
 
@@ -182,6 +184,8 @@ function AppContent() {
       return <ContactPage />;
     case 'pricing':
       return <PricingPage />;
+    case 'notifications':
+      return <NotificationsPage />;
     case 'terms':
       return <TermsPage />;
     case 'privacy':
@@ -199,7 +203,7 @@ function AppContent() {
     case 'admin-verification':
       return <VerificationQueuePage />;
     case 'admin-payments':
-      return <div>Payment Analytics - Coming Soon</div>;
+      return <AdminPaymentAnalyticsPage />;
     case 'admin-analytics':
       return <AnalyticsPage />;
     case 'admin-settings':

@@ -34,6 +34,15 @@ export function DocumentUploadModal({
   const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
   const [processingId, setProcessingId] = useState<number | null>(null);
 
+  // Reset state when modal closes
+  const handleClose = () => {
+    setFile(null);
+    setExtractedTasks([]);
+    setSelectedTasks([]);
+    setProcessingId(null);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +144,7 @@ export function DocumentUploadModal({
         onUploadSuccess();
       }
 
-      onClose();
+      handleClose();
 
     } catch (error: any) {
       console.error('Error creating tasks:', error);
@@ -163,7 +172,7 @@ export function DocumentUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4 overflow-y-auto">
       <Card className="w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         <CardHeader className="border-b bg-gradient-to-r from-primary/10 to-purple-100 flex-shrink-0 py-4 px-6">
           <div className="flex items-start justify-between gap-3">
@@ -179,7 +188,7 @@ export function DocumentUploadModal({
             <Button
               variant="ghost"
               size="icon"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-shrink-0 h-8 w-8 md:h-10 md:w-10"
             >
               <XCircle className="h-4 w-4 md:h-5 md:w-5" />
@@ -187,7 +196,7 @@ export function DocumentUploadModal({
           </div>
         </CardHeader>
 
-        <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6 flex-1 overflow-y-auto min-h-0">
+        <CardContent className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 flex-1 overflow-y-auto min-h-0">
           {/* Upload Section */}
           {extractedTasks.length === 0 && (
             <div className="space-y-4">
@@ -325,8 +334,8 @@ export function DocumentUploadModal({
 
         </CardContent>
 
-        <CardFooter className="border-t p-4 md:p-6 bg-gray-50 flex-shrink-0">
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
+        <CardFooter className="border-t p-3 sm:p-4 md:p-6 bg-gray-50 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
             {extractedTasks.length === 0 ? (
               <>
                 <Button
@@ -346,7 +355,7 @@ export function DocumentUploadModal({
                     </>
                   )}
                 </Button>
-                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </>
@@ -369,7 +378,7 @@ export function DocumentUploadModal({
                     </>
                   )}
                 </Button>
-                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+                <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </>

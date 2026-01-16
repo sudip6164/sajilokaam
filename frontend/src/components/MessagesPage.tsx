@@ -94,32 +94,79 @@ export function MessagesPage() {
       setLoading(true);
       const data = await conversationsApi.list();
       
-      // Transform API data to match Conversation interface
-      const transformedConversations: Conversation[] = data.map((conv: any) => {
+      // Transform API data to match Conversation interface and deduplicate
+      // Use participant ID as unique key to ensure only one conversation per person
+      const conversationMap = new Map<string, Conversation>();
+      
+      data.forEach((conv: any) => {
         const otherParticipant = conv.participants?.find((p: any) => p.id !== user?.id);
         
-        return {
-          id: conv.id.toString(),
-          participant: {
-            id: otherParticipant?.id,
-            name: otherParticipant?.fullName || 'Unknown User',
-            avatar: otherParticipant?.profilePictureUrl,
-            role: otherParticipant?.userType || 'USER',
-          },
-          lastMessage: conv.lastMessage ? {
-            content: conv.lastMessage.content,
-            timestamp: conv.lastMessage.createdAt,
-            isRead: conv.lastMessage.isRead,
-          } : undefined,
-          unreadCount: conv.unreadCount || 0,
-          projectName: conv.project?.title,
-          isPinned: conv.isPinned || false,
-          status: 'offline', // Can be enhanced with real-time presence
-        };
+        if (!otherParticipant) return; // Skip if no other participant found
+        
+        // Always use participant ID as unique key - one conversation per person
+        const uniqueKey = `person-${otherParticipant.id}`;
+        
+        // If conversation already exists, keep the one with the most recent message
+        const existing = conversationMap.get(uniqueKey);
+        if (existing) {
+          const existingTime = existing.lastMessage ? new Date(existing.lastMessage.timestamp).getTime() : 0;
+          const newTime = conv.lastMessage ? new Date(conv.lastMessage.createdAt).getTime() : 0;
+          
+          // Replace if new conversation has more recent message or if existing has no message
+          if (newTime > existingTime || (!existing.lastMessage && conv.lastMessage)) {
+            conversationMap.set(uniqueKey, {
+              id: conv.id.toString(),
+              participant: {
+                id: otherParticipant.id,
+                name: otherParticipant.fullName || 'Unknown User',
+                avatar: otherParticipant.profilePictureUrl,
+                role: otherParticipant.userType || 'USER',
+              },
+              lastMessage: conv.lastMessage ? {
+                content: conv.lastMessage.content,
+                timestamp: conv.lastMessage.createdAt,
+                isRead: conv.lastMessage.isRead,
+              } : undefined,
+              unreadCount: conv.unreadCount || 0,
+              projectName: conv.project?.title, // Keep project name for context
+              isPinned: conv.isPinned || false,
+              status: 'offline',
+            });
+          }
+        } else {
+          // First conversation with this person
+          conversationMap.set(uniqueKey, {
+            id: conv.id.toString(),
+            participant: {
+              id: otherParticipant.id,
+              name: otherParticipant.fullName || 'Unknown User',
+              avatar: otherParticipant.profilePictureUrl,
+              role: otherParticipant.userType || 'USER',
+            },
+            lastMessage: conv.lastMessage ? {
+              content: conv.lastMessage.content,
+              timestamp: conv.lastMessage.createdAt,
+              isRead: conv.lastMessage.isRead,
+            } : undefined,
+            unreadCount: conv.unreadCount || 0,
+            projectName: conv.project?.title,
+            isPinned: conv.isPinned || false,
+            status: 'offline',
+          });
+        }
       });
 
-      console.log('Fetched conversations:', transformedConversations.length);
-      console.log('Sample conversation participant:', transformedConversations[0]?.participant);
+      const transformedConversations = Array.from(conversationMap.values());
+      
+      // Sort by last message timestamp (most recent first)
+      transformedConversations.sort((a, b) => {
+        if (!a.lastMessage && !b.lastMessage) return 0;
+        if (!a.lastMessage) return 1;
+        if (!b.lastMessage) return -1;
+        return new Date(b.lastMessage.timestamp).getTime() - new Date(a.lastMessage.timestamp).getTime();
+      });
+
+      console.log('Fetched conversations:', transformedConversations.length, 'after deduplication');
       setConversations(transformedConversations);
       
       // Auto-select first conversation if available

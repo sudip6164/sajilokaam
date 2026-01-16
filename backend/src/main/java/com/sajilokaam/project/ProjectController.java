@@ -1,5 +1,8 @@
 package com.sajilokaam.project;
 
+import com.sajilokaam.activitylog.ActivityLog;
+import com.sajilokaam.activitylog.ActivityLogRepository;
+import com.sajilokaam.activitylog.ActivityLogService;
 import com.sajilokaam.auth.JwtService;
 import com.sajilokaam.bid.Bid;
 import com.sajilokaam.bid.BidRepository;
@@ -34,12 +37,16 @@ public class ProjectController {
     private final ConversationRepository conversationRepository;
     private final EscrowAccountRepository escrowAccountRepository;
     private final com.sajilokaam.task.TaskRepository taskRepository;
+    private final ActivityLogService activityLogService;
+    private final ActivityLogRepository activityLogRepository;
 
     public ProjectController(ProjectRepository projectRepository, JobRepository jobRepository,
                             BidRepository bidRepository, UserRepository userRepository,
                             JwtService jwtService, ConversationRepository conversationRepository,
                             EscrowAccountRepository escrowAccountRepository,
-                            com.sajilokaam.task.TaskRepository taskRepository) {
+                            com.sajilokaam.task.TaskRepository taskRepository,
+                            ActivityLogService activityLogService,
+                            ActivityLogRepository activityLogRepository) {
         this.projectRepository = projectRepository;
         this.jobRepository = jobRepository;
         this.bidRepository = bidRepository;
@@ -48,6 +55,8 @@ public class ProjectController {
         this.conversationRepository = conversationRepository;
         this.escrowAccountRepository = escrowAccountRepository;
         this.taskRepository = taskRepository;
+        this.activityLogService = activityLogService;
+        this.activityLogRepository = activityLogRepository;
     }
 
     @GetMapping
@@ -282,7 +291,8 @@ public class ProjectController {
     @DeleteMapping("/{projectId}/tasks/{taskId}")
     public ResponseEntity<Void> deleteTask(
             @PathVariable Long projectId,
-            @PathVariable Long taskId) {
+            @PathVariable Long taskId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
         Optional<Project> projectOpt = projectRepository.findById(projectId);
         if (projectOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -292,9 +302,28 @@ public class ProjectController {
             return ResponseEntity.status(403).build();
         }
 
-        if (!taskRepository.existsByIdAndProject_Id(taskId, projectId)) {
+        Optional<com.sajilokaam.task.Task> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty() || !taskOpt.get().getProject().getId().equals(projectId)) {
             return ResponseEntity.notFound().build();
         }
+
+        String taskTitle = taskOpt.get().getTitle();
+        
+        // Get user for activity log
+        Optional<User> userOpt = Optional.empty();
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring("Bearer ".length()).trim();
+            Optional<String> emailOpt = jwtService.extractSubject(token);
+            if (emailOpt.isPresent()) {
+                userOpt = userRepository.findByEmail(emailOpt.get());
+            }
+        }
+        
+        // Log deletion activity BEFORE deleting
+        userOpt.ifPresent(user -> {
+            activityLogService.logActivity(user, "Task deleted", "TASK", taskId, 
+                "Task deleted: " + taskTitle);
+        });
 
         taskRepository.deleteByIdDirect(taskId);
         return ResponseEntity.noContent().build();
@@ -303,8 +332,9 @@ public class ProjectController {
     @PostMapping("/{projectId}/tasks/{taskId}/delete")
     public ResponseEntity<Void> deleteTaskPost(
             @PathVariable Long projectId,
-            @PathVariable Long taskId) {
-        return deleteTask(projectId, taskId);
+            @PathVariable Long taskId,
+            @RequestHeader(name = "Authorization", required = false) String authorization) {
+        return deleteTask(projectId, taskId, authorization);
     }
 
     /**
@@ -387,6 +417,15 @@ public class ProjectController {
             "projectId", project.getId(),
             "status", "COMPLETED"
         ));
+    }
+
+    @GetMapping("/{projectId}/activities")
+    public ResponseEntity<List<ActivityLog>> getProjectActivities(@PathVariable Long projectId) {
+        if (!projectRepository.existsById(projectId)) {
+            return ResponseEntity.notFound().build();
+        }
+        List<ActivityLog> activities = activityLogRepository.findProjectActivities(projectId);
+        return ResponseEntity.ok(activities);
     }
 }
 

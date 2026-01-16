@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { useRouter } from './Router';
-import { jobsApi, jobCategoriesApi } from '@/lib/api';
+import { jobsApi, jobCategoriesApi, profileApi, reviewsApi, clientsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from './ui/skeleton';
 
@@ -49,6 +49,8 @@ export function FindWorkPage() {
   const [budgetRange, setBudgetRange] = useState<string>('all');
   const [jobTypeFilter, setJobTypeFilter] = useState<string>('all');
   const [savedJobs, setSavedJobs] = useState<number[]>([]);
+  const [clientRatings, setClientRatings] = useState<Record<number, { average: number; count: number }>>({});
+  const [clientNames, setClientNames] = useState<Record<number, string>>({});
 
   // Fetch jobs and categories on mount
   useEffect(() => {
@@ -90,6 +92,48 @@ export function FindWorkPage() {
 
       const data = await jobsApi.list(params);
       setJobs(data as any);
+      
+      // Fetch client info (name and ratings) for all jobs
+      const ratingsMap: Record<number, { average: number; count: number }> = {};
+      const namesMap: Record<number, string> = {};
+      await Promise.all(
+        (data as any[]).map(async (job: any) => {
+          if (job.clientId) {
+            try {
+              // job.clientId is a USER ID, so use clientsApi.getById which expects user ID
+              const clientProfile = await clientsApi.getById(job.clientId);
+              console.log(`FindWorkPage: Job ${job.id} - clientId (user ID): ${job.clientId}, profile:`, clientProfile);
+              
+              // Store client name - use userId from profile, not profile id
+              const clientName = clientProfile.companyName || clientProfile.user?.fullName || 'Client';
+              namesMap[job.id] = clientName;
+              
+              // Fetch client reviews using user ID (job.clientId IS the user ID)
+              const clientUserId = job.clientId; // job.clientId is already the user ID
+              console.log(`FindWorkPage: Job ${job.id} - Using clientUserId: ${clientUserId}, name: ${clientName}`);
+              
+              try {
+                const reviews = await reviewsApi.listByUser(clientUserId);
+                console.log(`FindWorkPage: Job ${job.id} - reviews:`, reviews);
+                if (Array.isArray(reviews) && reviews.length > 0) {
+                  const avg = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+                  ratingsMap[job.id] = { average: avg, count: reviews.length };
+                }
+              } catch (err) {
+                console.error(`FindWorkPage: Error fetching reviews for job ${job.id}:`, err);
+              }
+            } catch (err) {
+              console.error(`FindWorkPage: Error fetching client profile for job ${job.id} (clientId: ${job.clientId}):`, err);
+              // Set a default name even if profile fetch fails
+              namesMap[job.id] = 'Client';
+            }
+          }
+        })
+      );
+      console.log('FindWorkPage: Setting clientRatings:', ratingsMap);
+      console.log('FindWorkPage: Setting clientNames:', namesMap);
+      setClientRatings(ratingsMap);
+      setClientNames(namesMap);
     } catch (err: any) {
       console.error('Error fetching jobs:', err);
       setError('Failed to load jobs. Please try again later.');
@@ -289,7 +333,9 @@ export function FindWorkPage() {
                 <p className="text-muted-foreground">No jobs found. Try adjusting your filters.</p>
               </Card>
             ) : (
-              filteredJobs.map((job) => (
+              filteredJobs.map((job) => {
+                console.log(`FindWorkPage Render: Job ${job.id} - clientNames[${job.id}]:`, clientNames[job.id], 'clientRatings[${job.id}]:', clientRatings[job.id]);
+                return (
                 <Card key={job.id} className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 bg-card">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
@@ -336,6 +382,23 @@ export function FindWorkPage() {
                             <Badge variant="outline" className="text-xs">
                               {job.category.name}
                             </Badge>
+                          </div>
+                        )}
+                        {(clientNames[job.id] || clientRatings[job.id]) && (
+                          <div className="flex items-center gap-2 text-sm">
+                            {clientNames[job.id] && (
+                              <>
+                                <span className="text-muted-foreground">by</span>
+                                <span className="font-medium">{clientNames[job.id]}</span>
+                              </>
+                            )}
+                            {clientRatings[job.id] && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                <span className="font-semibold">{clientRatings[job.id].average.toFixed(1)}</span>
+                                <span className="text-xs text-muted-foreground">({clientRatings[job.id].count})</span>
+                              </div>
+                            )}
                           </div>
                         )}
                         {job.createdAt && (
@@ -413,7 +476,8 @@ export function FindWorkPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))
+                );
+              })
             )}
           </div>
         )}

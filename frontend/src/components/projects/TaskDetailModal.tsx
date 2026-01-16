@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Calendar, Clock, User, Tag, Link2, MessageSquare, Eye, Paperclip, CheckCircle2, Plus, Trash2, Download } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Calendar, Clock, User, Tag, Link2, MessageSquare, Eye, Paperclip, CheckCircle2, Plus, Trash2, Download, Edit2, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -266,6 +266,18 @@ export function TaskDetailModal({ isOpen, onClose, projectId, task, allTasks, on
     }
   };
 
+  const formatCommentTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   const handleToggleWatch = async () => {
     try {
       if (isWatching) {
@@ -333,6 +345,98 @@ export function TaskDetailModal({ isOpen, onClose, projectId, task, allTasks, on
   };
 
   if (!isOpen || !task) return null;
+
+  // Subtask Item Component (Jira-like)
+  function SubtaskItem({ 
+    subtask, 
+    onToggle, 
+    onDelete, 
+    onUpdate 
+  }: { 
+    subtask: {id: number; title: string; status: string}; 
+    onToggle: (id: number, status: string) => void;
+    onDelete: (id: number) => void;
+    onUpdate: (id: number, title: string) => void;
+  }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState(subtask.title);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (isEditing && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, [isEditing]);
+
+    const handleSave = () => {
+      if (editTitle.trim() && editTitle !== subtask.title) {
+        onUpdate(subtask.id, editTitle.trim());
+      }
+      setIsEditing(false);
+    };
+
+    const handleCancel = () => {
+      setEditTitle(subtask.title);
+      setIsEditing(false);
+    };
+
+    return (
+      <div className="group flex items-center gap-2 p-2 rounded hover:bg-muted/50 transition-colors">
+        <input
+          type="checkbox"
+          checked={subtask.status === 'DONE'}
+          onChange={() => onToggle(subtask.id, subtask.status)}
+          className="h-4 w-4 rounded cursor-pointer"
+        />
+        {isEditing ? (
+          <div className="flex-1 flex items-center gap-2">
+            <Input
+              ref={inputRef}
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') handleCancel();
+              }}
+              onBlur={handleSave}
+              className="flex-1 h-8"
+            />
+            <Button size="icon" variant="ghost" onClick={handleSave} className="h-7 w-7">
+              <Check className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <span 
+              className={`flex-1 cursor-pointer ${subtask.status === 'DONE' ? 'line-through text-muted-foreground' : ''}`}
+              onDoubleClick={() => setIsEditing(true)}
+            >
+              {subtask.title}
+            </span>
+            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsEditing(true)}
+                className="h-7 w-7"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => onDelete(subtask.id)}
+                className="h-7 w-7 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -463,36 +567,69 @@ export function TaskDetailModal({ isOpen, onClose, projectId, task, allTasks, on
           {/* Subtasks Tab */}
           {activeTab === 'subtasks' && (
             <div className="space-y-4">
+              {/* Progress Summary */}
+              {subtasks.length > 0 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Progress</span>
+                    <span className="text-sm text-muted-foreground">
+                      {subtasks.filter(s => s.status === 'DONE').length} of {subtasks.length} completed
+                    </span>
+                  </div>
+                  <div className="w-full bg-background rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{ 
+                        width: `${(subtasks.filter(s => s.status === 'DONE').length / subtasks.length) * 100}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Add Subtask */}
               <div className="flex gap-2">
                 <Input
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   placeholder="Add subtask..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newSubtaskTitle.trim()) {
+                      handleAddSubtask();
+                    }
+                  }}
+                  className="flex-1"
                 />
-                <Button onClick={handleAddSubtask} size="sm">
-                  <Plus className="h-4 w-4" />
+                <Button onClick={handleAddSubtask} size="sm" disabled={!newSubtaskTitle.trim()}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
                 </Button>
               </div>
-              <div className="space-y-2">
+
+              {/* Subtasks List */}
+              <div className="space-y-1">
                 {subtasks.map(subtask => (
-                  <div key={subtask.id} className="flex items-center gap-2 p-2 border rounded">
-                    <input
-                      type="checkbox"
-                      checked={subtask.status === 'DONE'}
-                      onChange={() => handleToggleSubtask(subtask.id, subtask.status)}
-                      className="h-4 w-4"
-                    />
-                    <span className={`flex-1 ${subtask.status === 'DONE' ? 'line-through text-muted-foreground' : ''}`}>
-                      {subtask.title}
-                    </span>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteSubtask(subtask.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <SubtaskItem
+                    key={subtask.id}
+                    subtask={subtask}
+                    onToggle={(id, status) => handleToggleSubtask(id, status)}
+                    onDelete={(id) => handleDeleteSubtask(id)}
+                    onUpdate={async (id, title) => {
+                      try {
+                        await subtasksApi.update(task.id, id, { title });
+                        toast.success('Subtask updated');
+                        fetchTaskData();
+                      } catch (error: any) {
+                        toast.error('Failed to update subtask');
+                      }
+                    }}
+                  />
                 ))}
                 {subtasks.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">No subtasks yet</p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No subtasks yet. Add one to break down this task.</p>
+                  </div>
                 )}
               </div>
             </div>

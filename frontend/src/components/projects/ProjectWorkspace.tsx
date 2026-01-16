@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Calendar, Clock, DollarSign, FileText, MessageSquare, Upload,
   CheckCircle, Circle, AlertCircle, Download, Eye, Trash2,
-  Play, Pause, Plus, Send, Sparkles, List, LayoutGrid, Edit, X, GripVertical
+  Play, Pause, Plus, Send, Sparkles, List, LayoutGrid, Edit, X, GripVertical, Star
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -14,6 +14,9 @@ import { DocumentUploadModal } from './DocumentUploadModal';
 import { TaskModal } from './TaskModal';
 import { MilestoneModal } from './MilestoneModal';
 import { TaskDetailModal } from './TaskDetailModal';
+import { FilePreviewModal } from './FilePreviewModal';
+import { SprintModal } from './SprintModal';
+import { SprintDetailModal } from './SprintDetailModal';
 import {
   DndContext,
   DragOverlay,
@@ -103,9 +106,14 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showTaskDetailModal, setShowTaskDetailModal] = useState(false);
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [showSprintModal, setShowSprintModal] = useState(false);
+  const [showSprintDetailModal, setShowSprintDetailModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedSprint, setSelectedSprint] = useState<{id: number; name: string; startDate?: string; endDate?: string; status: string} | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
 
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -192,8 +200,8 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         id: f.id,
         name: f.fileName || 'Unknown File',
         size: f.fileSize || 'N/A',
-        uploadedBy: f.uploadedBy || 'Unknown',
-        uploadedAt: f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString() : 'Recently',
+        uploadedBy: f.uploadedBy?.fullName || f.uploadedBy || 'Unknown',
+        uploadedAt: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : 'Recently',
         type: f.fileType || 'document',
       })));
 
@@ -208,60 +216,27 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         status: 'approved' as const, // Default to approved, can be updated later
       })));
 
-      // Generate activity feed from project data
-      const activityList: Array<{action: string; user: string; time: string; type: string}> = [];
-      
-      // Add milestone activities
-      milestonesData.forEach((m: any) => {
-        if (m.createdAt) {
-          activityList.push({
-            action: `Milestone created: ${m.title}`,
-            user: 'System',
-            time: new Date(m.createdAt).toLocaleString(),
-            type: 'info'
-          });
-        }
-      });
-
-      // Add file activities
-      filesData.forEach((f: any) => {
-        if (f.createdAt) {
-          activityList.push({
-            action: `File uploaded: ${f.fileName || 'Unknown'}`,
-            user: f.uploadedBy?.fullName || 'Unknown',
-            time: new Date(f.createdAt).toLocaleString(),
-            type: 'info'
-          });
-        }
-      });
-
-      // Add task activities
-      tasksData.forEach((t: any) => {
-        if (t.createdAt) {
-          activityList.push({
-            action: `Task created: ${t.title}`,
-            user: 'System',
-            time: new Date(t.createdAt).toLocaleString(),
-            type: 'info'
-          });
-        }
-      });
-
-      // Add time log activities
-      timeLogsData.forEach((log: any) => {
-        if (log.createdAt) {
-          activityList.push({
-            action: `Time entry logged: ${Math.round((log.minutes || 0) / 60 * 10) / 10}h`,
-            user: 'Freelancer',
-            time: new Date(log.createdAt).toLocaleString(),
-            type: 'info'
-          });
-        }
-      });
-
-      // Sort by time (newest first) and limit to 20
-      activityList.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-      setActivities(activityList.slice(0, 20));
+      // Fetch activities from activity log API (persists even when entities are deleted)
+      try {
+        const activitiesData = await projectsApi.getActivities(project.id);
+        const activityList = activitiesData.map((a: any) => {
+          const description = a.description || a.action || 'Activity';
+          // Extract the actual description (remove project ID suffix if present)
+          const cleanDescription = description.replace(/\s*\|\s*project:\d+.*$/, '').trim();
+          return {
+            action: cleanDescription || a.action || 'Activity',
+            user: a.user?.fullName || 'Unknown',
+            time: new Date(a.createdAt).toLocaleString(),
+            type: a.action?.toLowerCase().includes('deleted') ? 'error' : 
+                  a.action?.toLowerCase().includes('created') ? 'success' : 'info'
+          };
+        });
+        setActivities(activityList.slice(0, 20));
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+        // Fallback to empty activities if API fails
+        setActivities([]);
+      }
 
       // Set sprints
       setSprints(sprintsData);
@@ -459,12 +434,6 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             <Send className="h-4 w-4 mr-2" />
             Message
           </Button>
-          <Badge className={
-            project.status === 'active' || project.status === 'ACTIVE' || project.status === 'IN_PROGRESS' ? 'bg-success' :
-              project.status === 'completed' || project.status === 'COMPLETED' ? 'bg-primary' : 'bg-yellow-500'
-          }>
-            {project.status ? (project.status.charAt(0).toUpperCase() + project.status.slice(1).toLowerCase().replace('_', ' ')) : 'Unknown'}
-          </Badge>
         </div>
 
         {/* Stats */}
@@ -508,6 +477,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             { id: 'tasks', label: 'Tasks', icon: CheckCircle },
             { id: 'ml-documents', label: 'ML Documents', icon: Sparkles },
             { id: 'milestones', label: 'Milestones', icon: CheckCircle },
+            { id: 'sprints', label: 'Sprints', icon: Calendar },
             { id: 'files', label: 'Files', icon: Upload },
             { id: 'time', label: 'Time Tracking', icon: Clock },
             { id: 'activity', label: 'Activity', icon: MessageSquare },
@@ -947,7 +917,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Project Sprints</h3>
-              <Button size="sm" onClick={() => toast.info('Sprint creation coming soon')}>
+              <Button size="sm" onClick={() => setShowSprintModal(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Sprint
               </Button>
@@ -965,7 +935,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                 <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                 <h3 className="font-semibold mb-2">No sprints yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">Create sprints to organize your work</p>
-                <Button size="sm" onClick={() => toast.info('Sprint creation coming soon')}>
+                <Button size="sm" onClick={() => setShowSprintModal(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Sprint
                 </Button>
@@ -973,12 +943,26 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             ) : (
               <div className="space-y-3">
                 {sprints.map(sprint => (
-                  <div key={sprint.id} className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                  <div 
+                    key={sprint.id} 
+                    className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedSprint(sprint);
+                      setShowSprintDetailModal(true);
+                    }}
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-semibold">{sprint.name}</h4>
-                          <Badge variant="outline">{sprint.status}</Badge>
+                          <Badge variant="outline" className={
+                            sprint.status === 'ACTIVE' ? 'bg-green-500/10 text-green-700 border-green-500' :
+                            sprint.status === 'COMPLETED' ? 'bg-blue-500/10 text-blue-700 border-blue-500' :
+                            sprint.status === 'CANCELLED' ? 'bg-red-500/10 text-red-700 border-red-500' :
+                            ''
+                          }>
+                            {sprint.status}
+                          </Badge>
                         </div>
                         {sprint.startDate && sprint.endDate && (
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -989,14 +973,17 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={() => toast.info('Sprint details coming soon')}>
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => toast.info('Sprint edit coming soon')}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedSprint(sprint);
+                          setShowSprintDetailModal(true);
+                        }}
+                      >
+                        View
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -1092,6 +1079,17 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                       <Button 
                         variant="ghost" 
                         size="icon" 
+                        onClick={() => {
+                          setSelectedFile(file);
+                          setShowFilePreview(true);
+                        }}
+                        title="Preview file"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
                         onClick={async () => {
                           try {
                             const blob = await filesApi.download(project.id, file.id);
@@ -1107,6 +1105,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                             toast.error('Failed to download file');
                           }
                         }}
+                        title="Download file"
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -1124,6 +1123,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                             }
                           }
                         }}
+                        title="Delete file"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -1139,65 +1139,90 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         {activeTab === 'time' && (
           <div className="space-y-6">
             {/* Timer */}
-            <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold mb-1">Time Tracker</h3>
-                  <p className="text-sm text-muted-foreground">Track your working hours</p>
-                </div>
+            <div className="p-6 rounded-lg bg-gradient-to-br from-primary/5 via-background to-secondary/5 border-2 border-primary/20 shadow-lg">
+              <div className="space-y-6">
                 <div className="text-center">
-                  <p className="text-4xl font-bold mb-2">
-                    {Math.floor(currentTime / 3600)}:{String(Math.floor((currentTime % 3600) / 60)).padStart(2, '0')}:{String(currentTime % 60).padStart(2, '0')}
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <select
-                      className="text-sm border rounded px-2 py-1 mb-2"
-                      onChange={(e) => {
-                        // Store selected task for timer
-                        const taskId = e.target.value;
-                        if (taskId) {
-                          // Start timer for selected task
-                          setIsTimerRunning(true);
-                        }
-                      }}
-                    >
-                      <option value="">Select Task</option>
-                      {tasks.map(task => (
-                        <option key={task.id} value={task.id}>{task.title}</option>
-                      ))}
-                    </select>
+                  <h3 className="text-xl font-bold mb-2">Time Tracker</h3>
+                  <p className="text-sm text-muted-foreground">Select a task and start tracking your time</p>
+                </div>
+                
+                <div className="flex flex-col items-center gap-6">
+                  {/* Timer Display */}
+                  <div className="relative">
+                    <div className="text-6xl md:text-7xl font-bold font-mono text-primary">
+                      {Math.floor(currentTime / 3600)}:{String(Math.floor((currentTime % 3600) / 60)).padStart(2, '0')}:{String(currentTime % 60).padStart(2, '0')}
+                    </div>
+                    {isTimerRunning && (
+                      <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                    )}
+                  </div>
+
+                  {/* Task Selector */}
+                  <div className="w-full max-w-md space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Select Task</label>
+                      <select
+                        className="w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                        onChange={(e) => {
+                          const taskId = e.target.value;
+                          if (taskId && !isTimerRunning) {
+                            setIsTimerRunning(true);
+                          }
+                        }}
+                        disabled={isTimerRunning}
+                        value={isTimerRunning ? (document.querySelector('select')?.value || '') : ''}
+                      >
+                        <option value="">Choose a task...</option>
+                        {tasks.map(task => (
+                          <option key={task.id} value={task.id}>{task.title}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Control Button */}
                     <Button
                       onClick={async () => {
                         if (isTimerRunning) {
-                          // Stop timer and log time
                           setIsTimerRunning(false);
                           const selectedTaskId = (document.querySelector('select') as HTMLSelectElement)?.value;
                           if (selectedTaskId && currentTime > 0) {
                             try {
                               const minutes = Math.floor(currentTime / 60);
                               await timeLogsApi.create(project.id, parseInt(selectedTaskId), { minutes });
-                              toast.success('Time logged successfully');
+                              toast.success(`Logged ${minutes} minutes successfully`);
                               setCurrentTime(0);
                               fetchProjectData();
                             } catch (error: any) {
                               toast.error('Failed to log time');
                             }
+                          } else {
+                            setCurrentTime(0);
                           }
                         } else {
+                          const selectedTaskId = (document.querySelector('select') as HTMLSelectElement)?.value;
+                          if (!selectedTaskId) {
+                            toast.error('Please select a task first');
+                            return;
+                          }
                           setIsTimerRunning(true);
                         }
                       }}
-                      className={isTimerRunning ? 'bg-destructive' : ''}
+                      size="lg"
+                      className={`w-full text-lg py-6 ${
+                        isTimerRunning 
+                          ? 'bg-red-500 hover:bg-red-600 text-white' 
+                          : 'bg-primary hover:bg-primary/90 text-white'
+                      }`}
                     >
                       {isTimerRunning ? (
                         <>
-                          <Pause className="h-4 w-4 mr-2" />
-                          Stop & Log
+                          <Pause className="h-5 w-5 mr-2" />
+                          Stop Timer
                         </>
                       ) : (
                         <>
-                          <Play className="h-4 w-4 mr-2" />
-                          Start
+                          <Play className="h-5 w-5 mr-2" />
+                          Start Timer
                         </>
                       )}
                     </Button>
@@ -1227,18 +1252,29 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {timeEntries.map(entry => (
-                    <div key={entry.id} className="flex items-center justify-between p-4 rounded-lg border border-border">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="font-medium">{entry.hours}h</span>
-                          <span className="text-sm text-muted-foreground">{entry.date}</span>
-                          <Badge variant={entry.status === 'approved' ? 'default' : 'outline'}>
-                            {entry.status}
-                          </Badge>
+                    <div key={entry.id} className="p-4 rounded-lg border-2 border-border bg-card hover:border-primary/50 transition-colors">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="text-2xl font-bold text-primary">{entry.hours}h</div>
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{entry.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{entry.date}</p>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{entry.description}</p>
+                        <Badge 
+                          variant={entry.status === 'approved' ? 'default' : 'outline'}
+                          className={`${
+                            entry.status === 'approved' 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-yellow-500 text-white'
+                          }`}
+                        >
+                          {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -1248,7 +1284,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
 
             {/* Summary */}
             {timeEntries.length > 0 && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                 <div className="p-4 rounded-lg bg-background text-center">
                   <p className="text-sm text-muted-foreground mb-1">Total Hours</p>
                   <p className="text-2xl font-bold">{timeEntries.reduce((sum, e) => sum + e.hours, 0)}h</p>
@@ -1305,6 +1341,7 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
             )}
           </div>
         )}
+
       </div>
 
       {/* Document Upload Modal */}
@@ -1335,6 +1372,20 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
         }}
       />
 
+      {/* Milestone Modal */}
+      <MilestoneModal
+        isOpen={showMilestoneModal}
+        onClose={() => {
+          setShowMilestoneModal(false);
+          setEditingMilestone(null);
+        }}
+        projectId={project.id}
+        milestone={editingMilestone}
+        onSuccess={() => {
+          fetchProjectData();
+        }}
+      />
+
       {/* Task Detail Modal */}
       {selectedTask && (
         <TaskDetailModal
@@ -1351,6 +1402,49 @@ export function ProjectWorkspace({ project }: ProjectWorkspaceProps) {
           }}
         />
       )}
+
+      {/* File Preview Modal */}
+      {selectedFile && (
+        <FilePreviewModal
+          isOpen={showFilePreview}
+          onClose={() => {
+            setShowFilePreview(false);
+            setSelectedFile(null);
+          }}
+          projectId={project.id}
+          file={selectedFile}
+        />
+      )}
+
+      {/* Sprint Modal */}
+      <SprintModal
+        isOpen={showSprintModal}
+        onClose={() => {
+          setShowSprintModal(false);
+        }}
+        projectId={project.id}
+        sprint={null}
+        onSuccess={() => {
+          fetchProjectData();
+        }}
+      />
+
+      {/* Sprint Detail Modal */}
+      {selectedSprint && (
+        <SprintDetailModal
+          isOpen={showSprintDetailModal}
+          onClose={() => {
+            setShowSprintDetailModal(false);
+            setSelectedSprint(null);
+          }}
+          projectId={project.id}
+          sprint={selectedSprint as any}
+          onSuccess={() => {
+            fetchProjectData();
+          }}
+        />
+      )}
+
     </div>
   );
 }

@@ -198,31 +198,37 @@ interface LeaveReviewProps {
   freelancerName: string;
   onSubmit: (review: { rating: number; title: string; comment: string }) => void;
   onCancel: () => void;
+  initialRating?: number;
+  initialTitle?: string;
+  initialComment?: string;
 }
 
-export function LeaveReview({ projectTitle, freelancerName, onSubmit, onCancel }: LeaveReviewProps) {
-  const [rating, setRating] = useState(0);
+export function LeaveReview({ projectTitle, freelancerName, onSubmit, onCancel, initialRating, initialTitle, initialComment }: LeaveReviewProps) {
+  const [rating, setRating] = useState(initialRating || 0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [title, setTitle] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState(initialTitle || '');
+  const [comment, setComment] = useState(initialComment || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (rating > 0 && title && comment) {
-      onSubmit({ rating, title, comment });
+    if (rating > 0 && title.trim() && comment.trim()) {
+      onSubmit({ rating, title: title.trim(), comment: comment.trim() });
     }
   };
 
-  const isValid = rating > 0 && title.length >= 10 && comment.length >= 50;
+  const isValid = rating > 0 && title.length >= 10 && comment.trim().length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-card rounded-xl border border-border max-w-2xl w-full">
         {/* Header */}
         <div className="p-6 border-b border-border">
-          <h2 className="text-2xl font-bold mb-1">Leave a Review</h2>
+          <h2 className="text-2xl font-bold mb-1">{initialRating ? 'Edit Review' : 'Leave a Review'}</h2>
           <p className="text-sm text-muted-foreground">
-            Share your experience working with {freelancerName} on "{projectTitle}"
+            {initialRating 
+              ? `Update your review for ${freelancerName}`
+              : `Share your experience working with ${freelancerName}${projectTitle !== 'General Review' ? ` on "${projectTitle}"` : ''}`
+            }
           </p>
         </div>
 
@@ -290,7 +296,7 @@ export function LeaveReview({ projectTitle, freelancerName, onSubmit, onCancel }
               className="w-full px-4 py-3 rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <p className="text-sm text-muted-foreground mt-1">
-              {comment.length} / 50 characters minimum
+              {comment.length} characters
             </p>
           </div>
 
@@ -313,7 +319,7 @@ export function LeaveReview({ projectTitle, freelancerName, onSubmit, onCancel }
             disabled={!isValid}
             size="lg"
           >
-            Submit Review
+            {initialRating ? 'Update Review' : 'Submit Review'}
           </Button>
         </div>
       </div>

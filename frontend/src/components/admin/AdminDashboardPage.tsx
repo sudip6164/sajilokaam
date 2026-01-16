@@ -94,7 +94,7 @@ export function AdminDashboardPage() {
     },
     {
       title: 'Total Revenue',
-      value: `Rs. ${(stats?.totalRevenue || 0).toLocaleString()}`,
+      value: `Rs. ${Number(stats?.totalRevenue || 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'text-primary',
       bgColor: 'bg-primary/10',

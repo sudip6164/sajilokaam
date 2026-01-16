@@ -76,7 +76,7 @@ export function AboutPage() {
               <h2 className="text-3xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 2020, SajiloKaam started with a simple idea: make it easy for talented 
+                  Founded in 2026, SajiloKaam started with a simple idea: make it easy for talented 
                   professionals to find meaningful work and for businesses to access global talent.
                 </p>
                 <p>

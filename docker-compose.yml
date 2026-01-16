@@ -42,6 +42,13 @@ services:
       - DB_USER=root
       - DB_PASS=
       - KHALTI_SECRET_KEY=${KHALTI_SECRET_KEY}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-noreply@sajilokaam.com}
+      - MAIL_FROM_NAME=${MAIL_FROM_NAME:-SajiloKaam}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     ports:
       - "8080:8080"
     volumes:

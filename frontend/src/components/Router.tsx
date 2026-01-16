@@ -2,7 +2,7 @@ import { useState, createContext, useContext, useEffect } from 'react';
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-login' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment' | 'payment-success' | 'payment-failure' | 'payment-cancel' | 'client-projects' | 'freelancer-projects';
+export type Page = 'home' | 'login' | 'signup' | 'find-work' | 'find-freelancers' | 'freelancer-dashboard' | 'client-dashboard' | 'freelancer-profile' | 'client-profile' | 'view-freelancer' | 'view-client' | 'job-detail' | 'proposals-list' | 'submit-proposal' | 'view-proposal' | 'messages' | 'project-detail' | 'earnings' | 'features' | 'about' | 'contact' | 'pricing' | 'terms' | 'privacy' | 'forgot-password' | 'reset-password' | 'verify-email' | 'account-settings' | 'admin-login' | 'admin-dashboard' | 'admin-freelancers' | 'admin-clients' | 'admin-admins' | 'admin-verification' | 'admin-payments' | 'admin-analytics' | 'admin-settings' | 'project-workspace' | 'notifications' | '404' | 'access-denied' | 'success' | 'failure' | 'post-job' | 'invoices-list' | 'create-invoice' | 'invoice-detail' | 'transactions' | 'escrow' | 'payment' | 'payment-success' | 'payment-failure' | 'payment-cancel' | 'client-projects' | 'freelancer-projects';
 
 export type UserType = 'freelancer' | 'client' | null;
 
@@ -87,6 +87,7 @@ const pathToPage: Record<string, Page> = {
   '/terms': 'terms',
   '/privacy': 'privacy',
   '/account-settings': 'account-settings',
+  '/notifications': 'notifications',
   '/404': '404',
   '/access-denied': 'access-denied',
   '/success': 'success',
@@ -145,6 +146,7 @@ const pageToPath: Record<Page, string> = {
   'terms': '/terms',
   'privacy': '/privacy',
   'account-settings': '/account-settings',
+  'notifications': '/notifications',
   '404': '/404',
   'access-denied': '/access-denied',
   'success': '/success',
@@ -204,6 +206,8 @@ export function Router({ children }: { children: React.ReactNode }) {
       url = `${path}?bidId=${params.bidId}`;
     } else if (params?.projectId && page === 'project-detail') {
       url = `${path}?projectId=${params.projectId}`;
+    } else if (params?.clientId && page === 'view-client') {
+      url = `${path}?clientId=${params.clientId}`;
     }
     window.history.pushState({ page, params }, '', url);
   };
@@ -222,6 +226,7 @@ export function Router({ children }: { children: React.ReactNode }) {
     const freelancerId = urlParams.get('freelancerId');
     const bidId = urlParams.get('bidId');
     const projectId = urlParams.get('projectId');
+    const clientId = urlParams.get('clientId');
     if (token && page === 'reset-password') {
       setPageParams({ token });
     } else if (jobId && (page === 'job-detail' || page === 'proposals-list' || page === 'submit-proposal')) {
@@ -232,6 +237,8 @@ export function Router({ children }: { children: React.ReactNode }) {
       setPageParams({ bidId: parseInt(bidId, 10) });
     } else if (projectId && page === 'project-detail') {
       setPageParams({ projectId: parseInt(projectId, 10) });
+    } else if (clientId && page === 'view-client') {
+      setPageParams({ clientId: parseInt(clientId, 10) });
     }
 
     // Handle browser back/forward buttons

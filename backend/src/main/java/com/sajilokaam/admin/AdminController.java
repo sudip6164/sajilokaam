@@ -13,6 +13,7 @@ import com.sajilokaam.role.RoleRepository;
 import com.sajilokaam.job.JobRepository;
 import com.sajilokaam.bid.BidRepository;
 import com.sajilokaam.project.ProjectRepository;
+import com.sajilokaam.payment.PaymentRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,9 @@ public class AdminController {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     // Analytics Endpoints
@@ -74,7 +79,14 @@ public class AdminController {
         analytics.put("rejectedProfiles",
             freelancerProfileRepository.countByStatus(ProfileStatus.REJECTED) + 
             clientProfileRepository.countByStatus(ProfileStatus.REJECTED));
-        analytics.put("totalRevenue", 0);
+        
+        // Calculate total revenue from completed payments
+        BigDecimal totalRevenue = paymentRepository.sumAmountByStatus("COMPLETED");
+        if (totalRevenue == null) {
+            totalRevenue = BigDecimal.ZERO;
+        }
+        // Convert BigDecimal to double for JSON serialization
+        analytics.put("totalRevenue", totalRevenue.doubleValue());
         
         return ResponseEntity.ok(analytics);
     }
